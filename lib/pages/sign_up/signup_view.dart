@@ -26,6 +26,21 @@ class SignupPageView extends StatelessWidget {
               child: TextFormField(
                 readOnly: controller.loading,
                 autocorrect: false,
+                controller: controller.usernameController,
+                textInputAction: TextInputAction.next,
+                validator: controller.usernameTextFieldValidator,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.account_box_outlined),
+                  hintText: L10n.of(context)!.username,
+                  errorStyle: const TextStyle(color: Colors.orange),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: TextFormField(
+                readOnly: controller.loading,
+                autocorrect: false,
                 onChanged: controller.onPasswordType,
                 autofillHints: controller.loading
                     ? null

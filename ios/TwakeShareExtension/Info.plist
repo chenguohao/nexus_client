@@ -4,24 +4,6 @@
 <dict>
 	<key>AppGroupId</key>
 	<string>${CUSTOM_GROUP_ID}</string>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>TwakeShareExtension</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>1</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>
@@ -30,9 +12,9 @@
 			<dict>
 				<key>NSExtensionActivationSupportsFileWithMaxCount</key>
 				<integer>15</integer>
-				<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
-				<integer>15</integer>
 				<key>NSExtensionActivationSupportsImageWithMaxCount</key>
+				<integer>15</integer>
+				<key>NSExtensionActivationSupportsMovieWithMaxCount</key>
 				<integer>15</integer>
 				<key>NSExtensionActivationSupportsText</key>
 				<true/>

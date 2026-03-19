@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fluffychat/utils/dialog/twake_dialog.dart';
 import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
@@ -244,6 +245,10 @@ class LoginController extends State<Login> {
   }
 
   static int sendAttempt = 0;
+
+  void goToSignup() {
+    context.push('/signup');
+  }
 
   @override
   void initState() {

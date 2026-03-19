@@ -1,9 +1,9 @@
 class ConfigurationSaas {
-  static const String registrationUrl = 'https://sign-up.twake.app/';
+  static const String registrationUrl = 'http://127.0.0.1:8008/';
 
-  static const String twakeWorkplaceHomeserver = 'https://matrix.twake.app';
+  static const String twakeWorkplaceHomeserver = 'http://127.0.0.1:8008';
 
-  static const String homeserver = 'https://matrix.twake.app';
+  static const String homeserver = 'http://127.0.0.1:8008';
 
-  static const String platform = 'saas';
+  static const String platform = 'localDebug';
 }

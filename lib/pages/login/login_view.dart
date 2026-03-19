@@ -116,6 +116,16 @@ class LoginView extends StatelessWidget {
                   ),
                 ),
                 Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: OutlinedButton.icon(
+                    onPressed: controller.loading
+                        ? null
+                        : controller.goToSignup,
+                    icon: const Icon(Icons.person_add_outlined),
+                    label: Text(L10n.of(context)!.signUp),
+                  ),
+                ),
+                Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Row(
                     children: [

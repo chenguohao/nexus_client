@@ -14,6 +14,7 @@ class SignupPage extends StatefulWidget {
 }
 
 class SignupPageController extends State<SignupPage> {
+  final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController password2Controller = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -72,6 +73,24 @@ class SignupPageController extends State<SignupPage> {
     return null;
   }
 
+  String? usernameTextFieldValidator(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return L10n.of(context)!.pleaseEnterYourUsername;
+    }
+    if (_toLocalpart(value).isEmpty) {
+      return L10n.of(context)!.invalidUsername;
+    }
+    return null;
+  }
+
+  String _toLocalpart(String value) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), '_')
+        .replaceAll(RegExp(r'[^a-z0-9._=\-/+]'), '');
+  }
+
   void signup([_]) async {
     setState(() {
       error = null;
@@ -97,8 +116,8 @@ class SignupPageController extends State<SignupPage> {
             );
       }
 
-      final displayname = Matrix.of(context).loginUsername!;
-      final localPart = displayname.toLowerCase().replaceAll(' ', '_');
+      final displayname = usernameController.text.trim();
+      final localPart = _toLocalpart(displayname);
 
       await client.uiaRequestBackground(
         (auth) => client.register(
@@ -125,4 +144,13 @@ class SignupPageController extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) => SignupPageView(this);
+
+  @override
+  void dispose() {
+    usernameController.dispose();
+    passwordController.dispose();
+    password2Controller.dispose();
+    emailController.dispose();
+    super.dispose();
+  }
 }

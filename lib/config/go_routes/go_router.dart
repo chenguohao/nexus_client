@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fluffychat/config/first_column_inner_routes.dart';
+import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/config/go_routes/app_route_paths.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/pages/add_story/add_story.dart';
@@ -64,7 +65,11 @@ abstract class AppRoutes {
   static FutureOr<String?> loggedOutRedirect(
     BuildContext context,
     GoRouterState state,
-  ) => Matrix.of(context).client.isLogged() ? null : '/home/twakeWelcome';
+  ) => Matrix.of(context).client.isLogged()
+      ? null
+      : PlatformInfos.isMobile && !AppConfig.isSaasPlatForm
+      ? '/home/homeserverpicker'
+      : '/home/twakeWelcome';
 
   AppRoutes();
 
@@ -86,7 +91,9 @@ abstract class AppRoutes {
       pageBuilder: (context, state) => defaultPageBuilder(
         context,
         PlatformInfos.isMobile
-            ? const TwakeWelcome()
+            ? AppConfig.isSaasPlatForm
+                  ? const TwakeWelcome()
+                  : const HomeserverPicker()
             : AutoHomeserverPicker(
                 loggedOut: state.extra is bool ? state.extra as bool? : null,
               ),

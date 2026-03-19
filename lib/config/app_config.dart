@@ -27,7 +27,7 @@ abstract class AppConfig {
   static String? _applicationWelcomeMessage;
 
   static String? get applicationWelcomeMessage => _applicationWelcomeMessage;
-  static String _defaultHomeserver = 'matrix.linagora.com';
+  static String _defaultHomeserver = 'http://127.0.0.1:8008';
 
   static String get defaultHomeserver => _defaultHomeserver;
   static double bubbleSizeFactor = 1;

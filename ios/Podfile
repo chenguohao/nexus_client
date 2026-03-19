@@ -51,6 +51,11 @@ post_install do |installer|
       xcconfig_mod = xcconfig.gsub(/DT_TOOLCHAIN_DIR/, "TOOLCHAIN_DIR")
       File.open(xcconfig_path, "w") { |file| file << xcconfig_mod }
 
+      # Xcode 26 can fail while scanning transitive Flutter pod headers for
+      # some plugins (for example receive_sharing_intent) when explicit Swift
+      # modules are enabled.
+      config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+
       config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
         '$(inherited)',
         ## dart: PermissionGroup.microphone
