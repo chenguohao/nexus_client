@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:fluffychat/config/app_constants.dart';
 import 'package:fluffychat/config/localizations/localization_service.dart';
 import 'package:fluffychat/data/model/federation_server/federation_configuration.dart';
 import 'package:fluffychat/data/model/federation_server/federation_server_information.dart';
@@ -801,11 +802,20 @@ class MatrixState extends State<Matrix>
   }
 
   Future<void> setUpToMServicesInLogin(Client client) async {
-    final tomServer = loginHomeserverSummary?.tomServer;
+    var tomServer = loginHomeserverSummary?.tomServer;
     Logs().d('MatrixState::setUpToMServicesInLogin: $tomServer');
-    if (tomServer != null) {
-      _setUpToMServer(tomServer);
+    if (tomServer == null) {
+      // well-known 未返回 t.server（本地 Dendrite 部署），兜底使用 nexus_server。
+      // 这样通讋录、用户信息等 ToM API 请求能拿到正确的 base URL。
+      tomServer = ToMServerInformation(
+        baseUrl: Uri.parse(AppConstants.nexusServerUrl),
+        serverName: AppConstants.nexusServerUrl,
+      );
+      Logs().d(
+        'MatrixState::setUpToMServicesInLogin: fallback to nexus ${AppConstants.nexusServerUrl}',
+      );
     }
+    _setUpToMServer(tomServer);
     final identityServer =
         loginHomeserverSummary?.discoveryInformation?.mIdentityServer;
     final homeServer =
@@ -1006,7 +1016,13 @@ class MatrixState extends State<Matrix>
         'Matrix::_setUpToMServicesWhenChangingActiveClient: toMConfigurations - $toMConfigurations',
       );
       if (toMConfigurations == null) {
-        _setUpToMServer(null);
+        // 没有存储的 ToM 配置（本地 Dendrite 部署），兜底使用 nexus_server
+        _setUpToMServer(
+          ToMServerInformation(
+            baseUrl: Uri.parse(AppConstants.nexusServerUrl),
+            serverName: AppConstants.nexusServerUrl,
+          ),
+        );
         _setupAuthUrl();
         setUpAuthorization(client);
       } else {
@@ -1017,7 +1033,12 @@ class MatrixState extends State<Matrix>
         );
       }
     } catch (e) {
-      _setUpToMServer(null);
+      _setUpToMServer(
+        ToMServerInformation(
+          baseUrl: Uri.parse(AppConstants.nexusServerUrl),
+          serverName: AppConstants.nexusServerUrl,
+        ),
+      );
       _setupAuthUrl();
       setUpAuthorization(client);
       Logs().e('Matrix::_setUpToMServicesWhenChangingActiveClient: error - $e');
@@ -1050,6 +1071,11 @@ class MatrixState extends State<Matrix>
 
   Future<void> _getUserInfoWithActiveClient(Client newClient) async {
     if (newClient.userID == null) return;
+    // 没有配置 Tom server（纯 Matrix/Dendrite 部署）时跳过，避免无 host 的请求报错
+    if (!twakeSupported) {
+      await LocalizationService.initializeLanguage(context);
+      return;
+    }
     try {
       final result = await getIt.get<UserInfoRepository>().getUserInfo(
         Uri.encodeComponent(newClient.userID!),

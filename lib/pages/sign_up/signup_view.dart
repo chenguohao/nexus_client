@@ -84,30 +84,15 @@ class SignupPageView extends StatelessWidget {
                   ),
                 ),
               ),
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: TextFormField(
-                readOnly: controller.loading,
-                autocorrect: false,
-                controller: controller.emailController,
-                keyboardType: TextInputType.emailAddress,
-                autofillHints: controller.loading
-                    ? null
-                    : [AutofillHints.username],
-                validator: controller.emailTextFieldValidator,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.mail_outlined),
-                  hintText: L10n.of(context)!.enterAnEmailAddress,
-                  errorText: controller.error,
-                  errorMaxLines: 4,
-                  errorStyle: TextStyle(
-                    color: controller.emailController.text.isEmpty
-                        ? Colors.orangeAccent
-                        : Colors.orange,
-                  ),
+            if (controller.error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                child: Text(
+                  controller.error!,
+                  style: const TextStyle(color: Colors.red),
+                  maxLines: 4,
                 ),
               ),
-            ),
             Hero(
               tag: 'loginButton',
               child: Padding(
