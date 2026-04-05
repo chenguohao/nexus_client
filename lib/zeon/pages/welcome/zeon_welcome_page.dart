@@ -108,16 +108,14 @@ class ZeonWelcomePage extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(32, 0, 32, 0),
                   child: Column(
                     children: [
-                      // Primary: Create Sovereign Node
                       _ZeonButton(
-                        label: 'CREATE SOVEREIGN NODE',
+                        label: 'CREATE NEW ACCOUNT',
                         isPrimary: true,
                         onTap: () => context.go('/home/register'),
                       ),
                       const SizedBox(height: 12),
-                      // Secondary: Access Existing Core (recover)
                       _ZeonButton(
-                        label: 'ACCESS EXISTING CORE',
+                        label: 'RESTORE ACCOUNT',
                         isPrimary: false,
                         onTap: () => context.go('/home/recover'),
                       ),
