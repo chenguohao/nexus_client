@@ -11,6 +11,9 @@ linter:
     - always_declare_return_types
 
 analyzer:
+  language:
+    experiments:
+      - null-aware-elements
   errors:
     todo: ignore
     fixme: ignore

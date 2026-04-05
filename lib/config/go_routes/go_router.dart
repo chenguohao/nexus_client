@@ -1,12 +1,8 @@
 import 'dart:async';
 
 import 'package:fluffychat/config/first_column_inner_routes.dart';
-import 'package:fluffychat/config/app_config.dart';
-import 'package:fluffychat/config/go_routes/app_route_paths.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
-import 'package:fluffychat/pages/add_story/add_story.dart';
 import 'package:fluffychat/pages/archive/archive.dart';
-import 'package:fluffychat/pages/auto_homeserver_picker/auto_homeserver_picker.dart';
 import 'package:fluffychat/pages/chat/chat_pinned_events/pinned_events_argument.dart';
 import 'package:fluffychat/pages/chat/chat_pinned_events/pinned_messages.dart';
 import 'package:fluffychat/pages/chat_adaptive_scaffold/chat_adaptive_scaffold.dart';
@@ -14,18 +10,14 @@ import 'package:fluffychat/pages/chat_blank/chat_blank.dart';
 import 'package:fluffychat/pages/chat_draft/draft_chat_adaptive_scaffold.dart';
 import 'package:fluffychat/pages/chat_encryption_settings/chat_encryption_settings.dart';
 import 'package:fluffychat/pages/error_page/error_page.dart';
-import 'package:fluffychat/pages/homeserver_picker/homeserver_picker.dart';
-import 'package:fluffychat/pages/login/on_auth_redirect.dart';
 import 'package:fluffychat/pages/new_group/new_group_chat_info.dart';
 import 'package:fluffychat/pages/personal_qr/personal_qr.dart';
 import 'package:fluffychat/pages/settings_dashboard/settings_app_language/settings_app_language.dart';
 import 'package:fluffychat/pages/settings_dashboard/settings_blocked_users/settings_blocked_user.dart';
-import 'package:fluffychat/pages/settings_dashboard/settings_contacts_visibility/settings_contacts_visibility.dart';
 import 'package:fluffychat/pages/settings_dashboard/settings_profile/settings_profile.dart';
+import 'package:fluffychat/pages/settings_dashboard/settings_security/settings_security.dart';
 import 'package:fluffychat/pages/share/share.dart';
 import 'package:fluffychat/pages/splash/splash.dart';
-import 'package:fluffychat/pages/story/story_page.dart';
-import 'package:fluffychat/pages/twake_welcome/twake_welcome.dart';
 import 'package:fluffychat/presentation/model/chat/chat_router_input_argument.dart';
 import 'package:fluffychat/presentation/model/forward/forward_argument.dart';
 import 'package:fluffychat/presentation/model/contact/presentation_contact.dart';
@@ -33,24 +25,21 @@ import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:fluffychat/widgets/layouts/adaptive_layout/app_adaptive_scaffold_body.dart';
 import 'package:fluffychat/widgets/layouts/adaptive_layout/app_adaptive_scaffold.dart';
-import 'package:fluffychat/pages/connect/connect_page.dart';
 import 'package:fluffychat/pages/device_settings/device_settings.dart';
 import 'package:fluffychat/pages/forward/forward.dart';
 import 'package:fluffychat/pages/invitation_selection/invitation_selection.dart';
-import 'package:fluffychat/pages/login/login.dart';
 import 'package:fluffychat/pages/new_group/new_group.dart';
 import 'package:fluffychat/pages/new_private_chat/new_private_chat.dart';
-import 'package:fluffychat/pages/settings_dashboard/settings_3pid/settings_3pid.dart';
 import 'package:fluffychat/pages/settings_dashboard/settings_chat/settings_chat.dart';
 import 'package:fluffychat/pages/settings_dashboard/settings_emotes/settings_emotes.dart';
 import 'package:fluffychat/pages/settings_dashboard/settings_notifications/settings_notifications.dart';
-import 'package:fluffychat/pages/settings_dashboard/settings_security/settings_security.dart';
-import 'package:fluffychat/pages/settings_dashboard/settings_stories/settings_stories.dart';
 import 'package:fluffychat/pages/settings_dashboard/settings_style/settings_style.dart';
-import 'package:fluffychat/pages/sign_up/signup.dart';
 import 'package:fluffychat/widgets/layouts/agruments/app_adaptive_scaffold_body_args.dart';
 import 'package:fluffychat/widgets/log_view.dart';
 import 'package:fluffychat/widgets/matrix.dart';
+import 'package:fluffychat/zeon/pages/mining/zeon_mining_page.dart';
+import 'package:fluffychat/zeon/pages/recover/zeon_recover_page.dart';
+import 'package:fluffychat/zeon/pages/welcome/zeon_welcome_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -65,11 +54,7 @@ abstract class AppRoutes {
   static FutureOr<String?> loggedOutRedirect(
     BuildContext context,
     GoRouterState state,
-  ) => Matrix.of(context).client.isLogged()
-      ? null
-      : PlatformInfos.isMobile && !AppConfig.isSaasPlatForm
-      ? '/home/homeserverpicker'
-      : '/home/twakeWelcome';
+  ) => Matrix.of(context).client.isLogged() ? null : '/home';
 
   AppRoutes();
 
@@ -86,55 +71,26 @@ abstract class AppRoutes {
       redirect: (context, state) =>
           Matrix.of(context).client.isLogged() ? '/rooms' : '/home',
     ),
+    // ── Zeon auth routes ──────────────────────────────────────────────────
     GoRoute(
       path: '/home',
-      pageBuilder: (context, state) => defaultPageBuilder(
-        context,
-        PlatformInfos.isMobile
-            ? AppConfig.isSaasPlatForm
-                  ? const TwakeWelcome()
-                  : const HomeserverPicker()
-            : AutoHomeserverPicker(
-                loggedOut: state.extra is bool ? state.extra as bool? : null,
-              ),
-      ),
+      pageBuilder: (context, state) =>
+          defaultPageBuilder(context, const ZeonWelcomePage()),
       redirect: loggedInRedirect,
       routes: [
         GoRoute(
-          path: 'login',
+          path: 'register',
           pageBuilder: (context, state) =>
-              defaultPageBuilder(context, const Login()),
+              defaultPageBuilder(context, const ZeonMiningPage()),
           redirect: loggedInRedirect,
         ),
         GoRoute(
-          path: 'twakeWelcome',
+          path: 'recover',
           pageBuilder: (context, state) =>
-              defaultPageBuilder(context, const TwakeWelcome()),
-          redirect: loggedInRedirect,
-        ),
-        GoRoute(
-          path: 'homeserverpicker',
-          pageBuilder: (context, state) =>
-              defaultPageBuilder(context, const HomeserverPicker()),
+              defaultPageBuilder(context, const ZeonRecoverPage()),
           redirect: loggedInRedirect,
         ),
       ],
-    ),
-    GoRoute(
-      path: '/onAuthRedirect',
-      pageBuilder: (context, state) {
-        return defaultPageBuilder(context, const OnAuthRedirect());
-      },
-    ),
-    GoRoute(
-      path: '/connect',
-      pageBuilder: (context, state) =>
-          defaultPageBuilder(context, const ConnectPage()),
-    ),
-    GoRoute(
-      path: '/signup',
-      pageBuilder: (context, state) =>
-          defaultPageBuilder(context, const SignupPage()),
     ),
     GoRoute(
       path: '/logs',
@@ -179,26 +135,6 @@ abstract class AppRoutes {
             name: '/rooms',
           ),
           routes: [
-            GoRoute(
-              path: 'stories/create',
-              pageBuilder: (context, state) =>
-                  defaultPageBuilder(context, const AddStoryPage()),
-              redirect: loggedOutRedirect,
-            ),
-            GoRoute(
-              path: 'stories/:roomid',
-              pageBuilder: (context, state) =>
-                  defaultPageBuilder(context, const StoryPage()),
-              redirect: loggedOutRedirect,
-              routes: [
-                GoRoute(
-                  path: 'share',
-                  pageBuilder: (context, state) =>
-                      defaultPageBuilder(context, const AddStoryPage()),
-                  redirect: loggedOutRedirect,
-                ),
-              ],
-            ),
             GoRoute(
               path: 'archive',
               pageBuilder: (context, state) =>
@@ -354,60 +290,15 @@ abstract class AppRoutes {
               redirect: loggedOutRedirect,
             ),
             GoRoute(
-              path: 'addaccount',
-              redirect: loggedOutRedirect,
-              pageBuilder: (context, state) => defaultPageBuilder(
-                context,
-                TwakeWelcome(
-                  arg: state.extra is TwakeWelcomeArg?
-                      ? state.extra as TwakeWelcomeArg?
-                      : null,
-                ),
-              ),
-              routes: [
-                GoRoute(
-                  path: 'login',
-                  pageBuilder: (context, state) =>
-                      defaultPageBuilder(context, const Login()),
-                  redirect: loggedOutRedirect,
-                ),
-                GoRoute(
-                  path: 'homeserverpicker',
-                  pageBuilder: (context, state) =>
-                      defaultPageBuilder(context, const HomeserverPicker()),
-                ),
-              ],
-            ),
-            GoRoute(
               path: 'security',
               redirect: loggedOutRedirect,
               pageBuilder: (context, state) =>
                   defaultPageBuilder(context, const SettingsSecurity()),
               routes: [
                 GoRoute(
-                  path: 'stories',
-                  pageBuilder: (context, state) =>
-                      defaultPageBuilder(context, const SettingsStories()),
-                  redirect: loggedOutRedirect,
-                ),
-                GoRoute(
                   path: 'blockedUsers',
                   pageBuilder: (context, state) =>
                       defaultPageBuilder(context, const BlockedUsers()),
-                  redirect: loggedOutRedirect,
-                ),
-                GoRoute(
-                  path: '3pid',
-                  pageBuilder: (context, state) =>
-                      defaultPageBuilder(context, const Settings3Pid()),
-                  redirect: loggedOutRedirect,
-                ),
-                GoRoute(
-                  path: AppRoutePaths.contactsVisibilitySegment,
-                  pageBuilder: (context, state) => defaultPageBuilder(
-                    context,
-                    const SettingsContactsVisibility(),
-                  ),
                   redirect: loggedOutRedirect,
                 ),
               ],

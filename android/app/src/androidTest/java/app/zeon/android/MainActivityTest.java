@@ -1,4 +1,4 @@
-package app.twake.android.chat;
+package app.zeon.android;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;

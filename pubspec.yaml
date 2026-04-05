@@ -215,6 +215,11 @@ dependencies:
   visibility_detector: ^0.4.0+2
   path: ^1.8.0
   web: ^1.1.1
+  # Zeon Web3 dependencies
+  web3dart: ^2.7.3
+  pointycastle: ^3.9.1
+  convert: ^3.1.1
+  uuid: ^4.3.3
 
 dev_dependencies:
   build_runner: 2.10.5
@@ -333,9 +338,9 @@ cider:
     tag: https://github.com/linagora/twake-on-matrix/releases/tag/%tag% # initial release link template
 
 patrol:
-  app_name: Twake Chat
+  app_name: Zeon
   android:
-    package_name: app.twake.android.chat
+    package_name: app.zeon.android
   ios:
-    bundle_id: app.twake.ios.chat
-    app_name: Twake Chat
+    bundle_id: app.zeon.ios
+    app_name: Zeon

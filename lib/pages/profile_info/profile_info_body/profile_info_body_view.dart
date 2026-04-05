@@ -45,7 +45,7 @@ class ProfileInfoBodyView extends StatelessWidget {
   Widget _buildMobileHeader(BuildContext context) {
     return ValueListenableBuilder(
       valueListenable: controller.isExpandedAvatar,
-      builder: (context, _, _) {
+      builder: (context, _, __) {
         return AnimatedBuilder(
           animation: controller.animationController,
           builder: (context, _) {

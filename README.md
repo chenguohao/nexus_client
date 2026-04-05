@@ -1,34 +1,15 @@
 # Twake Chat Client
-[![Contributors](https://img.shields.io/github/contributors/linagora/twake-on-matrix?label=Contributors
-)](
-  https://github.com/linagora/twake-on-matrix/graphs/contributors
-)
-[![Issues](https://img.shields.io/github/issues/linagora/twake-on-matrix?label=Issues
-)](https://github.com/linagora/twake-on-matrix/issues)
-[![Documentation](https://img.shields.io/badge/Documentation-green.svg)](docs)
-[![Android application](https://img.shields.io/badge/App-Android-blue.svg)](https://play.google.com/store/apps/dev?id=8845244706987756601)
-[![Ios application](https://img.shields.io/badge/App-iOS-red.svg)](https://apps.apple.com/gr/developer/linagora/id1110867042)
 
-<br />
-<div align="center">
-  <a href="https://github.com/linagora/twake-on-matrix">
-     <img src="https://github.com/linagora/twake-on-matrix/assets/146178981/3e395e0e-5796-4986-97ab-814ae28745b2">
-  </a>
+[Contributors](https://github.com/linagora/twake-on-matrix/graphs/contributors)
+[Issues](https://github.com/linagora/twake-on-matrix/issues)
+[Documentation](docs)
+[Android application](https://play.google.com/store/apps/dev?id=8845244706987756601)
+[Ios application](https://apps.apple.com/gr/developer/linagora/id1110867042)
+
+  
 
 
-
-  <p align="center">
-    <a href="https://twake-chat.com">Website</a>
-    •
-    <a href="https://beta.twake.app/web/#/rooms">View Demo</a>
-    •
-    <a href="https://github.com/linagora/twake-on-matrix/issues">Report Bug</a>
-    •
-    <a href="https://github.com/orgs/linagora/projects/6/views/5">Roadmap</a>
-    •
-    <a href="https://hosted.weblate.org/projects/linagora/twake-matrix/#repository">Translate Twake</a>
-  </p>
-</div>
+[Website](https://twake-chat.com) • [View Demo](https://beta.twake.app/web/#/rooms) • [Report Bug](https://github.com/linagora/twake-on-matrix/issues) • [Roadmap](https://github.com/orgs/linagora/projects/6/views/5) • [Translate Twake](https://hosted.weblate.org/projects/linagora/twake-matrix/#repository)
 
 Twake Chat is an open source, decentralized chat app based on the Matrix protocol. It was developed by [Linagora](https://linagora.com). Twake Chat is a good option for individuals and organizations who are looking for a secure and decentralized chat app. It is also a good choice for developers who want to build their own Matrix-based chat apps.
 
@@ -59,9 +40,10 @@ Please make sure to run the following command at first, to verify your code befo
 ```bash
 bash scripts/config-pre-commit.sh
 ```
+
 ### Requirements
 
-- [ ] Flutter 3.38.9
+- Flutter 3.38.9
 
 You can at any moment verify your flutter installation using:
 
@@ -86,26 +68,27 @@ exit
 # back on your host
 sudo chown $(id -u):$(id -g) ./assets/js/package -Rv
 ```
+
 #### Android
 
-- [ ] An implementation of JDK 17 *(tested with openjdk-17.0.13+11)*
-- [ ] (Optional) Android Studio
-- [ ] An Android SDK with:
-  - [ ] Android build tools: 34.0.0
-  - [ ] Android platform: 31, 32, 33, 34, 35
-  - [ ] CMake: 3.22.1
-  - [ ] Android NDK: 26.1.10909125
-  - [ ] Google APIs: enabled
+- An implementation of JDK 17 *(tested with openjdk-17.0.13+11)*
+- (Optional) Android Studio
+- An Android SDK with:
+  - Android build tools: 34.0.0
+  - Android platform: 31, 32, 33, 34, 35
+  - CMake: 3.22.1
+  - Android NDK: 26.1.10909125
+  - Google APIs: enabled
 
 *Note: Gradle will try to install the JDK 8. If for any reasons the operation failed, try to install your own and use [this method](https://github.com/pm-McFly/twake-on-matrix/issues/1#issuecomment-2581428804) to tell Gradle where to find it.*
 
 #### Linux
 
-- [ ] Lib JsonCPP
-- [ ] Lib Secret
-- [ ] Lib RHash
-- [ ] Lib WebKit 2 GTK
-- [ ] Lib OLM
+- Lib JsonCPP
+- Lib Secret
+- Lib RHash
+- Lib WebKit 2 GTK
+- Lib OLM
 
 *If needed, a complete list is available in the `flake.nix`.*
 
@@ -114,6 +97,7 @@ On Ubuntu, the following command should install all the required elements:
 ```bash
 sudo apt install libjsoncpp1 libsecret-1-dev libsecret-1-0 librhash0 libwebkit2gtk-4.0-dev libolm3
 ```
+
 ---
 
 In addition, the Linux build requires Rust. For macOS or Linux, execute the following command in a terminal emulator:
@@ -121,6 +105,7 @@ In addition, the Linux build requires Rust. For macOS or Linux, execute the foll
 ```bash
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
+
 For Windows, you can use the [Rust Installer](https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe).
 
 In case you have Rust already installed, make sure to update it to latest version:
@@ -129,19 +114,19 @@ In case you have Rust already installed, make sure to update it to latest versio
 rustup update
 ```
 
-#### [`devenv.nix`](devenv.nix)
+#### `[devenv.nix](devenv.nix)`
 
-A `devenv.nix` is provided in order to ease the process of setting up your dev environment. Check out the install instructions: https://devenv.sh/getting-started/
+A `devenv.nix` is provided in order to ease the process of setting up your dev environment. Check out the install instructions: [https://devenv.sh/getting-started/](https://devenv.sh/getting-started/)
 
 Then you can use `devenv shell` to fire up your environment.
 *This can be automated thanks to: `[nix-direnv](https://github.com/nix-community/nix-direnv/)`*
 
 Supported platforms:
 
-- [x] Linux x86_64
-- [ ] MacOS aarch_64
-- [ ] MacOS x86_64
-- [ ] Windows WSL
+- Linux x86_64
+- MacOS aarch_64
+- MacOS x86_64
+- Windows WSL
 
 ### Configure the app
 
@@ -218,9 +203,9 @@ Please use the helper script corresponding to your target in order to build:
 ### Web version using Docker
 
 - Create a config file `config.json` in the root of the project with the following
-  [docs](https://github.com/linagora/twake-on-matrix/blob/main/docs/configurations/config_web_app_for_public_platform.md)
-
+[docs](https://github.com/linagora/twake-on-matrix/blob/main/docs/configurations/config_web_app_for_public_platform.md)
 - Run the image using the following command:
+
 ```
 docker run -d -p <host port>:<host port> -e TWAKECHAT_LISTEN_PORT=<host port> --name <container name> -v <host path>:/usr/share/nginx/html/web/config.json linagora/twake-web:<tag>
 ```
@@ -247,6 +232,7 @@ docker run -d -p <host port>:<host port> -e TWAKECHAT_LISTEN_PORT=<host port> --
 ```
 
 - Run the image using the following command with my port is `6868`:
+
 ```
 docker run -d -p 6868:6868 -e TWAKECHAT_LISTEN_PORT=6868 --name twake-web -v /path/to/config.json:/usr/share/nginx/html/web/config.json linagora/twake-web:v2.19.7
 ```
@@ -255,18 +241,12 @@ docker run -d -p 6868:6868 -e TWAKECHAT_LISTEN_PORT=6868 --name twake-web -v /pa
 
 # Special thanks
 
-* <a href="https://github.com/krille-chan/fluffychat">FluffyChat</a> is the original repository of this project. A huge thanks to the upstream repository for their vital contributions, not only for this project but also for [Matrix SDK in Dart](https://github.com/famedly/matrix-dart-sdk)
+- [FluffyChat](https://github.com/krille-chan/fluffychat) is the original repository of this project. A huge thanks to the upstream repository for their vital contributions, not only for this project but also for [Matrix SDK in Dart](https://github.com/famedly/matrix-dart-sdk)
+- [Fabiyamada](https://github.com/fabiyamada) is a graphics designer from Brasil and has made the fluffychat logo and the banner. Big thanks for her great designs.
+- [Advocatux](https://github.com/advocatux) has made the Spanish translation with great love and care. He always stands by my side and supports my work with great commitment.
+- Thanks to MTRNord and Sorunome for developing.
+- Also thanks to all translators and testers! With your help, fluffychat is now available in more than 12 languages.
+- [Noto Emoji Font](https://github.com/googlefonts/noto-emoji/) for the awesome emojis.
+- [WoodenBeaver](https://github.com/madsrh/WoodenBeaver) sound theme for the notification sound.
+- The Matrix Foundation for making and maintaining the [emoji translations](https://github.com/matrix-org/matrix-doc/blob/main/data-definitions/sas-emoji.json) used for emoji verification, licensed Apache 2.0
 
-* <a href="https://github.com/fabiyamada">Fabiyamada</a> is a graphics designer from Brasil and has made the fluffychat logo and the banner. Big thanks for her great designs.
-
-* <a href="https://github.com/advocatux">Advocatux</a> has made the Spanish translation with great love and care. He always stands by my side and supports my work with great commitment.
-
-* Thanks to MTRNord and Sorunome for developing.
-
-* Also thanks to all translators and testers! With your help, fluffychat is now available in more than 12 languages.
-
-* <a href="https://github.com/googlefonts/noto-emoji/">Noto Emoji Font</a> for the awesome emojis.
-
-* <a href="https://github.com/madsrh/WoodenBeaver">WoodenBeaver</a> sound theme for the notification sound.
-
-* The Matrix Foundation for making and maintaining the [emoji translations](https://github.com/matrix-org/matrix-doc/blob/main/data-definitions/sas-emoji.json) used for emoji verification, licensed Apache 2.0
