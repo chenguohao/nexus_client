@@ -1,10 +1,15 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:fluffychat/domain/model/tom_server_information.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:matrix/matrix.dart';
 
+import '../../../widgets/matrix.dart';
+import '../../services/api_service.dart';
+import '../../services/key_service.dart';
 import '../../services/steganography_service.dart';
 import '../mining/zeon_mining_logic.dart' show ZeonMiningLogic;
 
@@ -17,6 +22,8 @@ class ZeonRecoverPage extends StatefulWidget {
 
 class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
   final _steg = SteganographyService();
+  final _keyService = KeyService();
+  final _apiService = ApiService();
   final _imagePicker = ImagePicker();
 
   @override
@@ -76,31 +83,105 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
 
     if (!mounted) return;
 
-    // Step 4: Decrypt
+    // Step 4: Decrypt and login
     try {
       final privateKeyHex =
           ZeonMiningLogic.decryptPrivateKey(encryptedHex, password);
 
-      if (mounted) {
+      if (!mounted) return;
+
+      // Import key into secure storage
+      final privateKey = await _keyService.importPrivateKey(privateKeyHex);
+      final walletAddress = _keyService.address(privateKey);
+
+      // Login via Zeon API
+      final loginResponse = await _apiService.quickLogin(
+        username: walletAddress.toLowerCase().replaceAll('0x', '').substring(0, 16),
+        password: privateKeyHex.substring(0, 32),
+      );
+
+      if (!mounted) return;
+
+      // Login to Matrix client
+      final loginError = await _loginMatrixClient(
+        matrixUserId: loginResponse.matrixUserId,
+        accessToken: loginResponse.matrixAccessToken,
+        deviceId: loginResponse.deviceId,
+      );
+
+      if (!mounted) return;
+
+      if (loginError != null) {
         await _showResultDialog(
-          success: true,
-          title: 'DECRYPTION SUCCESSFUL',
-          message:
-              'Private key recovered:\n${privateKeyHex.substring(0, 16)}…${privateKeyHex.substring(privateKeyHex.length - 8)}\n\nLength: ${privateKeyHex.length} hex chars (${privateKeyHex.length ~/ 2} bytes)',
+          success: false,
+          title: 'LOGIN FAILED',
+          message: loginError,
         );
-        // DEBUG: stay on page, go back to home
         if (mounted) context.go('/home');
+        return;
       }
+
+      context.go('/rooms');
     } catch (e) {
       if (mounted) {
         await _showResultDialog(
           success: false,
-          title: 'DECRYPTION FAILED',
+          title: 'RECOVERY FAILED',
           message: 'Wrong password or corrupted data.\n\n$e',
         );
         if (mounted) context.go('/home');
       }
     }
+  }
+
+  Future<String?> _loginMatrixClient({
+    required String matrixUserId,
+    required String accessToken,
+    required String deviceId,
+  }) async {
+    final client = Matrix.of(context).client;
+    final homeserverUri = Uri.parse(
+      _apiService.baseUrl.replaceFirst(':8080', ':8008'),
+    );
+    Logs().i('ZeonRecoverPage: logging in as $matrixUserId to $homeserverUri');
+
+    try {
+      await client.checkHomeserver(homeserverUri, checkWellKnown: false);
+    } catch (e) {
+      final msg = 'Homeserver unreachable ($homeserverUri): $e';
+      Logs().w('ZeonRecoverPage: $msg');
+      return msg;
+    }
+
+    try {
+      await client.init(
+        newToken: accessToken,
+        newUserID: matrixUserId,
+        newHomeserver: homeserverUri,
+        newDeviceID: deviceId.isNotEmpty ? deviceId : null,
+        newDeviceName: 'Zeon Android',
+        waitForFirstSync: false,
+      );
+    } catch (e) {
+      Logs().w('ZeonRecoverPage: client.init error: $e');
+      return 'Matrix login failed: $e';
+    }
+
+    if (!client.isLogged()) {
+      return 'Login succeeded but client state is not logged-in';
+    }
+
+    // After Zeon login, Dendrite does not advertise a Twake TOM server in its
+    // well-known discovery, so the Dio interceptor base URL stays null and
+    // /_twake/* requests fail. The Zeon server (port 8080) implements the
+    // /_twake/* endpoints, so register it as the TOM server and persist it.
+    final matrixState = Matrix.of(context);
+    await matrixState.setUpAndStoreZeonToMServices(
+      ToMServerInformation(baseUrl: Uri.parse(_apiService.baseUrl)),
+    );
+
+    Logs().i('ZeonRecoverPage: logged in successfully as $matrixUserId');
+    return null;
   }
 
   Future<void> _showResultDialog({

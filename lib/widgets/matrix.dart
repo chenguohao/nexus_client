@@ -800,6 +800,21 @@ class MatrixState extends State<Matrix>
     }
   }
 
+  /// Sets up TOM services and **persists** the configuration so it survives
+  /// subsequent calls to [_setUpToMServicesWhenChangingActiveClient], which
+  /// resets the TOM URL to null when no stored configuration is found.
+  /// Use this for Zeon login flows where Dendrite does not advertise a Twake
+  /// TOM server in its well-known discovery.
+  Future<void> setUpAndStoreZeonToMServices(
+    ToMServerInformation tomServer,
+  ) async {
+    setUpToMServices(tomServer, null);
+    await _storeToMConfiguration(
+      client,
+      ToMConfigurations(tomServerInformation: tomServer),
+    );
+  }
+
   Future<void> setUpToMServicesInLogin(Client client) async {
     final tomServer = loginHomeserverSummary?.tomServer;
     Logs().d('MatrixState::setUpToMServicesInLogin: $tomServer');
@@ -1006,7 +1021,18 @@ class MatrixState extends State<Matrix>
         'Matrix::_setUpToMServicesWhenChangingActiveClient: toMConfigurations - $toMConfigurations',
       );
       if (toMConfigurations == null) {
-        _setUpToMServer(null);
+        // No stored TOM configuration found.
+        // The Zeon server (port 8080) implements /_twake/* endpoints.  We
+        // derive the Zeon URL from the homeserver URL by replacing port 8008
+        // with 8080 so that cold-app-restart sessions still have a usable
+        // TOM base URL without re-login.
+        final homeserver = client.homeserver;
+        if (homeserver != null) {
+          final zeonUri = homeserver.replace(port: 8080);
+          _setUpToMServer(ToMServerInformation(baseUrl: zeonUri));
+        } else {
+          _setUpToMServer(null);
+        }
         _setupAuthUrl();
         setUpAuthorization(client);
       } else {
@@ -1017,7 +1043,15 @@ class MatrixState extends State<Matrix>
         );
       }
     } catch (e) {
-      _setUpToMServer(null);
+      // On error, derive the Zeon server URL from the homeserver (same port
+      // substitution as the null-config path above).
+      final homeserver = client.homeserver;
+      if (homeserver != null) {
+        final zeonUri = homeserver.replace(port: 8080);
+        _setUpToMServer(ToMServerInformation(baseUrl: zeonUri));
+      } else {
+        _setUpToMServer(null);
+      }
       _setupAuthUrl();
       setUpAuthorization(client);
       Logs().e('Matrix::_setUpToMServicesWhenChangingActiveClient: error - $e');
@@ -1070,9 +1104,16 @@ class MatrixState extends State<Matrix>
       'Matrix::_getHomeserverInformation: client homeserver = ${newClient.homeserver}',
     );
     if (newClient.homeserver == null) return;
+    // Save the current homeserver before calling checkHomeserver.
+    // If checkHomeserver fails its catch block sets homeserver = null, which
+    // breaks all subsequent sync calls.  We restore it so the client can
+    // continue to work even when the well-known or version check is
+    // unavailable (common in local-dev setups).
+    final previousHomeserver = newClient.homeserver;
     loginHomeserverSummary = await newClient
         .checkHomeserver(newClient.homeserver!)
         .toHomeserverSummary();
+    newClient.homeserver ??= previousHomeserver;
     Logs().d(
       'Matrix::_getHomeserverInformation: appTwakeInformation ${loginHomeserverSummary?.appTwakeInformation}',
     );
@@ -1082,7 +1123,14 @@ class MatrixState extends State<Matrix>
     if (client.homeserver == null) {
       final domain = client.userID?.domain;
       if (domain == null) return;
-      client.homeserver = Uri.https(domain, '');
+      // On Android emulator "localhost" resolves to the emulator itself, not
+      // the host machine.  Map it to the Android emulator's special alias for
+      // the host loopback so that the homeserver check can actually succeed.
+      final effectiveDomain =
+          (domain == 'localhost' || domain == '127.0.0.1') && Platform.isAndroid
+              ? '10.0.2.2:8008'
+              : domain;
+      client.homeserver = Uri.http(effectiveDomain, '');
     }
     await _getHomeserverInformation(client);
   }

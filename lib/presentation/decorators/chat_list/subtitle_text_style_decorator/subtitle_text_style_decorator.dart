@@ -1,7 +1,6 @@
 import 'package:fluffychat/domain/model/room/room_extension.dart';
 import 'package:fluffychat/presentation/decorators/chat_list/subtitle_text_style_decorator/subtitle_text_style_component.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 abstract class ChatListSubtitleTextStyleDecorator
@@ -30,8 +29,9 @@ class ReadChatListSubtitleTextStyleDecorator
     implements ChatListSubtitleTextStyleComponent {
   @override
   TextStyle textStyle(Room room, BuildContext context) {
-    return Theme.of(context).textTheme.bodyMedium!.copyWith(
-      color: LinagoraSysColors.material().onSurface,
+    return const TextStyle(
+      color: Color(0xFFC6C6C6),
+      fontSize: 14,
       fontFamily: 'Inter',
     );
   }
@@ -48,11 +48,7 @@ class UnreadChatListSubtitleTextStyleDecorator
     if (room.isUnreadOrInvited) {
       return _interfaceTextStyleComponent
           .textStyle(room, context)
-          .merge(
-            Theme.of(context).textTheme.bodyMedium!.copyWith(
-              color: LinagoraSysColors.material().onSurface,
-            ),
-          );
+          .copyWith(color: Colors.white);
     } else {
       return _interfaceTextStyleComponent.textStyle(room, context);
     }
@@ -74,7 +70,7 @@ class MuteChatListSubtitleTextStyleDecorator
     if (room.isMuted) {
       return _interfaceTextStyleComponent
           .textStyle(room, context)
-          .copyWith(color: LinagoraSysColors.material().onSurface);
+          .copyWith(color: const Color(0xFF919191));
     } else {
       return _interfaceTextStyleComponent.textStyle(room, context);
     }

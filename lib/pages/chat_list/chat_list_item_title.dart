@@ -9,7 +9,6 @@ import 'package:fluffychat/utils/room_status_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class ChatListItemTitle extends StatelessWidget with ChatListItemMixin {
@@ -40,8 +39,12 @@ class ChatListItemTitle extends StatelessWidget with ChatListItemMixin {
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                         softWrap: false,
-                        style: ListItemStyle.titleTextStyle(
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                           fontFamily: 'Inter',
+                          letterSpacing: -0.3,
                         ),
                       ),
                     ),
@@ -83,10 +86,10 @@ class ChatListItemTitle extends StatelessWidget with ChatListItemMixin {
           child: Row(
             children: [
               if (room.isTypingText(context)) ...[
-                Icon(
+                const Icon(
                   Icons.schedule,
-                  color: LinagoraRefColors.material().tertiary[30],
-                  size: ChatListItemTitleStyle.iconScheduleSize,
+                  color: Color(0xFF919191),
+                  size: 16,
                 ),
               ],
               Padding(
@@ -94,8 +97,12 @@ class ChatListItemTitle extends StatelessWidget with ChatListItemMixin {
                 child: Text(
                   (originServerTs ?? room.latestEventReceivedTime)
                       .localizedTimeShort(context),
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: LinagoraRefColors.material().tertiary[30],
+                  style: const TextStyle(
+                    color: Color(0xFFFFFFFF),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.0,
+                    fontFamily: 'Inter',
                   ),
                 ),
               ),

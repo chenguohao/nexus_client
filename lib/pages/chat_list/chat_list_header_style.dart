@@ -2,9 +2,6 @@ import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:flutter/material.dart';
 
-import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
-
 class ChatListHeaderStyle {
   static ResponsiveUtils responsive = getIt.get<ResponsiveUtils>();
 
@@ -24,23 +21,30 @@ class ChatListHeaderStyle {
   }) {
     return InputDecoration(
       filled: true,
-      contentPadding: ChatListHeaderStyle.paddingZero,
-      fillColor: Theme.of(context).colorScheme.surface,
+      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+      fillColor: const Color(0xFF0E0E0F),
       border: OutlineInputBorder(
-        borderSide: BorderSide.none,
-        borderRadius: BorderRadius.circular(
-          ChatListHeaderStyle.searchRadiusBorder,
-        ),
+        borderSide: const BorderSide(color: Color(0x33474747)),
+        borderRadius: BorderRadius.circular(8),
       ),
-      hintText: hintText ?? L10n.of(context)!.search,
-      hintStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-        color: LinagoraRefColors.material().neutral[60],
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0x33474747)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Color(0x33474747)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      hintText: hintText ?? 'Search secure communications...',
+      hintStyle: const TextStyle(
+        color: Color(0xFFC6C6C6),
+        fontSize: 14,
       ),
       floatingLabelBehavior: FloatingLabelBehavior.never,
       prefixIcon: Icon(
         Icons.search,
         size: ChatListHeaderStyle.searchIconSize,
-        color: prefixIconColor ?? LinagoraRefColors.material().neutral[60],
+        color: prefixIconColor ?? const Color(0xFFC6C6C6),
       ),
       suffixIcon: const SizedBox.shrink(),
     );

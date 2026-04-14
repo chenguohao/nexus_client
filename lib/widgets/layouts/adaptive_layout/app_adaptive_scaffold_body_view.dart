@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:fluffychat/config/first_column_inner_routes.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
@@ -7,7 +9,6 @@ import 'package:fluffychat/utils/android_utils.dart';
 import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:fluffychat/widgets/layouts/adaptive_layout/adaptive_scaffold_primary_navigation.dart';
 import 'package:fluffychat/widgets/layouts/adaptive_layout/app_adaptive_scaffold_body.dart';
-import 'package:fluffychat/widgets/layouts/adaptive_layout/app_adaptive_scaffold_body_view_style.dart';
 import 'package:fluffychat/widgets/layouts/agruments/app_adaptive_scaffold_body_args.dart';
 import 'package:fluffychat/widgets/layouts/enum/adaptive_destinations_enum.dart';
 import 'package:flutter/material.dart';
@@ -57,7 +58,7 @@ class AppAdaptiveScaffoldBodyView extends StatelessWidget {
     final responsiveUtils = getIt.get<ResponsiveUtils>();
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: const Color(0xFF131314),
       body: ValueListenableBuilder(
         valueListenable: activeNavigationBarNotifier,
         builder: (context, activeNavigationBar, __) {
@@ -215,12 +216,6 @@ class _ColumnPageView extends StatelessWidget {
       controller: pageController,
       physics: const NeverScrollableScrollPhysics(),
       children: [
-        _triggerPageViewBuilder(
-          navigatorBarType: AdaptiveDestinationEnum.contacts,
-          navigatorBarWidget: ContactsTab(
-            bottomNavigationBar: _bottomNavigationBarBuilder(context),
-          ),
-        ),
         ChatList(
           bottomNavigationBar: _triggerPageViewBuilder(
             navigatorBarType: AdaptiveDestinationEnum.rooms,
@@ -229,6 +224,12 @@ class _ColumnPageView extends StatelessWidget {
           activeRoomIdNotifier: activeRoomIdNotifier,
           onOpenSettings: onOpenSettings,
           adaptiveScaffoldBodyArgs: adaptiveScaffoldBodyArgs,
+        ),
+        _triggerPageViewBuilder(
+          navigatorBarType: AdaptiveDestinationEnum.contacts,
+          navigatorBarWidget: ContactsTab(
+            bottomNavigationBar: _bottomNavigationBarBuilder(context),
+          ),
         ),
         _triggerPageViewBuilder(
           navigatorBarType: AdaptiveDestinationEnum.settings,
@@ -272,27 +273,42 @@ class _ColumnPageView extends StatelessWidget {
           key: bottomNavigationKey,
           builder: (_) {
             return Container(
-              decoration: AppAdaptiveScaffoldBodyViewStyle.navBarBorder,
+              decoration: const BoxDecoration(
+                color: Color(0xFF1C1B1C),
+                border: Border(
+                  top: BorderSide(color: Color(0x0DFFFFFF)),
+                ),
+              ),
               height: _bottomNavBarHeight(
+                context,
                 MediaQuery.systemGestureInsetsOf(context),
               ),
-              padding: AppAdaptiveScaffoldBodyViewStyle.paddingBottomNavigation,
-              child: ListView(
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      splashColor: Colors.transparent,
-                      highlightColor: Colors.transparent,
-                    ),
-                    child: BottomNavigationBar(
-                      elevation: AppAdaptiveScaffoldBodyViewStyle.elevation,
-                      currentIndex: _getActiveBottomNavigationBarIndex(),
-                      onTap: onDestinationSelected,
-                      items: getNavigationDestinationsForBottomBar(context),
-                    ),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  canvasColor: const Color(0xFF1C1B1C),
+                ),
+                child: BottomNavigationBar(
+                  elevation: 0,
+                  backgroundColor: const Color(0xFF1C1B1C),
+                  selectedItemColor: Colors.white,
+                  unselectedItemColor: const Color(0xFF919191),
+                  selectedLabelStyle: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
                   ),
-                ],
+                  unselectedLabelStyle: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                  ),
+                  type: BottomNavigationBarType.fixed,
+                  currentIndex: _getActiveBottomNavigationBarIndex(),
+                  onTap: onDestinationSelected,
+                  items: getNavigationDestinationsForBottomBar(context),
+                ),
               ),
             );
           },
@@ -301,14 +317,26 @@ class _ColumnPageView extends StatelessWidget {
     );
   }
 
-  double _bottomNavBarHeight(EdgeInsets systemGestureInsets) {
+  /// [BottomNavigationBar] pads its row by [MediaQuery.viewPadding.bottom],
+  /// so the row height is `outerHeight - viewPadding.bottom`. A fixed
+  /// [ResponsiveUtils] height can be smaller than `kBottomNavigationBarHeight`
+  /// plus that inset and causes vertical overflow on devices with a home
+  /// indicator.
+  double _bottomNavBarHeight(
+    BuildContext context,
+    EdgeInsets systemGestureInsets,
+  ) {
+    final viewPaddingBottom = MediaQuery.viewPaddingOf(context).bottom;
+    final minForBar = kBottomNavigationBarHeight + viewPaddingBottom;
     if (AndroidUtils.isNavigationButtonsEnabled(
       systemGestureInsets: systemGestureInsets,
     )) {
-      return ResponsiveUtils
-          .heightBottomNavigationWhenAndroidNavigationButtonsEnabled;
+      return math.max(
+        ResponsiveUtils.heightBottomNavigationWhenAndroidNavigationButtonsEnabled,
+        minForBar,
+      );
     }
-    return ResponsiveUtils.heightBottomNavigation;
+    return math.max(ResponsiveUtils.heightBottomNavigation, minForBar);
   }
 
   List<NavigationDestination> getNavigationDestinations(BuildContext context) {

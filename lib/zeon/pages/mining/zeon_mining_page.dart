@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:fluffychat/zeon/pages/mining/zeon_mining_logic.dart'
@@ -7,8 +6,9 @@ import 'package:fluffychat/zeon/pages/mining/zeon_mining_logic.dart'
 import 'package:fluffychat/zeon/pages/mining/zeon_mining_phases.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:http/http.dart' as http;
 import 'package:matrix/matrix.dart';
+
+import 'package:fluffychat/domain/model/tom_server_information.dart';
 
 import '../../services/api_service.dart';
 import '../../services/key_service.dart';
@@ -65,8 +65,13 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
   // Success state
   String _matrixId = '';
   String _walletAddress = '';
+  String _uid = '';
   String _registrationDate = '';
   bool _savingKeyCard = false;
+
+  // Matrix credentials (stored after mining, used for login during save)
+  String _matrixAccessToken = '';
+  String _matrixDeviceId = '';
 
   // Services
   final _keyService = KeyService();
@@ -141,24 +146,12 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
   }
 
   void _onChargeComplete() {
-    // DEBUG: skip mining, jump straight to success phase for key card debugging
     setState(() {
       _isCharging = false;
-      _matrixId = '@debug_user:localhost';
-      _walletAddress = '0xDEBUG1234567890abcdef1234567890abcdef';
-      final now = DateTime.now();
-      _registrationDate =
-          '${now.year}.${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')}';
-      _phase = _Phase.success;
+      _phase = _Phase.mining;
     });
-    // Ensure we have a key for saveKeyCard
-    _keyService.getOrCreatePrivateKey().then((key) {
-      _logic = ZeonMiningLogic(
-        keyService: _keyService,
-        miningService: _miningService,
-        apiService: _apiService,
-      );
-    });
+    _startMiningSimulation();
+    _startRealMining();
   }
 
   // ── Mining simulation (visual) ──────────────────────────────────────────────
@@ -203,10 +196,10 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
           if (!mounted) return;
           setState(() => _hashAttempts = attempts);
         },
-        onComplete: (matrixId, walletAddress, accessToken, deviceId) async {
-          _stopMiningVisuals(matrixId, walletAddress);
-          // Log into Matrix client
-          await _loginMatrixClient(matrixId, accessToken, deviceId);
+        onComplete: (matrixId, walletAddress, uid, accessToken, deviceId) {
+          _matrixAccessToken = accessToken;
+          _matrixDeviceId = deviceId;
+          _stopMiningVisuals(matrixId, walletAddress, uid);
         },
         onError: (error) {
           if (!mounted) return;
@@ -218,47 +211,66 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
     }
   }
 
-  Future<void> _loginMatrixClient(
-    String matrixUserId,
-    String accessToken,
-    String deviceId,
-  ) async {
+  /// Log into the Matrix client using credentials obtained from the Zeon API.
+  /// Returns null on success, or an error string on failure.
+  Future<String?> _loginMatrixClient({
+    required String matrixUserId,
+    required String accessToken,
+    required String deviceId,
+  }) async {
+    final client = Matrix.of(context).client;
+    final homeserverUri = Uri.parse(
+      _apiService.baseUrl.replaceFirst(':8080', ':8008'),
+    );
+    Logs().i('ZeonMiningPage: logging in as $matrixUserId to $homeserverUri');
+
     try {
-      final client = Matrix.of(context).client;
+      await client.checkHomeserver(homeserverUri, checkWellKnown: false);
+    } catch (e) {
+      final msg = 'Homeserver unreachable ($homeserverUri): $e';
+      Logs().w('ZeonMiningPage: $msg');
+      return msg;
+    }
 
-      // Discover homeserver via .well-known from the Zeon API server
-      final wellKnownUri = Uri.parse('${_apiService.baseUrl}/.well-known/matrix/client');
-      final wkResponse = await http.get(wellKnownUri).timeout(const Duration(seconds: 10));
-      Uri homeserverUri;
-      if (wkResponse.statusCode == 200) {
-        final wkJson = jsonDecode(wkResponse.body) as Map<String, dynamic>;
-        final hs = wkJson['m.homeserver']?['base_url'] as String?;
-        homeserverUri = Uri.parse(hs ?? _apiService.baseUrl.replaceFirst(':8080', ':8008'));
-      } else {
-        homeserverUri = Uri.parse(_apiService.baseUrl.replaceFirst(':8080', ':8008'));
-      }
-      Logs().i('ZeonMiningPage: discovered homeserver=$homeserverUri');
-
-      await client.checkHomeserver(homeserverUri);
+    try {
       await client.init(
         newToken: accessToken,
         newUserID: matrixUserId,
         newHomeserver: homeserverUri,
         newDeviceID: deviceId.isNotEmpty ? deviceId : null,
         newDeviceName: 'Zeon Android',
+        waitForFirstSync: false,
       );
     } catch (e) {
-      Logs().w('ZeonMiningPage: Matrix login error: $e');
+      Logs().w('ZeonMiningPage: client.init error: $e');
+      return 'Matrix login failed: $e';
     }
+
+    if (!client.isLogged()) {
+      return 'Login succeeded but client state is not logged-in';
+    }
+
+    // After Zeon login, Dendrite does not advertise a Twake TOM server in its
+    // well-known discovery, so the Dio interceptor base URL stays null and
+    // /_twake/* requests fail. The Zeon server (port 8080) implements the
+    // /_twake/* endpoints, so register it as the TOM server and persist it.
+    final matrixState = Matrix.of(context);
+    await matrixState.setUpAndStoreZeonToMServices(
+      ToMServerInformation(baseUrl: Uri.parse(_apiService.baseUrl)),
+    );
+
+    Logs().i('ZeonMiningPage: logged in successfully as $matrixUserId');
+    return null;
   }
 
-  void _stopMiningVisuals(String matrixId, String walletAddress) {
+  void _stopMiningVisuals(String matrixId, String walletAddress, String uid) {
     _hashScrollTimer?.cancel();
     _hashScrambleTimer?.cancel();
     setState(() {
       _miningComplete = true;
       _matrixId = matrixId;
       _walletAddress = walletAddress;
+      _uid = uid;
       final now = DateTime.now();
       _registrationDate =
           '${now.year}.${now.month.toString().padLeft(2, '0')}.${now.day.toString().padLeft(2, '0')}';
@@ -299,67 +311,66 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
   // ── Key card save ───────────────────────────────────────────────────────────
 
   Future<void> _saveKeyCard() async {
-    // Show password dialog first
     final password = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       barrierColor: Colors.black.withValues(alpha: 0.6),
       builder: (dialogContext) => const _SecureKeyDialog(),
     );
-    if (password == null || !mounted) return; // user cancelled
+    if (password == null || !mounted) return;
 
     setState(() => _savingKeyCard = true);
     try {
       await _logic.saveKeyCard(
         matrixUserId: _matrixId,
         walletAddress: _walletAddress,
+        uid: _uid,
         password: password,
       );
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            backgroundColor: const Color(0xFF1C1B1C),
-            title: const Text('Success',
-                style: TextStyle(color: Color(0xFF4FFFB0), fontSize: 16)),
-            content: const Text('Key card saved to gallery!',
-                style: TextStyle(color: Color(0xFFCCCCCC))),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('OK', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
+
+      if (!mounted) return;
+
+      // Log into Matrix client before navigating
+      final loginError = await _loginMatrixClient(
+        matrixUserId: _matrixId,
+        accessToken: _matrixAccessToken,
+        deviceId: _matrixDeviceId,
+      );
+
+      if (!mounted) return;
+
+      if (loginError != null) {
+        _showSaveError('Key card saved, but login failed:\n$loginError');
+        return;
       }
-    } catch (e, stackTrace) {
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (dialogContext) => AlertDialog(
-            backgroundColor: const Color(0xFF1C1B1C),
-            title: const Text('Save Key Card Error',
-                style: TextStyle(color: Colors.redAccent, fontSize: 16)),
-            content: SingleChildScrollView(
-              child: SelectableText(
-                'Error: $e\n\nStackTrace:\n$stackTrace',
-                style: const TextStyle(
-                    color: Color(0xFFCCCCCC), fontSize: 11, fontFamily: 'monospace'),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('OK', style: TextStyle(color: Colors.white)),
-              ),
-            ],
-          ),
-        );
-      }
+
+      context.go('/rooms');
+    } catch (e) {
+      if (mounted) _showSaveError('Failed to save key card: $e');
     } finally {
       if (mounted) setState(() => _savingKeyCard = false);
     }
+  }
+
+  void _showSaveError(String message) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1B1C),
+        title: const Text('Error',
+            style: TextStyle(color: Colors.redAccent, fontSize: 16)),
+        content: Text(
+          message,
+          style: const TextStyle(color: Color(0xFFCCCCCC), fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -403,6 +414,7 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
               key: const ValueKey('success'),
               matrixId: _matrixId,
               walletAddress: _walletAddress,
+              uid: _uid,
               registrationDate: _registrationDate,
               saving: _savingKeyCard,
               onSave: _saveKeyCard,

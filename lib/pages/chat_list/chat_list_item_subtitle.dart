@@ -11,8 +11,6 @@ import 'package:fluffychat/utils/room_status_extension.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 class ChatListItemSubtitle extends StatelessWidget with ChatListItemMixin {
@@ -69,9 +67,9 @@ class ChatListItemSubtitle extends StatelessWidget with ChatListItemMixin {
                 ? Icon(
                     Icons.done_all,
                     color: lastEvent.receipts.isEmpty
-                        ? LinagoraRefColors.material().tertiary[30]
-                        : LinagoraSysColors.material().secondary,
-                    size: 20,
+                        ? const Color(0xFF919191)
+                        : const Color(0xFFC6C6C6),
+                    size: 18,
                   )
                 : AnimatedContainer(
                     duration: TwakeThemes.animationDuration,
@@ -111,7 +109,7 @@ class ChatListItemSubtitle extends StatelessWidget with ChatListItemMixin {
         AnimatedContainer(
           duration: TwakeThemes.animationDuration,
           curve: TwakeThemes.animationCurve,
-          padding: const EdgeInsets.symmetric(horizontal: 7),
+          padding: const EdgeInsets.symmetric(horizontal: 5),
           height: unreadBadgeSize,
           width: ChatListItemStyle.notificationBadgeSize(
             room.isUnreadOrInvited,
@@ -119,16 +117,17 @@ class ChatListItemSubtitle extends StatelessWidget with ChatListItemMixin {
             room.notificationCount,
           ),
           decoration: BoxDecoration(
-            color: notificationColor(context: context, room: room),
-            borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(3),
           ),
           child: Center(
             child: room.notificationCount > 0
                 ? Text(
                     room.notificationCount.toString(),
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      letterSpacing: -0.5,
-                      color: Theme.of(context).colorScheme.onPrimary,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF131314),
                     ),
                   )
                 : Container(),

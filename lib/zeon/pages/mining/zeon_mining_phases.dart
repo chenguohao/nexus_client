@@ -582,6 +582,7 @@ class _StepIcon extends StatelessWidget {
 class SuccessPhaseView extends StatefulWidget {
   final String matrixId;
   final String walletAddress;
+  final String uid;
   final String registrationDate;
   final bool saving;
   final VoidCallback onSave;
@@ -591,6 +592,7 @@ class SuccessPhaseView extends StatefulWidget {
     super.key,
     required this.matrixId,
     required this.walletAddress,
+    required this.uid,
     required this.registrationDate,
     required this.saving,
     required this.onSave,
@@ -624,6 +626,13 @@ class _SuccessPhaseViewState extends State<SuccessPhaseView>
   String _shortAddress(String addr) {
     if (addr.length <= 14) return addr;
     return '${addr.substring(0, 6)}...${addr.substring(addr.length - 4)}';
+  }
+
+  /// Returns ":domain" from a Matrix user ID like "@uid:domain", or "" if missing.
+  String _domainFromMatrixId(String matrixId) {
+    final idx = matrixId.indexOf(':');
+    if (idx < 0) return '';
+    return matrixId.substring(idx); // includes the leading colon
   }
 
   Widget _buildFadeSlide({required Widget child, double slideY = 12}) {
@@ -755,16 +764,30 @@ class _SuccessPhaseViewState extends State<SuccessPhaseView>
                                 ],
                               ),
                               const SizedBox(height: 16),
-                              Text(
-                                widget.matrixId.isNotEmpty
-                                    ? widget.matrixId
-                                    : '@0x…:zeon.im',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                  letterSpacing: -0.2,
-                                  height: 1.3,
+                              RichText(
+                                text: TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text: '@${widget.uid}',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w500,
+                                        letterSpacing: -0.2,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                    TextSpan(
+                                      text: _domainFromMatrixId(widget.matrixId),
+                                      style: const TextStyle(
+                                        color: Color(0x66FFFFFF),
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w400,
+                                        letterSpacing: -0.2,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                               const SizedBox(height: 6),

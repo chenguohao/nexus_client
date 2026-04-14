@@ -49,15 +49,15 @@ class AppAdaptiveScaffoldBodyController extends State<AppAdaptiveScaffoldBody>
   StreamSubscription? onAccountDataSubscription;
 
   final PageController pageController = PageController(
-    initialPage: 1,
+    initialPage: 0,
     keepPage: true,
   );
 
   final responsiveUtils = ResponsiveUtils();
 
   List<AdaptiveDestinationEnum> get destinations => [
-    AdaptiveDestinationEnum.contacts,
     AdaptiveDestinationEnum.rooms,
+    AdaptiveDestinationEnum.contacts,
     AdaptiveDestinationEnum.settings,
   ];
 

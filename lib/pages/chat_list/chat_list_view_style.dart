@@ -10,8 +10,8 @@ class ChatListViewStyle {
 
   static Size preferredSizeAppBar({bool? hasAudioEvent}) =>
       hasAudioEvent == true
-      ? const Size.fromHeight(160)
-      : const Size.fromHeight(120);
+      ? const Size.fromHeight(140)
+      : const Size.fromHeight(64);
 
   // Slidable Ratio of one slidable item
   static const double slidableSizeRatio = 0.23;

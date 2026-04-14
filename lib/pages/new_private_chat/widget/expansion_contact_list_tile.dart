@@ -188,7 +188,9 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
                                   HighlightText(
                                     text: widget.contact.matrixId!,
                                     searchWord: widget.highlightKeyword,
-                                    style: ListItemStyle.subtitleTextStyle(
+                                    style: const TextStyle(
+                                      color: Color(0xFFC6C6C6),
+                                      fontSize: 13,
                                       fontFamily: 'Inter',
                                     ),
                                     maxLines: 1,
@@ -239,7 +241,12 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
       ),
       contactDisplayName: widget.contact.displayName,
       highlightKeyword: widget.highlightKeyword,
-      style: ListItemStyle.titleTextStyle(fontFamily: 'Inter'),
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        fontFamily: 'Inter',
+      ),
     );
   }
 
@@ -317,13 +324,13 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
       return HighlightText(
         text: widget.contact.primaryPhoneNumber,
         searchWord: widget.highlightKeyword,
-        style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+        style: const TextStyle(color: Color(0xFFC6C6C6), fontSize: 13, fontFamily: 'Inter'),
       );
     } else if (widget.contact.primaryEmail.isNotEmpty) {
       return HighlightText(
         text: widget.contact.primaryEmail,
         searchWord: widget.highlightKeyword,
-        style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+        style: const TextStyle(color: Color(0xFFC6C6C6), fontSize: 13, fontFamily: 'Inter'),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
@@ -336,7 +343,7 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
       return HighlightText(
         text: widget.contact.primaryPhoneNumber,
         searchWord: widget.highlightKeyword,
-        style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+        style: const TextStyle(color: Color(0xFFC6C6C6), fontSize: 13, fontFamily: 'Inter'),
       );
     }
     return const SizedBox();
@@ -347,7 +354,7 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
       return HighlightText(
         text: widget.contact.primaryEmail,
         searchWord: widget.highlightKeyword,
-        style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+        style: const TextStyle(color: Color(0xFFC6C6C6), fontSize: 13, fontFamily: 'Inter'),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );

@@ -1,15 +1,12 @@
 import 'package:fluffychat/utils/matrix_sdk_extensions/client_stories_extension.dart';
-import 'package:fluffychat/widgets/avatar/bottom_navigation_avatar.dart';
 import 'package:fluffychat/widgets/twake_components/twake_navigation_icon/twake_navigation_icon.dart';
 import 'package:fluffychat/widgets/unread_rooms_badge.dart';
 import 'package:flutter/material.dart';
-import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 enum AdaptiveDestinationEnum {
-  contacts,
   rooms,
+  contacts,
   settings;
 
   NavigationDestination getNavigationDestination(
@@ -17,44 +14,44 @@ enum AdaptiveDestinationEnum {
     ValueNotifier<Profile?> profile,
   ) {
     switch (this) {
-      case AdaptiveDestinationEnum.contacts:
-        return NavigationDestination(
-          key: const Key('contacts_navigation_destination'),
-          icon: TwakeNavigationIcon(
-            color: LinagoraSysColors.material().onBackground,
-            icon: Icons.supervised_user_circle_outlined,
-          ),
-          label: L10n.of(context)!.contacts,
-          selectedIcon: const TwakeNavigationIcon(
-            icon: Icons.supervised_user_circle_outlined,
-            isSelected: true,
-          ),
-        );
       case AdaptiveDestinationEnum.rooms:
         return NavigationDestination(
           key: const Key('rooms_navigation_destination'),
           icon: UnreadRoomsBadge(
-            color: LinagoraSysColors.material().onBackground,
+            color: const Color(0xFFC6C6C6),
             filter: (room) => !room.isSpace && !room.isStoryRoom,
           ),
           selectedIcon: UnreadRoomsBadge(
             filter: (room) => !room.isSpace && !room.isStoryRoom,
             isSelected: true,
           ),
-          label: L10n.of(context)!.chats,
+          label: 'MESSAGES',
         );
-      case AdaptiveDestinationEnum.settings:
-        return NavigationDestination(
-          key: const Key('settings_navigation_destination'),
+      case AdaptiveDestinationEnum.contacts:
+        return const NavigationDestination(
+          key: Key('contacts_navigation_destination'),
           icon: TwakeNavigationIcon(
-            color: LinagoraSysColors.material().onBackground,
-            icon: Icons.settings_outlined,
+            color: Color(0xFFC6C6C6),
+            icon: Icons.group_outlined,
           ),
-          selectedIcon: const TwakeNavigationIcon(
-            icon: Icons.settings_outlined,
+          label: 'CONTACTS',
+          selectedIcon: TwakeNavigationIcon(
+            icon: Icons.group,
             isSelected: true,
           ),
-          label: L10n.of(context)!.settings,
+        );
+      case AdaptiveDestinationEnum.settings:
+        return const NavigationDestination(
+          key: Key('settings_navigation_destination'),
+          icon: TwakeNavigationIcon(
+            color: Color(0xFFC6C6C6),
+            icon: Icons.settings_outlined,
+          ),
+          selectedIcon: TwakeNavigationIcon(
+            icon: Icons.settings,
+            isSelected: true,
+          ),
+          label: 'SETTINGS',
         );
     }
   }
@@ -64,43 +61,23 @@ enum AdaptiveDestinationEnum {
     ValueNotifier<Profile?> profile,
   ) {
     switch (this) {
-      case AdaptiveDestinationEnum.contacts:
-        return BottomNavigationBarItem(
-          icon: TwakeNavigationIcon(
-            color: LinagoraSysColors.material().tertiary,
-            icon: Icons.supervised_user_circle_outlined,
-          ),
-          label: L10n.of(context)!.contacts,
-          activeIcon: const TwakeNavigationIcon(
-            icon: Icons.supervised_user_circle_outlined,
-            isSelected: true,
-          ),
-        );
       case AdaptiveDestinationEnum.rooms:
-        return BottomNavigationBarItem(
-          icon: UnreadRoomsBadge(
-            color: LinagoraSysColors.material().tertiary,
-            filter: (room) => !room.isSpace && !room.isStoryRoom,
-          ),
-          activeIcon: UnreadRoomsBadge(
-            filter: (room) => !room.isSpace && !room.isStoryRoom,
-            isSelected: true,
-          ),
-          label: L10n.of(context)!.chats,
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.chat_bubble_outline, color: Color(0xFF919191)),
+          activeIcon: Icon(Icons.chat_bubble, color: Colors.white),
+          label: 'MESSAGES',
+        );
+      case AdaptiveDestinationEnum.contacts:
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.group_outlined, color: Color(0xFF919191)),
+          activeIcon: Icon(Icons.group, color: Colors.white),
+          label: 'CONTACTS',
         );
       case AdaptiveDestinationEnum.settings:
-        return BottomNavigationBarItem(
-          icon: BottomNavigationAvatar(
-            key: const Key('settings_navigation_destination'),
-            profile: profile,
-            isSelected: false,
-          ),
-          activeIcon: BottomNavigationAvatar(
-            key: const Key('settings_navigation_destination'),
-            profile: profile,
-            isSelected: true,
-          ),
-          label: L10n.of(context)!.settings,
+        return const BottomNavigationBarItem(
+          icon: Icon(Icons.settings_outlined, color: Color(0xFF919191)),
+          activeIcon: Icon(Icons.settings, color: Colors.white),
+          label: 'SETTINGS',
         );
     }
   }

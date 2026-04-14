@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+// ── DEBUG: toggle background decorations ──
+const _showGrid = false;
+const _showCenterAxis = true;
+
 class ZeonWelcomePage extends StatelessWidget {
   const ZeonWelcomePage({super.key});
 
@@ -10,29 +14,29 @@ class ZeonWelcomePage extends StatelessWidget {
       backgroundColor: const Color(0xFF131314),
       body: Stack(
         children: [
-          // Architectural grid background
-          Positioned.fill(
-            child: CustomPaint(painter: _GridPainter()),
-          ),
-          // Vertical center axis
-          Positioned.fill(
-            child: Center(
-              child: Container(
-                width: 1,
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Color(0x1AFFFFFF),
-                      Colors.transparent,
-                    ],
+          if (_showGrid)
+            Positioned.fill(
+              child: CustomPaint(painter: _GridPainter()),
+            ),
+          if (_showCenterAxis)
+            Positioned.fill(
+              child: Center(
+                child: Container(
+                  width: 1,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Color(0x1AFFFFFF),
+                        Colors.transparent,
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           // Main content
           SafeArea(
             child: Column(
@@ -42,14 +46,14 @@ class ZeonWelcomePage extends StatelessWidget {
                 // Expand to fill space
                 Expanded(
                   child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                    child: Stack(
+                      alignment: Alignment.center,
                       children: [
-                        // Glow decoration
                         Container(
                           width: 80,
                           height: 80,
                           decoration: BoxDecoration(
+                            // color: Colors.red,
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
@@ -60,42 +64,44 @@ class ZeonWelcomePage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        // Brand name
-                        const Text(
-                          'ZEON',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 36,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 14.4,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        // Separator with tagline
-                        Row(
+                        Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(
-                              width: 32,
-                              height: 1,
-                              color: const Color(0x4D919191),
-                            ),
-                            const SizedBox(width: 16),
                             const Text(
-                              'ARCHITECTURAL INTERFACE',
+                              'ZEON',
                               style: TextStyle(
-                                color: Color(0xFF919191),
-                                fontSize: 10,
-                                letterSpacing: 3.0,
-                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                                fontSize: 36,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 14.4,
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Container(
-                              width: 32,
-                              height: 1,
-                              color: const Color(0x4D919191),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 1,
+                                  color: const Color(0x4D919191),
+                                ),
+                                const SizedBox(width: 16),
+                                const Text(
+                                  'ARCHITECTURAL INTERFACE',
+                                  style: TextStyle(
+                                    color: Color(0xFF919191),
+                                    fontSize: 10,
+                                    letterSpacing: 3.0,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Container(
+                                  width: 32,
+                                  height: 1,
+                                  color: const Color(0x4D919191),
+                                ),
+                              ],
                             ),
                           ],
                         ),

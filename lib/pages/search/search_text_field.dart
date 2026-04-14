@@ -1,10 +1,8 @@
-import 'package:fluffychat/pages/search/search_view_style.dart';
 import 'package:fluffychat/widgets/context_menu_builder_ios_paste_without_permission.dart';
 import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/pages/dialer/pip/dismiss_keyboard.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
 
 class SearchTextField extends StatelessWidget {
   final TextEditingController textEditingController;
@@ -23,7 +21,8 @@ class SearchTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      borderRadius: const BorderRadius.all(Radius.circular(24.0)),
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(8),
       child: TextField(
         onTapOutside: (event) {
           dismissKeyboard(context);
@@ -34,23 +33,35 @@ class SearchTextField extends StatelessWidget {
         enabled: true,
         focusNode: focusNode,
         autofocus: autofocus,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
         decoration: InputDecoration(
           filled: true,
-          contentPadding: SearchViewStyle.contentPaddingAppBar,
-          fillColor: Theme.of(context).colorScheme.surface,
+          contentPadding: const EdgeInsets.symmetric(vertical: 14),
+          fillColor: const Color(0xFF0E0E0F),
           border: OutlineInputBorder(
-            borderSide: BorderSide.none,
-            borderRadius: SearchViewStyle.borderRadiusTextField,
+            borderSide: const BorderSide(color: Color(0x33474747)),
+            borderRadius: BorderRadius.circular(8),
           ),
-          hintText: hintText ?? L10n.of(context)!.search,
-          hintStyle: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: LinagoraRefColors.material().neutral[60],
+          enabledBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Color(0x33474747)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Color(0x66FFFFFF)),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          hintText: hintText ?? 'SEARCH DIRECTORY',
+          hintStyle: const TextStyle(
+            color: Color(0xFF919191),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.0,
           ),
           floatingLabelBehavior: FloatingLabelBehavior.never,
-          prefixIcon: Icon(
+          prefixIcon: const Icon(
             Icons.search_outlined,
-            size: SearchViewStyle.searchIconSize,
-            color: LinagoraRefColors.material().neutral[60],
+            size: 20,
+            color: Color(0xFF919191),
           ),
           suffixIcon: ValueListenableBuilder(
             valueListenable: textEditingController,

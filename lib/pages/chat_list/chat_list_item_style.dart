@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
 
 class ChatListItemStyle {
-  static Color? get readIconColor => LinagoraRefColors.material().tertiary[20];
+  static Color? get readIconColor => const Color(0xFF919191);
 
-  static Color? get pinnedIconColor =>
-      LinagoraRefColors.material().tertiary[40];
+  static Color? get pinnedIconColor => const Color(0xFF919191);
 
   static const double readIconSize = 20;
 

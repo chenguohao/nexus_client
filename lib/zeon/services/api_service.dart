@@ -90,20 +90,26 @@ class ApiService {
 
 class SubmitMiningResponse {
   final String walletAddress;
+  final String uid;
   final String matrixUserId;
   final String matrixAccessToken;
+  final String deviceId;
 
   const SubmitMiningResponse({
     required this.walletAddress,
+    required this.uid,
     required this.matrixUserId,
     required this.matrixAccessToken,
+    required this.deviceId,
   });
 
   factory SubmitMiningResponse.fromJson(Map<String, dynamic> json) =>
       SubmitMiningResponse(
         walletAddress: json['wallet_address'] as String? ?? '',
+        uid: json['uid'] as String? ?? '',
         matrixUserId: json['matrix_user_id'] as String? ?? '',
         matrixAccessToken: json['matrix_access_token'] as String? ?? '',
+        deviceId: json['device_id'] as String? ?? '',
       );
 }
 

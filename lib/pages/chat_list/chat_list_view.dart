@@ -13,7 +13,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:keyboard_shortcuts/keyboard_shortcuts.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 class ChatListView extends StatelessWidget {
@@ -46,7 +45,7 @@ class ChatListView extends StatelessWidget {
       valueListenable: controller.matrixState.voiceMessageEvent,
       builder: (context, hasEvent, child) {
         return Scaffold(
-          backgroundColor: LinagoraSysColors.material().onPrimary,
+          backgroundColor: const Color(0xFF131314),
           appBar: PreferredSize(
             preferredSize: ChatListViewStyle.preferredSizeAppBar(
               hasAudioEvent: hasEvent != null && PlatformInfos.isMobile,
@@ -131,10 +130,22 @@ class ChatListView extends StatelessWidget {
                           );
                         },
                       )
-                    : TwakeFloatingActionButton(
-                        icon: Icons.mode_edit_outline_outlined,
-                        size: ChatListViewStyle.editIconSize,
-                        onTap: controller.goToNewPrivateChat,
+                    : SizedBox(
+                        width: 56,
+                        height: 56,
+                        child: FloatingActionButton(
+                          backgroundColor: Colors.white,
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          onPressed: controller.goToNewPrivateChat,
+                          child: const Icon(
+                            Icons.add,
+                            color: Color(0xFF131314),
+                            size: 28,
+                          ),
+                        ),
                       ),
               );
             },

@@ -22,7 +22,7 @@ import '../../services/steganography_service.dart';
 typedef StepUpdateCallback = void Function(int stepIndex, StepStatus status, String? detail);
 typedef MiningProgressCallback = void Function(int attempts);
 typedef CompleteCallback = void Function(
-    String matrixId, String walletAddress, String accessToken, String deviceId);
+    String matrixId, String walletAddress, String uid, String accessToken, String deviceId);
 typedef ErrorCallback = void Function(String error);
 
 enum StepStatus { idle, running, done, error }
@@ -101,8 +101,9 @@ class ZeonMiningLogic {
       onComplete(
         response.matrixUserId,
         response.walletAddress,
+        response.uid,
         response.matrixAccessToken,
-        '', // deviceId — server may return this
+        response.deviceId,
       );
     } catch (e) {
       onError(e.toString());
@@ -112,6 +113,7 @@ class ZeonMiningLogic {
   Future<void> saveKeyCard({
     required String matrixUserId,
     required String walletAddress,
+    required String uid,
     required String password,
   }) async {
     if (_privateKey == null) {
@@ -124,6 +126,7 @@ class ZeonMiningLogic {
       encryptedKeyHex: encryptedHex,
       walletAddress: walletAddress,
       matrixUserId: matrixUserId,
+      uid: uid,
     );
   }
 
@@ -209,12 +212,17 @@ class ZeonMiningLogic {
     required String encryptedKeyHex,
     required String walletAddress,
     required String matrixUserId,
+    required String uid,
   }) async {
+    // Extract domain from matrixUserId (e.g. "@uid:domain" → "domain")
+    final parts = matrixUserId.split(':');
+    final domain = parts.length >= 2 ? parts.sublist(1).join(':') : '';
+
     final recorder = ui.PictureRecorder();
     final canvas =
         Canvas(recorder, Rect.fromLTWH(0, 0, _cardWidth, _cardHeight));
 
-    _drawCard(canvas, walletAddress, matrixUserId, encryptedKeyHex);
+    _drawCard(canvas, walletAddress, uid, domain, encryptedKeyHex);
 
     final picture = recorder.endRecording();
     final image =
@@ -237,8 +245,8 @@ class ZeonMiningLogic {
     );
   }
 
-  void _drawCard(Canvas canvas, String walletAddress, String matrixUserId,
-      String encryptedKeyHex) {
+  void _drawCard(Canvas canvas, String walletAddress, String uid,
+      String domain, String encryptedKeyHex) {
     final size = Size(_cardWidth, _cardHeight);
     final halfH = size.height / 2;
 
@@ -286,13 +294,35 @@ class ZeonMiningLogic {
     datePainter.paint(
         canvas, Offset(size.width - _pad - datePainter.width, _pad));
 
-    // ── Matrix ID ──
-    _drawText(canvas, matrixUserId,
-        offset: Offset(_pad, _pad + 16 * _s + 11 * _s),
-        fontSize: 18 * _s,
-        color: Colors.white,
-        fontWeight: FontWeight.w500,
-        letterSpacing: -0.2 * _s);
+    // ── UID + domain (主身份标识) ──
+    // @uid is white; :domain is dimmer so it doesn't distract but stays readable.
+    final uidPainter = TextPainter(
+      text: TextSpan(
+        children: [
+          TextSpan(
+            text: '@$uid',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18 * _s,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.2 * _s,
+            ),
+          ),
+          if (domain.isNotEmpty)
+            TextSpan(
+              text: ':$domain',
+              style: TextStyle(
+                color: const Color(0x66FFFFFF),
+                fontSize: 18 * _s,
+                fontWeight: FontWeight.w400,
+                letterSpacing: -0.2 * _s,
+              ),
+            ),
+        ],
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: _cardWidth - _pad * 2);
+    uidPainter.paint(canvas, Offset(_pad, _pad + 16 * _s + 11 * _s));
 
     // ── Wallet address ──
     String shortAddr = walletAddress;

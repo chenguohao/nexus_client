@@ -2,7 +2,6 @@ import 'package:fluffychat/utils/string_extension.dart';
 import 'package:fluffychat/widgets/avatar/avatar_style.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/avatar/round_avatar.dart';
 
 class Avatar extends StatelessWidget {
   final Uri? mxContent;
@@ -26,6 +25,8 @@ class Avatar extends StatelessWidget {
     super.key,
   });
 
+  static const double _cornerRadius = 4.0;
+
   @override
   Widget build(BuildContext context) {
     return Material(
@@ -34,22 +35,30 @@ class Avatar extends StatelessWidget {
       shadowColor: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(size / 2),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(size / 2),
-          child: MxcImage(
-            key: Key(mxContent.toString()),
-            uri: mxContent,
-            fit: BoxFit.cover,
-            width: size,
-            height: size,
-            cacheWidth: (size * MediaQuery.devicePixelRatioOf(context) * 2)
-                .round(),
-            cacheKey: mxContent.toString(),
-            animated: true,
-            isThumbnail: false,
-            placeholder: (context) => _fallbackAvatar(),
-            keepAlive: keepAlive,
+        borderRadius: BorderRadius.circular(_cornerRadius),
+        child: Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(_cornerRadius),
+            border: Border.all(color: const Color(0xFF474747),width: 1),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_cornerRadius),
+            child: MxcImage(
+              key: Key(mxContent.toString()),
+              uri: mxContent,
+              fit: BoxFit.cover,
+              width: size,
+              height: size,
+              cacheWidth: (size * MediaQuery.devicePixelRatioOf(context) * 2)
+                  .round(),
+              cacheKey: mxContent.toString(),
+              animated: true,
+              isThumbnail: false,
+              placeholder: (context) => _fallbackAvatar(),
+              keepAlive: keepAlive,
+            ),
           ),
         ),
       ),
@@ -58,22 +67,25 @@ class Avatar extends StatelessWidget {
 
   Widget _fallbackAvatar() {
     final fallbackLetters = name?.getShortcutNameForAvatar() ?? '@';
-    return RoundAvatar(
-      size: size,
-      text: fallbackLetters,
-      boxShadows: boxShadows,
-      textStyle: TextStyle(
-        fontSize: fontSize,
-        color: textColor ?? AvatarStyle.defaultTextColor(_havePicture),
-        fontFamily: AvatarStyle.fontFamily,
-        fontWeight: AvatarStyle.fontWeight,
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: const Color(0xFF2A2A2B),
+        borderRadius: BorderRadius.circular(_cornerRadius),
+        boxShadow: boxShadows,
+      ),
+      child: Center(
+        child: Text(
+          fallbackLetters,
+          style: TextStyle(
+            fontSize: fontSize,
+            color: textColor ?? Colors.white,
+            fontFamily: 'Inter',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
       ),
     );
-  }
-
-  bool get _havePicture {
-    return mxContent == null ||
-        mxContent.toString().isEmpty ||
-        mxContent.toString() == 'null';
   }
 }

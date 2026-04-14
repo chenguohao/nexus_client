@@ -1,6 +1,5 @@
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:fluffychat/presentation/mixins/chat_list_item_mixin.dart';
-import 'package:fluffychat/pages/chat_list/chat_list_item_style.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item_subtitle.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item_title.dart';
 import 'package:fluffychat/utils/dialog/twake_dialog.dart';
@@ -11,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
 import 'package:go_router/go_router.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 enum ArchivedRoomAction { delete, rejoin }
@@ -84,69 +82,54 @@ class ChatListItem extends StatelessWidget with ChatListItemMixin {
     }
   }
 
-  bool get _isGroupChat => !room.isDirectChat;
-
   @override
   Widget build(BuildContext context) {
     final displayName = room.getLocalizedDisplayname(
       MatrixLocals(L10n.of(context)!),
     );
     return Padding(
-      padding: ChatListItemStyle.padding,
-      child: TwakeInkWell(
-        isSelected: activeChat,
-        onTap: () => clickAction(context),
-        onSecondaryTapDown: onSecondaryTapDown,
-        onLongPress: onLongPress,
-        child: TwakeListItem(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => clickAction(context),
+          onSecondaryTapDown: onSecondaryTapDown,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(12),
+          splashColor: const Color(0x1AFFFFFF),
+          highlightColor: const Color(0x0DFFFFFF),
           child: Container(
-            height: ChatListItemStyle.chatItemHeight,
-            padding: ChatListItemStyle.paddingBody,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: activeChat
+                ? BoxDecoration(
+                    color: const Color(0x0DFFFFFF),
+                    borderRadius: BorderRadius.circular(12),
+                  )
+                : null,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 if (isEnableSelectMode) checkBoxWidget ?? const SizedBox(),
                 Padding(
-                  padding: ChatListItemStyle.paddingAvatar,
-                  child: Stack(
-                    children: [
-                      Avatar(
-                        mxContent: room.avatar,
-                        name: displayName,
-                        onTap: onTapAvatar,
-                        keepAlive: true,
-                      ),
-                      if (_isGroupChat)
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: ChatListItemStyle.paddingIconGroup,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                            ),
-                            child: Icon(
-                              Icons.group,
-                              size: ChatListItemStyle.groupIconSize,
-                              color: room.isUnreadOrInvited
-                                  ? LinagoraSysColors.material()
-                                        .onSurfaceVariant
-                                  : LinagoraRefColors.material().tertiary[30],
-                            ),
-                          ),
-                        ),
-                    ],
+                  padding: const EdgeInsetsDirectional.only(end: 14),
+                  child: Avatar(
+                    mxContent: room.avatar,
+                    name: displayName,
+                    size: 60,
+                    onTap: onTapAvatar,
+                    keepAlive: true,
                   ),
                 ),
                 Expanded(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       ChatListItemTitle(
                         room: room,
                         originServerTs: lastEvent?.originServerTs,
                       ),
+                      const SizedBox(height: 4),
                       ChatListItemSubtitle(room: room, lastEvent: lastEvent),
                     ],
                   ),

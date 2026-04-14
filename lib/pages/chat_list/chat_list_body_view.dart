@@ -38,7 +38,7 @@ class ChatListBodyView extends StatelessWidget {
                 animation: primaryAnimation,
                 secondaryAnimation: secondaryAnimation,
                 transitionType: SharedAxisTransitionType.vertical,
-                fillColor: LinagoraSysColors.material().onPrimary,
+                fillColor: const Color(0xFF131314),
                 child: child,
               );
             },
@@ -90,7 +90,11 @@ class ChatListBodyView extends StatelessWidget {
                               children: [
                                 Text(
                                   L10n.of(context)!.welcomeToTwake(name),
-                                  style: Theme.of(context).textTheme.titleLarge,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                   textAlign: TextAlign.center,
                                 ),
                                 Padding(
@@ -98,9 +102,10 @@ class ChatListBodyView extends StatelessWidget {
                                       .paddingTextStartNewChatMessage,
                                   child: Text(
                                     L10n.of(context)!.startNewChatMessage,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodyMedium,
+                                    style: const TextStyle(
+                                      color: Color(0xFFC6C6C6),
+                                      fontSize: 14,
+                                    ),
                                     textAlign: TextAlign.center,
                                   ),
                                 ),
