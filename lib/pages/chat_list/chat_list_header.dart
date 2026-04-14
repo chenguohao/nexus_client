@@ -1,4 +1,3 @@
-import 'package:fluffychat/pages/chat/chat_audio_player_widget.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_header_style.dart';
 import 'package:fluffychat/pages/search/search.dart';
@@ -56,7 +55,7 @@ class ChatListHeader extends StatelessWidget {
   }
 
   Widget _buildFilterChips() {
-    return Container(color: Colors.red,);
+    return Container();
     return Container(
       color: const Color(0xFF131314),
       height: 44,
