@@ -770,6 +770,10 @@ class MatrixState extends State<Matrix>
       final toMConfigurations = await getTomConfigurations(client.userID!);
       if (toMConfigurations == null) {
         _setupAuthUrl();
+        if (client.homeserver != null) {
+          _setUpHomeServer(client.homeserver!);
+        }
+        setUpAuthorization(client);
         return;
       }
       setUpToMServices(
@@ -1030,6 +1034,7 @@ class MatrixState extends State<Matrix>
         if (homeserver != null) {
           final zeonUri = homeserver.replace(port: 8080);
           _setUpToMServer(ToMServerInformation(baseUrl: zeonUri));
+          _setUpHomeServer(homeserver);
         } else {
           _setUpToMServer(null);
         }
@@ -1049,6 +1054,7 @@ class MatrixState extends State<Matrix>
       if (homeserver != null) {
         final zeonUri = homeserver.replace(port: 8080);
         _setUpToMServer(ToMServerInformation(baseUrl: zeonUri));
+        _setUpHomeServer(homeserver);
       } else {
         _setUpToMServer(null);
       }
