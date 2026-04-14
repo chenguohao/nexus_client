@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_matrix_html/color_extension.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 
 class FileTileWidgetStyle {
   const FileTileWidgetStyle();
@@ -11,10 +9,10 @@ class FileTileWidgetStyle {
 
   Color backgroundColor(BuildContext context, {bool ownMessage = false}) =>
       ownMessage
-      ? LinagoraSysColors.material().primaryContainer
-      : LinagoraSysColors.material().onSurface.withOpacity(0.08);
+      ? Colors.white.withOpacity(0.08)
+      : const Color(0xFF2A2A2B).withOpacity(0.40);
 
-  BorderRadiusGeometry get borderRadius => BorderRadius.circular(8.0);
+  BorderRadiusGeometry get borderRadius => BorderRadius.circular(4.0);
 
   EdgeInsets get paddingIcon => const EdgeInsets.only(right: 8);
 
@@ -24,28 +22,30 @@ class FileTileWidgetStyle {
 
   double get imageSize => 40;
 
-  Color? get fileInfoColor => LinagoraRefColors.material().tertiary[20];
+  Color? get fileInfoColor => const Color(0xFF919191);
 
   TextStyle highlightTextStyle(BuildContext context) {
     return TextStyle(
-      // TODO: change to colorSurface when its approved
-      // ignore: deprecated_member_use
-      color: Theme.of(context).colorScheme.onBackground,
+      color: Colors.white,
       fontWeight: FontWeight.bold,
       backgroundColor: CssColor.fromCss('gold'),
     );
   }
 
   TextStyle? textStyle(BuildContext context) {
-    return Theme.of(context).textTheme.bodyLarge?.copyWith(
-      color: Theme.of(context).colorScheme.onSurface,
+    return const TextStyle(
+      color: Colors.white,
+      fontSize: 14,
+      fontFamily: 'Inter',
     );
   }
 
   TextStyle textInformationStyle(BuildContext context) {
-    return Theme.of(
-      context,
-    ).textTheme.bodySmall!.copyWith(color: fileInfoColor);
+    return TextStyle(
+      color: fileInfoColor,
+      fontSize: 12,
+      fontFamily: 'Inter',
+    );
   }
 
   EdgeInsets get imagePadding => const EdgeInsets.all(4.0);

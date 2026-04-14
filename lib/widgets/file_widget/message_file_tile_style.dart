@@ -20,8 +20,11 @@ class MessageFileTileStyle extends FileTileWidgetStyle {
 
   @override
   TextStyle? textStyle(BuildContext context) {
-    return Theme.of(context).textTheme.titleSmall?.copyWith(
-      color: Theme.of(context).colorScheme.onSurface,
+    return const TextStyle(
+      color: Colors.white,
+      fontSize: 13,
+      fontFamily: 'Inter',
+      fontWeight: FontWeight.w500,
     );
   }
 
@@ -50,6 +53,6 @@ class MessageFileTileStyle extends FileTileWidgetStyle {
     required bool hasError,
     required BuildContext context,
   }) => hasError
-      ? Theme.of(context).colorScheme.error
-      : Theme.of(context).colorScheme.primary;
+      ? Colors.redAccent
+      : Colors.white.withOpacity(0.10);
 }

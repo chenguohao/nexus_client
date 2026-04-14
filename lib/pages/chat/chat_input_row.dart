@@ -18,7 +18,6 @@ import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:social_media_recorder/audio_encoder_type.dart';
 import 'package:social_media_recorder/screen/social_media_recorder.dart';
@@ -68,7 +67,8 @@ class ChatInputRow extends StatelessWidget {
                                   size:
                                       ChatInputRowStyle.chatInputRowMoreBtnSize,
                                   tooltip: L10n.of(context)!.more,
-                                  icon: Icons.add_circle_outline,
+                                  icon: Icons.add_circle,
+                                  iconColor: const Color(0xFFC6C6C6),
                                   onTap: () =>
                                       controller.onSendFileClick(context),
                                 ),
@@ -101,11 +101,9 @@ class ChatInputRow extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       borderRadius: ChatInputRowStyle
                                           .chatInputRowBorderRadius,
-                                      color: LinagoraSysColors.material()
-                                          .onPrimary,
+                                      color: const Color(0xFF0E0E0F),
                                       border: Border.all(
-                                        color: LinagoraRefColors.material()
-                                            .tertiary,
+                                        color: const Color(0x0DFFFFFF),
                                         width: 1,
                                       ),
                                     ),
@@ -160,24 +158,24 @@ class ChatInputRow extends StatelessWidget {
                             pauseBottomPositioned:
                                 102 + (isKeyboardVisible ? bottomInset : 16),
                             pauseRightPositioned: 16,
-                            resumeDecoration: BoxDecoration(
-                              color: LinagoraSysColors.material().surface,
+                            resumeDecoration: const BoxDecoration(
+                              color: Color(0xFF131314),
                             ),
                             soundRecorderWhenLockedDecoration: BoxDecoration(
                               borderRadius:
                                   ChatInputRowStyle.chatInputRowBorderRadius,
-                              color: LinagoraSysColors.material().onPrimary,
+                              color: const Color(0xFF0E0E0F),
                               border: Border.all(
-                                color: LinagoraRefColors.material().tertiary,
+                                color: const Color(0x0DFFFFFF),
                                 width: 1,
                               ),
                             ),
                             decoration: BoxDecoration(
                               borderRadius:
                                   ChatInputRowStyle.chatInputRowBorderRadius,
-                              color: LinagoraSysColors.material().onPrimary,
+                              color: const Color(0xFF0E0E0F),
                               border: Border.all(
-                                color: LinagoraRefColors.material().tertiary,
+                                color: const Color(0x0DFFFFFF),
                                 width: 1,
                               ),
                             ),
@@ -240,33 +238,28 @@ class ChatInputRow extends StatelessWidget {
                             initRecordPackageWidth: 50,
                             cancelTextBackGroundColor: Colors.transparent,
                             cancelText: L10n.of(context)!.cancel,
-                            cancelTextStyle: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color: LinagoraSysColors.material().primary,
-                                ),
+                            cancelTextStyle: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontFamily: 'Inter',
+                            ),
                             slideToCancelText: L10n.of(context)!.slideToCancel,
-                            slideToCancelTextStyle: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color:
-                                      LinagoraRefColors.material().neutral[30],
-                                ),
-                            counterTextStyle: Theme.of(context)
-                                .textTheme
-                                .bodySmall
-                                ?.copyWith(
-                                  color:
-                                      LinagoraRefColors.material().neutral[50],
-                                ),
+                            slideToCancelTextStyle: const TextStyle(
+                              color: Color(0xFF919191),
+                              fontSize: 12,
+                              fontFamily: 'Inter',
+                            ),
+                            counterTextStyle: const TextStyle(
+                              color: Color(0xFFC6C6C6),
+                              fontSize: 12,
+                              fontFamily: 'Inter',
+                            ),
                             slideToCancelPadding: const EdgeInsets.only(
                               right: 24,
                             ),
-                            recordIcon: Icon(
+                            recordIcon: const Icon(
                               Icons.keyboard_voice_outlined,
-                              color: LinagoraSysColors.material().tertiary,
+                              color: Color(0xFFC6C6C6),
                             ),
                             soundRecorderWhenLockedWidth:
                                 MediaQuery.of(context).size.width - 16,
@@ -274,17 +267,13 @@ class ChatInputRow extends StatelessWidget {
                             micCounterWidget: Container(
                               width: 12,
                               height: 12,
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: LinagoraSysColors.material().error,
+                                color: Colors.redAccent,
                               ),
                             ),
-                            pauseSplashColor: LinagoraSysColors.material()
-                                .primary
-                                .withOpacity(0.5),
-                            pauseHighlightColor: LinagoraSysColors.material()
-                                .primary
-                                .withOpacity(0.2),
+                            pauseSplashColor: Colors.white.withOpacity(0.5),
+                            pauseHighlightColor: Colors.white.withOpacity(0.2),
                             pauseWidget: const AnimatedPauseButton(),
                           ),
                         ),
@@ -322,9 +311,9 @@ class ChatInputRow extends StatelessWidget {
               child: Container(
                 width: 12,
                 height: 12,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
-                  color: LinagoraSysColors.material().error,
+                  color: Colors.redAccent,
                 ),
               ),
             ),
@@ -335,20 +324,26 @@ class ChatInputRow extends StatelessWidget {
               children: [
                 Text(
                   (duration ~/ 60).formatNumberAudioDuration(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: LinagoraRefColors.material().neutral[50],
+                  style: const TextStyle(
+                    color: Color(0xFFC6C6C6),
+                    fontSize: 12,
+                    fontFamily: 'Inter',
                   ),
                 ),
-                Text(
+                const Text(
                   " : ",
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: LinagoraRefColors.material().neutral[50],
+                  style: TextStyle(
+                    color: Color(0xFFC6C6C6),
+                    fontSize: 12,
+                    fontFamily: 'Inter',
                   ),
                 ),
                 Text(
                   (duration % 60).formatNumberAudioDuration(),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: LinagoraRefColors.material().neutral[50],
+                  style: const TextStyle(
+                    color: Color(0xFFC6C6C6),
+                    fontSize: 12,
+                    fontFamily: 'Inter',
                   ),
                 ),
               ],
@@ -440,14 +435,31 @@ class ChatInputRow extends StatelessWidget {
       showEmojiPickerNotifier: controller.showEmojiPickerNotifier,
       decoration: InputDecoration(
         contentPadding: ChatInputRowStyle.contentPadding(context),
-        hintText: L10n.of(context)!.message,
+        filled: true,
+        fillColor: const Color(0xFF0E0E0F),
+        border: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color(0x0DFFFFFF)),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: Color(0x0DFFFFFF)),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: Colors.white.withOpacity(0.30),
+          ),
+          borderRadius: BorderRadius.circular(2),
+        ),
+        hintText: 'EXECUTE MESSAGE...',
         isDense: true,
         hintMaxLines: 1,
-        hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: controller.responsive.isMobile(context)
-              ? LinagoraRefColors.material().tertiary[50]
-              : LinagoraRefColors.material().tertiary[30],
+        hintStyle: TextStyle(
+          color: Colors.white.withOpacity(0.40),
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
           fontFamily: 'Inter',
+          letterSpacing: 2.0,
         ),
       ),
       onChanged: controller.onInputBarChanged,

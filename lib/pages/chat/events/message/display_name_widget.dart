@@ -1,7 +1,6 @@
 import 'package:fluffychat/pages/chat/events/message/message_style.dart';
 import 'package:fluffychat/utils/string_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class DisplayNameWidget extends StatelessWidget {
@@ -22,12 +21,17 @@ class DisplayNameWidget extends StatelessWidget {
         return Padding(
           padding: MessageStyle.paddingDisplayName(event),
           child: Text(
-            displayName.shortenDisplayName(
-              maxCharacters: maxCharactersDisplayNameBubble,
-            ),
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            displayName
+                .shortenDisplayName(
+                  maxCharacters: maxCharactersDisplayNameBubble,
+                )
+                .toUpperCase(),
+            style: const TextStyle(
+              color: Color(0xFFC6C6C6),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
               fontFamily: 'Inter',
-              color: LinagoraSysColors.material().secondary,
+              letterSpacing: 1.5,
             ),
             maxLines: 2,
             overflow: TextOverflow.clip,

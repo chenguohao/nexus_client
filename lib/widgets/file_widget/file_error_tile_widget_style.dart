@@ -1,22 +1,25 @@
 import 'package:fluffychat/widgets/file_widget/file_tile_widget_style.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class FileErrorTileWidgetStyle extends FileTileWidgetStyle {
   @override
-  Color? get fileInfoColor => LinagoraSysColors.material().error;
+  Color? get fileInfoColor => Colors.redAccent;
 
   @override
   TextStyle textInformationStyle(BuildContext context) {
-    return Theme.of(
-      context,
-    ).textTheme.bodySmall!.copyWith(color: fileInfoColor);
+    return TextStyle(
+      color: fileInfoColor,
+      fontSize: 12,
+      fontFamily: 'Inter',
+    );
   }
 
   @override
   TextStyle? textStyle(BuildContext context) {
-    return Theme.of(
-      context,
-    ).textTheme.bodyLarge?.copyWith(color: Theme.of(context).colorScheme.error);
+    return const TextStyle(
+      color: Colors.redAccent,
+      fontSize: 14,
+      fontFamily: 'Inter',
+    );
   }
 }

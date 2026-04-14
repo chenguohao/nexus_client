@@ -11,8 +11,6 @@ import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_state_layer.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 class ChatView extends StatelessWidget with MessageContentMixin {
@@ -110,15 +108,14 @@ class ChatView extends StatelessWidget with MessageContentMixin {
           future: controller.loadTimelineFuture,
           builder: (BuildContext context, snapshot) {
             return Scaffold(
-              backgroundColor: controller.responsive.isMobile(context)
-                  ? LinagoraSysColors.material().background
-                  : LinagoraSysColors.material().onPrimary,
+              backgroundColor: const Color(0xFF131314),
               appBar: AppBar(
-                backgroundColor: controller.responsive.isMobile(context)
-                    ? LinagoraSysColors.material().surface
-                    : LinagoraSysColors.material().onPrimary,
+                backgroundColor: const Color(0xFF131314).withOpacity(0.80),
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
                 automaticallyImplyLeading: false,
                 toolbarHeight: ChatViewStyle.appBarHeight(context),
+                iconTheme: const IconThemeData(color: Colors.white),
                 title: Padding(
                   padding: ChatViewStyle.paddingLeading(context),
                   child: Row(
@@ -157,12 +154,16 @@ class ChatView extends StatelessWidget with MessageContentMixin {
                             splashColor: Colors.transparent,
                             highlightColor: Colors.transparent,
                             onPressed: controller.toggleSearch,
-                            icon: const Icon(Icons.search),
+                            icon: const Icon(
+                              Icons.search,
+                              color: Colors.white,
+                            ),
                           ),
                           if (controller.hasActionAppBarMenu)
                             Builder(
                               builder: (context) => TwakeIconButton(
                                 icon: Icons.more_vert,
+                                iconColor: Colors.white,
                                 tooltip: L10n.of(context)!.more,
                                 onTapDown: (tapDownDetails) =>
                                     controller.handleAppbarMenuAction(
@@ -179,9 +180,7 @@ class ChatView extends StatelessWidget with MessageContentMixin {
                 bottom: PreferredSize(
                   preferredSize: const Size(double.infinity, 1),
                   child: Container(
-                    color: LinagoraStateLayer(
-                      LinagoraSysColors.material().surfaceTint,
-                    ).opacityLayer1,
+                    color: Colors.white.withOpacity(0.10),
                     height: 1,
                   ),
                 ),
@@ -203,7 +202,11 @@ class ChatView extends StatelessWidget with MessageContentMixin {
                           child: FloatingActionButton(
                             onPressed: controller.scrollDown,
                             mini: true,
-                            child: const Icon(Icons.arrow_downward_outlined),
+                            backgroundColor: const Color(0xFF2A2A2B),
+                            child: const Icon(
+                              Icons.arrow_downward_outlined,
+                              color: Colors.white,
+                            ),
                           ),
                         );
                       },
@@ -241,7 +244,8 @@ class ChatView extends StatelessWidget with MessageContentMixin {
     padding: const EdgeInsets.only(left: 8, right: 8),
     child: TwakeIconButton(
       tooltip: L10n.of(context)!.back,
-      icon: Icons.arrow_back_ios,
+      icon: Icons.arrow_back,
+      iconColor: Colors.white,
       onTap: controller.onBackPress,
       margin: const EdgeInsets.symmetric(vertical: 12.0),
     ),

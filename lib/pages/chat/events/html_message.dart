@@ -58,7 +58,6 @@ class HtmlMessage extends StatelessWidget with LinkifyMixin {
 
     final matrix = Matrix.of(context);
 
-    final themeData = Theme.of(context);
     return Html(
       data: renderHtml,
       defaultTextStyle: defaultTextStyle,
@@ -68,10 +67,12 @@ class HtmlMessage extends StatelessWidget with LinkifyMixin {
           : null,
       linkStyle:
           linkStyle ??
-          themeData.textTheme.bodyMedium!.copyWith(
-            color: themeData.colorScheme.secondary,
+          const TextStyle(
+            color: Color(0xFF8AB4F8),
             decoration: TextDecoration.underline,
-            decorationColor: themeData.colorScheme.secondary,
+            decorationColor: Color(0xFF8AB4F8),
+            fontSize: 15,
+            fontFamily: 'Inter',
           ),
       linkTypes: const [LinkType.url, LinkType.phone],
       shrinkToFit: true,
@@ -197,10 +198,8 @@ class HtmlMessage extends StatelessWidget with LinkifyMixin {
           url: url,
           onTap: !room.isDirectChat ? onTap : null,
           textStyle: !room.isDirectChat
-              ? defaultTextStyle?.copyWith(color: themeData.colorScheme.primary)
-              : Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
+              ? defaultTextStyle?.copyWith(color: const Color(0xFF8AB4F8))
+              : defaultTextStyle?.copyWith(color: Colors.white),
         );
       },
     );

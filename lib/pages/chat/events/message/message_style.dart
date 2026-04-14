@@ -14,7 +14,7 @@ class MessageStyle {
   static ResponsiveUtils responsiveUtils = getIt.get<ResponsiveUtils>();
 
   static const double heightDivider = 1.0;
-  static final bubbleBorderRadius = BorderRadius.circular(16);
+  static final bubbleBorderRadius = BorderRadius.circular(2);
   static final errorStatusPlaceHolderWidth = 16 * AppConfig.bubbleSizeFactor;
   static final errorStatusPlaceHolderHeight = 16 * AppConfig.bubbleSizeFactor;
   static const double avatarSize = 40;
@@ -266,7 +266,10 @@ class MessageStyle {
   static const double pushpinIconSize = 14.0;
 
   static const double paddingAllPushpin = 0;
-  static const Color borderColorReceivedBubble = Color(0xFFEBEDF0);
+  static const Color borderColorReceivedBubble = Color(0xFF474747);
+
+  static Color ownBubbleColor = Colors.white.withOpacity(0.10);
+  static Color otherBubbleColor = const Color(0xFF2A2A2B).withOpacity(0.60);
 
   static MainAxisAlignment messageAlignment(
     Event event,

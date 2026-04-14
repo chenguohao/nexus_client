@@ -16,7 +16,7 @@ class ChatViewBodyStyle {
 
   static double blockedUserBannerHeight = 40.0;
 
-  static const Color backgroundColor = Color(0xFFF4EFE8);
+  static const Color backgroundColor = Color(0xFF131314);
 
   static String get imageBackground => ImagePaths.chatBackground;
 

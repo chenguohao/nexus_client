@@ -44,9 +44,7 @@ class ChatViewBody extends StatelessWidget with MessageContentMixin {
       onDragUpdated: controller.onDragUpdated,
       onDragExited: controller.onDragExited,
       child: Container(
-        color: controller.responsive.isMobile(context)
-            ? LinagoraSysColors.material().surface
-            : null,
+        color: const Color(0xFF131314),
         child: Stack(
           children: <Widget>[
             const ChatBackground(),
@@ -324,18 +322,12 @@ class ChatViewBody extends StatelessWidget with MessageContentMixin {
 
   Widget _inputMessageWidget(BuildContext context) {
     return Container(
-      decoration: controller.responsive.isMobile(context)
-          ? BoxDecoration(
-              color: LinagoraSysColors.material().surface,
-              border: Border(
-                top: BorderSide(
-                  color: LinagoraStateLayer(
-                    LinagoraSysColors.material().surfaceTint,
-                  ).opacityLayer3,
-                ),
-              ),
-            )
-          : const BoxDecoration(color: Colors.transparent),
+      decoration: const BoxDecoration(
+        color: Color(0xFF131314),
+        border: Border(
+          top: BorderSide(color: Color(0x0DFFFFFF)),
+        ),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

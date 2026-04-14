@@ -48,7 +48,7 @@ class _CircularLoadingDownloadWidgetState
     return RotationTransition(
       turns: _animation!,
       child: CircularProgressIndicator(
-        color: Theme.of(context).colorScheme.surface,
+        color: Colors.white,
         strokeWidth: widget.style.strokeWidthLoading,
         value: widget.downloadProgress,
       ),

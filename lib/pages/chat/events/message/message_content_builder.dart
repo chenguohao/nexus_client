@@ -37,9 +37,9 @@ class MessageContentBuilder extends StatelessWidget
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        // TODO: change to colorSurface when its approved
-        // ignore: deprecated_member_use
-        final textColor = Theme.of(context).colorScheme.onBackground;
+        final textColor = event.isOwnMessage
+            ? Colors.white
+            : const Color(0xFFE5E2E3);
         final displayEvent = event.getDisplayEventWithoutEditEvent(timeline);
         final noPadding = {
           MessageTypes.File,

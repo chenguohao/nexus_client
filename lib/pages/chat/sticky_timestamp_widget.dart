@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
 
 class StickyTimestampWidget extends StatelessWidget {
   final String content;
@@ -22,8 +21,8 @@ class StickyTimestampWidget extends StatelessWidget {
             margin: const EdgeInsets.only(top: 8.0),
             decoration: isStickyHeader
                 ? BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    color: LinagoraRefColors.material().primary[100],
+                    borderRadius: BorderRadius.circular(4),
+                    color: const Color(0xFF201F20),
                   )
                 : null,
             alignment: Alignment.center,
@@ -36,8 +35,12 @@ class StickyTimestampWidget extends StatelessWidget {
                 children: [
                   Text(
                     content,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: LinagoraRefColors.material().tertiary[20],
+                    style: const TextStyle(
+                      color: Color(0xFF919191),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Inter',
+                      letterSpacing: 1.0,
                     ),
                   ),
                 ],

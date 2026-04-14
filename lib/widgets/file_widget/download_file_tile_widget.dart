@@ -110,7 +110,7 @@ class DownloadFileTileWidget extends StatelessWidget {
                               ? Icons.arrow_downward
                               : Icons.close,
                           key: ValueKey(downloadProgress),
-                          color: Theme.of(context).colorScheme.surface,
+                          color: Colors.white,
                           size: style.downloadIconSize,
                         ),
                       ),

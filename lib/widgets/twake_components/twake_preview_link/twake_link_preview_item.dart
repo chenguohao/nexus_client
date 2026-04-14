@@ -3,7 +3,6 @@ import 'package:fluffychat/utils/url_launcher.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
 import 'package:fluffychat/widgets/twake_components/twake_preview_link/twake_link_preview_item_style.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 
 class TwakeLinkPreviewItem extends StatelessWidget {
@@ -30,8 +29,8 @@ class TwakeLinkPreviewItem extends StatelessWidget {
       height: TwakeLinkPreviewItemStyle.maxHeightPreviewItem,
       decoration: ShapeDecoration(
         color: ownMessage
-            ? LinagoraSysColors.material().primaryContainer
-            : LinagoraSysColors.material().onSurface.withOpacity(0.08),
+            ? Colors.white.withOpacity(0.08)
+            : const Color(0xFF2A2A2B).withOpacity(0.40),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(
             TwakeLinkPreviewItemStyle.radiusBorder,
@@ -145,8 +144,11 @@ class LinkPreviewBuilder extends StatelessWidget {
                   child: Text(
                     key: LinkPreviewBuilder.titleKey,
                     urlPreviewPresentation.title ?? '',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    style: const TextStyle(
+                      color: Color(0xFFC6C6C6),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Inter',
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -158,8 +160,10 @@ class LinkPreviewBuilder extends StatelessWidget {
                   child: Text(
                     key: LinkPreviewBuilder.subtitleKey,
                     urlPreviewPresentation.description ?? '',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: LinagoraRefColors.material().neutral[50],
+                    style: const TextStyle(
+                      color: Color(0xFF919191),
+                      fontSize: 12,
+                      fontFamily: 'Inter',
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

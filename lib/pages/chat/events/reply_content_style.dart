@@ -2,7 +2,6 @@ import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class ReplyContentStyle {
   static ResponsiveUtils responsive = getIt.get<ResponsiveUtils>();
@@ -23,9 +22,9 @@ class ReplyContentStyle {
   ) {
     return BoxDecoration(
       color: ownMessage
-          ? LinagoraSysColors.material().primaryContainer
-          : LinagoraSysColors.material().onSurface.withOpacity(0.08),
-      borderRadius: BorderRadius.circular(8.0),
+          ? Colors.white.withOpacity(0.08)
+          : const Color(0xFF2A2A2B).withOpacity(0.40),
+      borderRadius: BorderRadius.circular(4.0),
     );
   }
 
@@ -34,7 +33,7 @@ class ReplyContentStyle {
   static BoxDecoration prefixBarDecoration(BuildContext context) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(2),
-      color: Theme.of(context).colorScheme.primary,
+      color: Colors.white.withOpacity(0.40),
     );
   }
 
@@ -45,19 +44,21 @@ class ReplyContentStyle {
   static const double previewedImagePlaceholderPadding = 4.0;
 
   static TextStyle? displayNameTextStyle(BuildContext context) {
-    return Theme.of(context).textTheme.titleSmall?.copyWith(
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return const TextStyle(
+      color: Color(0xFFC6C6C6),
       fontWeight: FontWeight.bold,
       fontSize: fontSizeDisplayName,
+      fontFamily: 'Inter',
     );
   }
 
   static TextStyle? replyBodyTextStyle(BuildContext context) {
-    return Theme.of(context).textTheme.bodySmall?.copyWith(
-      color: LinagoraRefColors.material().neutral[50],
+    return const TextStyle(
+      color: Color(0xFF919191),
       fontWeight: FontWeight.w500,
       overflow: TextOverflow.ellipsis,
       fontSize: fontSizeDisplayContent,
+      fontFamily: 'Inter',
     );
   }
 

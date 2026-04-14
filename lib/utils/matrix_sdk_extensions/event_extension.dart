@@ -20,7 +20,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:future_loading_dialog/future_loading_dialog.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
 import 'package:matrix/matrix.dart';
 import 'package:universal_html/html.dart' as html;
 
@@ -270,50 +269,32 @@ extension LocalizedBody on Event {
   }
 
   TextStyle? textStyleForOnlyEmoji(BuildContext context) {
+    const emojiColor = Colors.white;
     switch (numberEmotes) {
       case 1:
-        return Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontSize: 79.5,
-          color: Theme.of(context).colorScheme.onSurface,
-        );
+        return const TextStyle(fontSize: 79.5, color: emojiColor);
       case 2:
-        return Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontSize: 63.24,
-          color: Theme.of(context).colorScheme.onSurface,
-        );
+        return const TextStyle(fontSize: 63.24, color: emojiColor);
       case 3:
-        return Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontSize: 54.2,
-          color: Theme.of(context).colorScheme.onSurface,
-        );
+        return const TextStyle(fontSize: 54.2, color: emojiColor);
       case 4:
-        return Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontSize: 45.17,
-          color: Theme.of(context).colorScheme.onSurface,
-        );
+        return const TextStyle(fontSize: 45.17, color: emojiColor);
       case 5:
-        return Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontSize: 36.14,
-          color: Theme.of(context).colorScheme.onSurface,
-        );
+        return const TextStyle(fontSize: 36.14, color: emojiColor);
       case 6:
-        return Theme.of(context).textTheme.bodyLarge?.copyWith(
-          fontSize: 18.07,
-          color: Theme.of(context).colorScheme.onSurface,
-        );
+        return const TextStyle(fontSize: 18.07, color: emojiColor);
       default:
-        return Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: Theme.of(context).colorScheme.onSurface,
-        );
+        return const TextStyle(color: emojiColor);
     }
   }
 
   TextStyle? getMessageTextStyle(BuildContext context) {
     if (redacted) {
-      return Theme.of(context).textTheme.bodyLarge?.copyWith(
+      return const TextStyle(
         fontSize: 17,
         height: 24 / 17,
-        color: LinagoraRefColors.material().tertiary[30],
+        color: Color(0xFF919191),
+        fontFamily: 'Inter',
       );
     }
 
@@ -321,8 +302,11 @@ extension LocalizedBody on Event {
       return textStyleForOnlyEmoji(context);
     }
 
-    return Theme.of(context).textTheme.bodyLarge?.copyWith(
-      color: Theme.of(context).colorScheme.onSurface,
+    return TextStyle(
+      color: isOwnMessage ? Colors.white : const Color(0xFFE5E2E3),
+      fontSize: 15,
+      fontFamily: 'Inter',
+      height: 1.5,
     );
   }
 

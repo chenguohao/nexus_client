@@ -6,7 +6,6 @@ import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
 class ChatInputRowSendBtn extends StatelessWidget {
   final ValueListenable<String> inputText;
@@ -94,14 +93,24 @@ class ChatInputRowSendBtn extends StatelessWidget {
           }
           return Padding(
             padding: ChatInputRowStyle.sendIconPadding,
-            child: TwakeIconButton(
-              hoverColor: Colors.transparent,
-              splashColor: Colors.transparent,
-              size: ChatInputRowStyle.sendIconBtnSize,
-              onTap: onTap,
-              tooltip: L10n.of(context)!.send,
-              imagePath: ImagePaths.icSend,
-              paddingAll: 0,
+            child: SizedBox(
+              width: ChatInputRowStyle.sendIconBtnSize,
+              height: ChatInputRowStyle.sendIconBtnSize,
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(2),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(2),
+                  onTap: onTap,
+                  child: const Center(
+                    child: Icon(
+                      Icons.send,
+                      color: Color(0xFF131314),
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
             ),
           );
         },

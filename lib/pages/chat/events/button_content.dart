@@ -27,13 +27,13 @@ class ButtonContent extends StatelessWidget {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onError,
+                    color: Colors.white.withOpacity(0.10),
                     shape: BoxShape.circle,
                   ),
                   padding: ButtonContentStyle.leadingIconPadding,
                   child: Icon(
                     icon,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: Colors.white,
                     size: ButtonContentStyle.leadingIconSize,
                   ),
                 ),
@@ -46,8 +46,10 @@ class ButtonContent extends StatelessWidget {
                     title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium!.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
+                    style: const TextStyle(
+                      color: Color(0xFFC6C6C6),
+                      fontSize: 14,
+                      fontFamily: 'Inter',
                     ),
                   ),
                 ),

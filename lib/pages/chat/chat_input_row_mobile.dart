@@ -1,6 +1,5 @@
 import 'package:fluffychat/pages/chat/chat_input_row_style.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 typedef OnTapEmojiAction = void Function();
 
@@ -19,10 +18,10 @@ class ChatInputRowMobile extends StatelessWidget {
         alignment: Alignment.center,
         padding: ChatInputRowStyle.chatInputRowPaddingMobile,
         decoration: BoxDecoration(
-          borderRadius: ChatInputRowStyle.chatInputRowBorderRadius,
-          color: LinagoraSysColors.material().onPrimary,
+          borderRadius: BorderRadius.circular(2),
+          color: const Color(0xFF0E0E0F),
           border: Border.all(
-            color: LinagoraRefColors.material().tertiary,
+            color: const Color(0x0DFFFFFF),
             width: 1,
           ),
         ),

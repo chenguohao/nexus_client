@@ -84,8 +84,12 @@ class MessageContentStyle {
   static const EdgeInsets emojiPadding = EdgeInsets.symmetric(horizontal: 8.0);
 
   static TextStyle? linkStyleMessageContent(BuildContext context) =>
-      Theme.of(context).textTheme.bodyLarge?.copyWith(
-        color: Theme.of(context).colorScheme.secondary,
+      const TextStyle(
+        color: Color(0xFF8AB4F8),
+        fontSize: 15,
+        fontFamily: 'Inter',
+        decoration: TextDecoration.underline,
+        decorationColor: Color(0xFF8AB4F8),
       );
 
   static const blurhashSize = 32;

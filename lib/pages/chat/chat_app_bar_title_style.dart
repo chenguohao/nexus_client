@@ -1,7 +1,6 @@
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class ChatAppBarTitleStyle {
   static ResponsiveUtils responsive = getIt.get<ResponsiveUtils>();
@@ -21,38 +20,35 @@ class ChatAppBarTitleStyle {
 
   static double get statusBorderSize => 2;
 
-  static double get letterSpacingRoomName => 0.15;
+  static double get letterSpacingRoomName => -0.3;
 
-  static double get letterSpacingStatusContent => 0.5;
+  static double get letterSpacingStatusContent => 1.0;
 
-  static TextStyle? appBarTitleStyle(BuildContext context) =>
-      Theme.of(context).textTheme.titleMedium?.copyWith(
-        color: Theme.of(context).colorScheme.onSurface,
-        letterSpacing: ChatAppBarTitleStyle.letterSpacingRoomName,
-      );
+  static TextStyle? appBarTitleStyle(BuildContext context) => const TextStyle(
+    color: Colors.white,
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
+    fontFamily: 'Inter',
+    letterSpacing: -0.3,
+  );
 
   static TextStyle? offlineStatusTextStyle(BuildContext context) =>
-      responsive.isMobile(context)
-      ? Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: LinagoraRefColors.material().tertiary[30],
-          letterSpacing: ChatAppBarTitleStyle.letterSpacingStatusContent,
-          fontFamily: 'Inter',
-        )
-      : Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: LinagoraRefColors.material().neutral[50],
-          letterSpacing: ChatAppBarTitleStyle.letterSpacingRoomName,
-          fontFamily: 'Inter',
-        );
+      const TextStyle(
+        color: Color(0x99C6C6C6),
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+        fontFamily: 'Inter',
+        letterSpacing: 1.0,
+      );
 
   static TextStyle? onlineStatusTextStyle(BuildContext context) =>
-      responsive.isMobile(context)
-      ? Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: LinagoraRefColors.material().secondary[40],
-          letterSpacing: ChatAppBarTitleStyle.letterSpacingStatusContent,
-        )
-      : Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: LinagoraRefColors.material().secondary[40],
-          letterSpacing: ChatAppBarTitleStyle.letterSpacingRoomName,
-        );
-  static const avatarPadding = EdgeInsetsDirectional.only(end: 8);
+      const TextStyle(
+        color: Color(0x99C6C6C6),
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+        fontFamily: 'Inter',
+        letterSpacing: 1.0,
+      );
+
+  static const avatarPadding = EdgeInsetsDirectional.only(end: 12);
 }

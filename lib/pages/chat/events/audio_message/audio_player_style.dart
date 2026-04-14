@@ -1,6 +1,5 @@
 import 'package:fluffychat/pages/chat/events/message/message_style.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class AudioPlayerStyle {
   static const minWaveCount = 32;
@@ -19,7 +18,10 @@ class AudioPlayerStyle {
   static const maxWaveHeight = 26.0;
 
   static TextStyle? textInformationStyle(BuildContext context) =>
-      Theme.of(context).textTheme.bodySmall!.copyWith(
-        color: LinagoraRefColors.material().tertiary[20],
+      const TextStyle(
+        color: Color(0xFFC6C6C6),
+        fontSize: 10,
+        fontFamily: 'Inter',
+        fontFeatures: [FontFeature.tabularFigures()],
       );
 }

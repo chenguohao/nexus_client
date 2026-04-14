@@ -8,7 +8,6 @@ import 'package:fluffychat/widgets/twake_components/twake_preview_link/twake_lin
 import 'package:fluffychat/widgets/twake_components/twake_preview_link/twake_link_preview_item_style.dart';
 import 'package:fluffychat/widgets/twake_components/twake_preview_link/twake_link_view.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:linkfy_text/linkfy_text.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
 import 'package:skeletonizer/skeletonizer.dart';
@@ -104,10 +103,8 @@ class TwakeLinkPreviewController extends State<TwakeLinkPreview>
             height: TwakeLinkPreviewItemStyle.maxHeightPreviewItem,
             decoration: ShapeDecoration(
               color: widget.ownMessage
-                  ? LinagoraRefColors.material().primary[95]
-                  : LinagoraStateLayer(
-                      LinagoraSysColors.material().surfaceTint,
-                    ).opacityLayer1,
+                  ? Colors.white.withOpacity(0.08)
+                  : const Color(0xFF2A2A2B).withOpacity(0.40),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(
                   TwakeLinkPreviewItemStyle.radiusBorder,

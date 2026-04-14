@@ -406,8 +406,8 @@ class _MessageState extends State<Message> with MessageAvatarMixin {
         left: Message.responsiveUtils.isMobile(context) ? 8.0 : 0,
       ),
       color: widget.selected
-          ? LinagoraSysColors.material().secondaryContainer
-          : Theme.of(context).primaryColor.withAlpha(0),
+          ? Colors.white.withOpacity(0.08)
+          : Colors.transparent,
       constraints: const BoxConstraints(
         maxWidth: TwakeThemes.columnWidth * 2.5,
       ),
@@ -419,13 +419,13 @@ class _MessageState extends State<Message> with MessageAvatarMixin {
           else if (widget.selectMode && event.status.isAvailable)
             Align(
               alignment: AlignmentDirectional.centerStart,
-              child: Icon(
+              child:               Icon(
                 widget.selected
                     ? Icons.check_circle_rounded
                     : Icons.circle_outlined,
                 color: widget.selected
-                    ? LinagoraSysColors.material().primary
-                    : Colors.black,
+                    ? Colors.white
+                    : const Color(0xFF919191),
                 size: 20,
               ),
             ),

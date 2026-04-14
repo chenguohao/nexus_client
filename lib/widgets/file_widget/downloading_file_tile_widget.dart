@@ -76,7 +76,7 @@ class DownloadingFileTileWidget extends StatelessWidget {
                         width: style.iconSize,
                         height: style.iconSize,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
+                          color: Colors.white.withOpacity(0.10),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -94,7 +94,7 @@ class DownloadingFileTileWidget extends StatelessWidget {
                         child: Container(
                           width: style.downloadIconSize,
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Colors.white.withOpacity(0.10),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -102,7 +102,7 @@ class DownloadingFileTileWidget extends StatelessWidget {
                                 ? Icons.arrow_downward
                                 : Icons.close,
                             key: ValueKey(downloadProgress),
-                            color: Theme.of(context).colorScheme.surface,
+                            color: Colors.white,
                             size: style.downloadIconSize,
                           ),
                         ),

@@ -64,25 +64,25 @@ class MessageTime extends StatelessWidget {
             Text(
               '${L10n.of(context)!.edited} ',
               textScaler: const TextScaler.linear(1.0),
-              style: Theme.of(context).textTheme.bodySmall?.merge(
-                TextStyle(
-                  color: timelineOverlayMessage
-                      ? Colors.white
-                      : LinagoraRefColors.material().tertiary[30],
-                  letterSpacing: 0.4,
-                ),
+              style: TextStyle(
+                color: timelineOverlayMessage
+                    ? Colors.white
+                    : Colors.white.withOpacity(0.40),
+                fontSize: 9,
+                letterSpacing: 0.4,
+                fontFamily: 'Inter',
               ),
             ),
           Text(
             DateFormat("HH:mm").format(event.originServerTs),
             textScaler: const TextScaler.linear(1.0),
-            style: Theme.of(context).textTheme.bodySmall?.merge(
-              TextStyle(
-                color: timelineOverlayMessage
-                    ? Colors.white
-                    : LinagoraRefColors.material().tertiary[30],
-                letterSpacing: 0.4,
-              ),
+            style: TextStyle(
+              color: timelineOverlayMessage
+                  ? Colors.white
+                  : Colors.white.withOpacity(0.40),
+              fontSize: 9,
+              letterSpacing: 0.4,
+              fontFamily: 'Inter',
             ),
           ),
           TextMessageRetryButton(event: event, onRetry: onRetryTextMessage),

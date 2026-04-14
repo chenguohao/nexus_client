@@ -20,7 +20,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
@@ -317,7 +316,7 @@ class AudioPlayerState extends State<AudioPlayerWidget>
                               isCurrentAudio:
                                   event?.eventId == widget.event.eventId,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -326,14 +325,11 @@ class AudioPlayerState extends State<AudioPlayerWidget>
                                   if (_calculatedWaveform.isEmpty) ...[
                                     Text(
                                       fileName,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurface,
-                                          ),
+                                      style: const TextStyle(
+                                        color: Color(0xFFC6C6C6),
+                                        fontSize: 12,
+                                        fontFamily: 'Inter',
+                                      ),
                                       maxLines: 2,
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -386,8 +382,10 @@ class AudioPlayerState extends State<AudioPlayerWidget>
         if (isAudio) ...[
           Text(
             duration,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: LinagoraRefColors.material().tertiary[30],
+            style: const TextStyle(
+              color: Color(0xFFC6C6C6),
+              fontSize: 12,
+              fontFamily: 'Inter',
             ),
           ),
         ] else ...[
@@ -413,18 +411,18 @@ class AudioPlayerState extends State<AudioPlayerWidget>
                     size: MessageStyle.pushpinIconSize,
                     paddingAll: MessageStyle.paddingAllPushpin,
                     margin: EdgeInsets.zero,
-                    iconColor: LinagoraRefColors.material().neutral[50],
+                    iconColor: const Color(0xFF919191),
                   ),
                   const SizedBox(width: 4.0),
                 ],
                 Text(
                   DateFormat("HH:mm").format(widget.event.originServerTs),
                   textScaler: const TextScaler.linear(1.0),
-                  style: Theme.of(context).textTheme.bodySmall?.merge(
-                    TextStyle(
-                      color: LinagoraRefColors.material().tertiary[30],
-                      letterSpacing: 0.4,
-                    ),
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.40),
+                    fontSize: 9,
+                    letterSpacing: 0.4,
+                    fontFamily: 'Inter',
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -458,8 +456,8 @@ class AudioPlayerState extends State<AudioPlayerWidget>
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
         color: index < wavePosition
-            ? LinagoraSysColors.material().primary
-            : LinagoraSysColors.material().primary.withAlpha(70),
+            ? Colors.white
+            : Colors.white.withAlpha(70),
         borderRadius: BorderRadius.circular(64),
       ),
     );
@@ -480,8 +478,8 @@ class AudioPlayerState extends State<AudioPlayerWidget>
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(
@@ -494,14 +492,14 @@ class AudioPlayerState extends State<AudioPlayerWidget>
                 Container(
                   width: 40,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(2),
                   ),
                   child: Icon(
                     status == AudioPlayerStatus.downloaded
                         ? Icons.arrow_downward
                         : Icons.play_arrow,
-                    color: Theme.of(context).colorScheme.surface,
+                    color: Colors.white,
                     size: 24,
                   ),
                 ),
@@ -511,15 +509,15 @@ class AudioPlayerState extends State<AudioPlayerWidget>
               height: 40,
               width: 40,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(2),
               ),
               child: Icon(
                 audioPlayer?.playing == true &&
                         audioPlayer?.isAtEndPosition == false
                     ? Icons.pause_outlined
                     : Icons.play_arrow,
-                color: Theme.of(context).colorScheme.onPrimary,
+                color: Colors.white,
               ),
             ),
     );

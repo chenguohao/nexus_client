@@ -331,7 +331,7 @@ class ChatAppBarTitleText extends StatelessWidget {
         : ChatAppBarTitleStyle.offlineStatusTextStyle(context);
 
     return Text(
-      text,
+      text.toUpperCase(),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
       style: statusTextStyle,

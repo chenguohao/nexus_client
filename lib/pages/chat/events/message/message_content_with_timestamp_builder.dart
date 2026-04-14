@@ -268,16 +268,8 @@ class _MessageContentWithTimestampBuilderState
                                           return ReactionsDialogWidget(
                                             messageWidget: Material(
                                               color: widget.event.isOwnMessage
-                                                  ? LinagoraRefColors.material()
-                                                        .primary[95]
-                                                  : _responsiveUtils.isMobile(
-                                                      context,
-                                                    )
-                                                  ? LinagoraSysColors.material()
-                                                        .onPrimary
-                                                  : Theme.of(context)
-                                                        .colorScheme
-                                                        .surfaceContainerHighest,
+                                                  ? MessageStyle.ownBubbleColor
+                                                  : MessageStyle.otherBubbleColor,
                                               shape: RoundedRectangleBorder(
                                                 borderRadius: MessageStyle
                                                     .bubbleBorderRadius,
@@ -578,17 +570,32 @@ class _MessageContentWithTimestampBuilderState
               : BoxDecoration(
                   borderRadius: MessageStyle.bubbleBorderRadius,
                   color: widget.event.isOwnMessage
-                      ? LinagoraRefColors.material().primary[95]
-                      : _responsiveUtils.isMobile(context)
-                      ? LinagoraSysColors.material().onPrimary
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                      ? MessageStyle.ownBubbleColor
+                      : MessageStyle.otherBubbleColor,
                   border: enableBorder
-                      ? (!widget.event.isOwnMessage &&
-                                _responsiveUtils.isMobile(context)
-                            ? Border.all(
-                                color: MessageStyle.borderColorReceivedBubble,
-                              )
-                            : null)
+                      ? Border(
+                          left: widget.event.isOwnMessage
+                              ? BorderSide.none
+                              : const BorderSide(
+                                  color: Color(0xFF474747),
+                                  width: 2,
+                                ),
+                          right: widget.event.isOwnMessage
+                              ? const BorderSide(
+                                  color: Colors.white,
+                                  width: 2,
+                                )
+                              : BorderSide.none,
+                        )
+                      : null,
+                  boxShadow: widget.event.isOwnMessage
+                      ? [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            offset: const Offset(0, 2),
+                            blurRadius: 8,
+                          ),
+                        ]
                       : null,
                 ),
           padding:
