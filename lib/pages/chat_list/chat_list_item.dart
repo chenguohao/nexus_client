@@ -5,7 +5,7 @@ import 'package:fluffychat/pages/chat_list/chat_list_item_title.dart';
 import 'package:fluffychat/utils/dialog/twake_dialog.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/utils/twake_snackbar.dart';
-import 'package:fluffychat/widgets/avatar/avatar.dart';
+import 'package:fluffychat/widgets/avatar/room_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
@@ -112,8 +112,8 @@ class ChatListItem extends StatelessWidget with ChatListItemMixin {
                 if (isEnableSelectMode) checkBoxWidget ?? const SizedBox(),
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 14),
-                  child: Avatar(
-                    mxContent: room.avatar,
+                  child: RoomAvatar(
+                    room: room,
                     name: displayName,
                     size: 60,
                     onTap: onTapAvatar,

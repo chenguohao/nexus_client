@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dartz/dartz.dart';
 import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
@@ -11,6 +13,34 @@ import 'package:fluffychat/utils/power_level_manager.dart';
 import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
 
+/// Matrix SDK [Client.getWellknown] always uses `https://<mxid-domain>/.well-known/...`.
+/// Local Dendrite often uses `server_name: localhost` while the client connects to
+/// `http://127.0.0.1:8008`, so discovery hits `https://localhost` (nothing listening).
+/// Dendrite still serves the same JSON at the client base URL; fetch it on failure.
+Future<DiscoveryInformation> _discoveryForSupportChat(Client client) async {
+  try {
+    return await client.getWellknown();
+  } catch (e, s) {
+    Logs().w(
+      'CreateSupportChatInteractor: getWellknown failed, trying homeserver URL',
+      e,
+      s,
+    );
+    final hs = client.homeserver;
+    if (hs == null) rethrow;
+    final uri = hs.replace(path: '/.well-known/matrix/client');
+    final response = await client.httpClient.get(uri);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        'Well-known via homeserver failed: HTTP ${response.statusCode} ($uri)',
+      );
+    }
+    return DiscoveryInformation.fromJson(
+      jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, Object?>,
+    );
+  }
+}
+
 class CreateSupportChatInteractor {
   const CreateSupportChatInteractor();
 
@@ -22,7 +52,7 @@ class CreateSupportChatInteractor {
     String? roomId;
     String? userId;
     try {
-      final discovery = await client.getWellknown();
+      final discovery = await _discoveryForSupportChat(client);
       final supportChatTwakeId =
           (discovery.additionalProperties[WellKnownMixin.twakeChatKey]
               as Map?)?[WellKnownMixin.supportContact];

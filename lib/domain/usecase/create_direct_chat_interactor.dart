@@ -57,19 +57,44 @@ class CreateDirectChatInteractor {
           } else if (room.membership == Membership.invite) {
             // Case 2: Pending invite - accept and wait for sync
             await room.join();
-            // Wait for sync to update membership status before checking
             if (waitForSync) {
               await client.waitForRoomInSync(directChatRoomId, join: true);
             }
-            // After sync, verify membership is not leave
             final updatedRoom = client.getRoomById(directChatRoomId);
             if (updatedRoom != null &&
                 updatedRoom.membership == Membership.join) {
               yield Right(CreateDirectChatSuccess(roomId: directChatRoomId));
               return;
             }
+          } else if (room.membership == Membership.leave) {
+            // Case 3: Left room - check if the other party is still in it.
+            // If so, rejoin the existing room to avoid duplicate conversations.
+            // If the room is empty (everyone left), create a new one instead.
+            final otherMember = room
+                .getParticipants()
+                .where((u) => u.id != client.userID)
+                .toList();
+            final otherStillIn = otherMember.any(
+              (u) => u.membership == Membership.join || u.membership == Membership.invite,
+            );
+            if (otherStillIn) {
+              try {
+                await room.join();
+                if (waitForSync) {
+                  await client.waitForRoomInSync(directChatRoomId, join: true);
+                }
+                final rejoinedRoom = client.getRoomById(directChatRoomId);
+                if (rejoinedRoom != null &&
+                    rejoinedRoom.membership == Membership.join) {
+                  yield Right(CreateDirectChatSuccess(roomId: directChatRoomId));
+                  return;
+                }
+              } catch (e) {
+                Logs().w('Rejoin failed, will create a new room', e);
+              }
+            }
           }
-          // Case 3: Left room - continue to create new room below
+          // Case 4: Rejoin failed or room is empty - create new room below
         }
       }
 

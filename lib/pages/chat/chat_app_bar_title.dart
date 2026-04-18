@@ -22,7 +22,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:matrix/matrix.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
-import 'package:fluffychat/widgets/avatar/avatar.dart';
+import 'package:fluffychat/widgets/avatar/room_avatar.dart';
 
 class ChatAppBarTitle extends StatelessWidget {
   final Widget? actions;
@@ -117,9 +117,9 @@ class ChatAppBarTitle extends StatelessWidget {
                         .get<ContactsManager>()
                         .getContactsNotifier(),
                     builder: (context, state, child) {
-                      return Avatar(
+                      return RoomAvatar(
                         fontSize: ChatAppBarTitleStyle.avatarFontSize,
-                        mxContent: room!.avatar,
+                        room: room!,
                         name: _getRoomName(context, state),
                         size: ChatAppBarTitleStyle.avatarSize(context),
                       );
