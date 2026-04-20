@@ -31,20 +31,35 @@ abstract class ClientManager {
       clientNames.add(PlatformInfos.clientName);
       await Store().setItem(clientNamespace, jsonEncode(clientNames.toList()));
     }
-    final clients = await Future.wait(clientNames.map(createClient));
+    final nameList = clientNames.toList();
+    final clients = <Client>[];
+    for (final name in nameList) {
+      clients.add(await createClient(name));
+    }
     if (initialize) {
-      await Future.wait(
-        clients.map(
-          (client) => client
-              .init(
-                waitForFirstSync: false,
-                waitUntilLoadCompletedLoaded: false,
-              )
-              .catchError(
-                (e, s) => Logs().e('Unable to initialize client', e, s),
-              ),
-        ),
-      );
+      for (var i = 0; i < clients.length; i++) {
+        final name = nameList[i];
+        try {
+          await clients[i].init(
+            waitForFirstSync: false,
+            waitUntilLoadCompletedLoaded: false,
+          );
+        } catch (e, s) {
+          Logs().e('Unable to initialize client $name', e, s);
+          try {
+            await clients[i].dispose();
+          } catch (_) {}
+          clients[i] = await createClient(name);
+          try {
+            await clients[i].init(
+              waitForFirstSync: false,
+              waitUntilLoadCompletedLoaded: false,
+            );
+          } catch (e2, s2) {
+            Logs().e('Unable to initialize fresh client $name', e2, s2);
+          }
+        }
+      }
     }
     if (clients.length > 1 && clients.any((c) => !c.isLogged())) {
       final loggedOutClients = clients.where((c) => !c.isLogged()).toList();

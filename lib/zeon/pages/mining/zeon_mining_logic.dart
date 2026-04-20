@@ -174,6 +174,13 @@ class ZeonMiningLogic {
     final salt = raw.sublist(0, 16);
     final iv = raw.sublist(16, 32);
     final cipherBytes = raw.sublist(32);
+    if (cipherBytes.isEmpty || cipherBytes.length % 16 != 0) {
+      throw FormatException(
+        'Encrypted payload has invalid length (${cipherBytes.length} bytes). '
+        'The key card image may be re-compressed or edited; use the original '
+        'PNG from your gallery or a copy where the QR code is still sharp.',
+      );
+    }
 
     final derivator = pc.PBKDF2KeyDerivator(pc.HMac(pc.SHA256Digest(), 64))
       ..init(pc.Pbkdf2Parameters(salt, 100000, 32));

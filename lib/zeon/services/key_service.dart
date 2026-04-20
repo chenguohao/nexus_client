@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:convert/convert.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pointycastle/export.dart';
+import 'package:web3dart/crypto.dart' show keccak256, privateKeyBytesToPublic;
 import 'package:web3dart/web3dart.dart';
 
 class KeyService {
@@ -44,6 +45,15 @@ class KeyService {
   }
 
   String address(EthPrivateKey privateKey) => privateKey.address.hexEip55;
+
+  /// Matrix `POST /quick-login` password: first 16 bytes of Keccak256(pubX‖pubY)
+  /// as 32 hex chars (pub = 64-byte uncompressed form without 0x04). Matches
+  /// [services.DeriveMatrixQuickLoginPassword] on zeon_server for mining registration.
+  String matrixQuickLoginPassword(EthPrivateKey privateKey) {
+    final pub64 = privateKeyBytesToPublic(privateKey.privateKey);
+    final h = keccak256(pub64);
+    return hex.encode(h.sublist(0, 16));
+  }
 
   Future<EthPrivateKey> _generateAndStore() async {
     dev.log('[KeyService] Generating new secp256k1 key pair…', name: 'KeyService');

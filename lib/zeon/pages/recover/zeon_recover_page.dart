@@ -11,6 +11,8 @@ import '../../../widgets/matrix.dart';
 import '../../services/api_service.dart';
 import '../../services/key_service.dart';
 import '../../services/steganography_service.dart';
+import '../../services/zeon_key_card_qr_decode.dart';
+import '../../services/zeon_matrix_client_database.dart';
 import '../mining/zeon_mining_logic.dart' show ZeonMiningLogic;
 
 class ZeonRecoverPage extends StatefulWidget {
@@ -33,8 +35,11 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
   }
 
   Future<void> _startRecovery() async {
-    // Step 1: Pick image from gallery
-    final file = await _imagePicker.pickImage(source: ImageSource.gallery);
+    // Step 1: Pick image from gallery (full quality — LSB payload is fragile).
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 100,
+    );
     if (file == null) {
       if (mounted) context.go('/home');
       return;
@@ -42,10 +47,11 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
 
     if (!mounted) return;
 
-    // Step 2: Extract encrypted data via LSB
-    String encryptedHex;
+    // Step 2: Encrypted key from LSB and/or QR (QR survives JPEG re-compression).
+    final imageBytes = await File(file.path).readAsBytes();
+
+    String? lsbEncryptedHex;
     try {
-      final imageBytes = await File(file.path).readAsBytes();
       final codec = await ui.instantiateImageCodec(imageBytes);
       final frame = await codec.getNextFrame();
       final image = frame.image;
@@ -54,18 +60,41 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
       if (byteData == null) throw Exception('Failed to decode image');
 
       final rgbaBytes = byteData.buffer.asUint8List();
-      encryptedHex = _steg.extract(rgbaBytes);
-    } catch (e) {
+      lsbEncryptedHex = _steg.extract(rgbaBytes);
+    } catch (_) {
+      lsbEncryptedHex = null;
+    }
+
+    final qrEncryptedHex = ZeonKeyCardQrDecode.tryDecodeEncryptedHex(imageBytes);
+
+    if (lsbEncryptedHex == null && qrEncryptedHex == null) {
       if (mounted) {
         await _showResultDialog(
           success: false,
           title: 'INVALID IMAGE',
-          message: 'This image does not contain a valid Zeon key card.\n\n$e',
+          message:
+              'Could not read a Zeon key from this image (hidden data and QR). '
+              'Use the original key card photo from your gallery, or a clear '
+              'shot where the QR is readable.\n',
         );
         if (mounted) context.go('/home');
       }
       return;
     }
+
+    final decryptCandidates = <MapEntry<String, String>>[
+      if (lsbEncryptedHex != null) MapEntry('lsb', lsbEncryptedHex),
+      if (qrEncryptedHex != null &&
+          qrEncryptedHex.toLowerCase() != lsbEncryptedHex?.toLowerCase())
+        MapEntry('qr', qrEncryptedHex),
+    ];
+
+    Logs().i(
+      'ZeonRecover: imageSize=${imageBytes.length}B '
+      'lsb=${lsbEncryptedHex != null} qr=${qrEncryptedHex != null} '
+      'decryptCandidates=${decryptCandidates.map((c) => c.key).join(",")} '
+      'hexLens=${decryptCandidates.map((c) => c.value.length).join(",")}',
+    );
 
     if (!mounted) return;
 
@@ -83,21 +112,63 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
 
     if (!mounted) return;
 
-    // Step 4: Decrypt and login
+    // Step 4: Decrypt and login (try LSB payload first, then QR if needed).
     try {
-      final privateKeyHex =
-          ZeonMiningLogic.decryptPrivateKey(encryptedHex, password);
+      String privateKeyHex = '';
+      Object? decryptError;
+      var decryptSource = '';
+      for (final c in decryptCandidates) {
+        try {
+          privateKeyHex = ZeonMiningLogic.decryptPrivateKey(
+            c.value,
+            password,
+          );
+          decryptSource = c.key;
+          decryptError = null;
+          break;
+        } catch (e, st) {
+          Logs().w('ZeonRecover: decrypt failed source=${c.key}: $e\n$st');
+          decryptError = e;
+        }
+      }
+      if (privateKeyHex.isEmpty) {
+        throw decryptError ?? Exception('Decryption failed');
+      }
+
+      Logs().i(
+        'ZeonRecover: decrypt OK source=$decryptSource '
+        'privKeyHexLen=${privateKeyHex.length} '
+        '(password not logged)',
+      );
 
       if (!mounted) return;
 
       // Import key into secure storage
       final privateKey = await _keyService.importPrivateKey(privateKeyHex);
       final walletAddress = _keyService.address(privateKey);
+      final quickLoginUser = walletAddress
+          .toLowerCase()
+          .replaceAll('0x', '')
+          .substring(0, 16);
 
-      // Login via Zeon API
+      final matrixPassword = _keyService.matrixQuickLoginPassword(privateKey);
+
+      Logs().i(
+        'ZeonRecover: wallet=${_maskAddr(walletAddress)} '
+        'quickLoginUser=$quickLoginUser '
+        'matrixPasswordLen=${matrixPassword.length} '
+        'apiBase=${_apiService.baseUrl}',
+      );
+
+      // Login via Zeon API (password derived from pubkey; matches /submit-mining registration)
       final loginResponse = await _apiService.quickLogin(
-        username: walletAddress.toLowerCase().replaceAll('0x', '').substring(0, 16),
-        password: privateKeyHex.substring(0, 32),
+        username: quickLoginUser,
+        password: matrixPassword,
+      );
+
+      Logs().i(
+        'ZeonRecover: quickLogin OK matrixUserId=${loginResponse.matrixUserId} '
+        'deviceId=${loginResponse.deviceId}',
       );
 
       if (!mounted) return;
@@ -112,6 +183,7 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
       if (!mounted) return;
 
       if (loginError != null) {
+        Logs().w('ZeonRecover: Matrix client init failed: $loginError');
         await _showResultDialog(
           success: false,
           title: 'LOGIN FAILED',
@@ -122,7 +194,8 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
       }
 
       context.go('/rooms');
-    } catch (e) {
+    } catch (e, st) {
+      Logs().w('ZeonRecover: RECOVERY FAILED: $e\n$st');
       if (mounted) {
         await _showResultDialog(
           success: false,
@@ -132,6 +205,12 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
         if (mounted) context.go('/home');
       }
     }
+  }
+
+  static String _maskAddr(String addr) {
+    final a = addr.startsWith('0x') ? addr : '0x$addr';
+    if (a.length <= 14) return a;
+    return '${a.substring(0, 8)}…${a.substring(a.length - 6)}';
   }
 
   Future<String?> _loginMatrixClient({
@@ -144,6 +223,13 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
       _apiService.baseUrl.replaceFirst(':8080', ':8008'),
     );
     Logs().i('ZeonRecoverPage: logging in as $matrixUserId to $homeserverUri');
+
+    try {
+      await ZeonMatrixClientDatabase.ensureOpenBeforeInit(client);
+    } catch (e, st) {
+      Logs().w('ZeonRecoverPage: ensureOpenBeforeInit: $e\n$st');
+      return 'Matrix store could not be opened: $e';
+    }
 
     try {
       await client.checkHomeserver(homeserverUri, checkWellKnown: false);

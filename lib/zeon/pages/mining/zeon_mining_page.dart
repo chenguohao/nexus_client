@@ -13,6 +13,7 @@ import 'package:fluffychat/domain/model/tom_server_information.dart';
 import '../../services/api_service.dart';
 import '../../services/key_service.dart';
 import '../../services/mining_service.dart';
+import '../../services/zeon_matrix_client_database.dart';
 import '../../../widgets/matrix.dart';
 
 // ── Phase enum ────────────────────────────────────────────────────────────────
@@ -223,6 +224,13 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
       _apiService.baseUrl.replaceFirst(':8080', ':8008'),
     );
     Logs().i('ZeonMiningPage: logging in as $matrixUserId to $homeserverUri');
+
+    try {
+      await ZeonMatrixClientDatabase.ensureOpenBeforeInit(client);
+    } catch (e, st) {
+      Logs().w('ZeonMiningPage: ensureOpenBeforeInit: $e\n$st');
+      return 'Matrix store could not be opened: $e';
+    }
 
     try {
       await client.checkHomeserver(homeserverUri, checkWellKnown: false);

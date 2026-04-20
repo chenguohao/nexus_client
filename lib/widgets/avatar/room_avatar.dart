@@ -149,21 +149,18 @@ class _GroupGridAvatarState extends State<_GroupGridAvatar> {
 
   @override
   Widget build(BuildContext context) {
-    // We reserve the bottom-right cell for the total group member count,
-    // so only up to 3 members (indices 0..2) go into avatar slots.
-    final members = _pickTopMembers().take(3).toList();
+    final members = _pickTopMembers();
     // `actualMembersCount` sums joined + invited and is the value already
     // used elsewhere (e.g. chat details subtitle), so it is the most stable
     // source of truth for the total headcount.
     final totalCount = widget.room.summary.actualMembersCount;
+    // Only show the `+N` badge when there are members beyond the 3 we can
+    // render as avatars. For groups with <= 3 members everyone fits in the
+    // first three cells, so the bottom-right cell stays empty.
+    final extra = totalCount > members.length ? totalCount - members.length : 0;
     final cellSize = (widget.size - _gap) / 2;
 
     Widget cell(int index) {
-      if (index == 3) {
-        // Bottom-right is ALWAYS the group head-count badge so the user
-        // can glance at the chat list and instantly know how big the group is.
-        return _CountCell(count: totalCount, size: cellSize);
-      }
       if (index < members.length) {
         final user = members[index];
         return _MemberCell(
@@ -171,6 +168,9 @@ class _GroupGridAvatarState extends State<_GroupGridAvatar> {
           name: user.calcDisplayname(),
           size: cellSize,
         );
+      }
+      if (index == 3 && extra > 0) {
+        return _CountCell(count: extra, size: cellSize);
       }
       return const _EmptyCell();
     }
@@ -269,11 +269,13 @@ class _CountCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Cap display so the text never overflows the tiny cell.
-    final text = count >= 100 ? '99+' : count.toString();
-    // Scale the font a bit smaller when the text gets longer (e.g. 3 chars)
-    // so the number stays centred and readable.
-    final fontScale = text.length >= 3 ? 0.28 : 0.36;
+    // Always render with a leading `+` so the badge never gets confused with
+    // a member initial placeholder (e.g. a user whose name starts with a
+    // digit). 100+ collapses to `99+` to keep the cell readable.
+    final text = count >= 100 ? '99+' : '+$count';
+    // Shrink the font when we have 3 characters (e.g. `+12`, `99+`) so the
+    // number still fits comfortably.
+    final fontScale = text.length >= 3 ? 0.3 : 0.36;
     return Container(
       color: _GroupGridAvatarState._countBgColor,
       alignment: Alignment.center,

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
@@ -83,6 +84,10 @@ class ApiService {
         final json = jsonDecode(response.body) as Map<String, dynamic>;
         message = json['error'] as String? ?? message;
       } catch (_) {}
+      developer.log(
+        'status=${response.statusCode} body=${response.body}',
+        name: 'ZeonApi.$endpoint',
+      );
       throw ApiException('[$endpoint] $message');
     }
   }
