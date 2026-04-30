@@ -352,7 +352,9 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
         return;
       }
 
-      context.go('/rooms');
+      // Take the freshly-registered user through the profile-setup step.
+      // Skipping that step (or completing it) will navigate to /rooms.
+      context.go('/profile-setup');
     } catch (e) {
       if (mounted) _showSaveError('Failed to save key card: $e');
     } finally {

@@ -38,6 +38,7 @@ import 'package:fluffychat/widgets/layouts/agruments/app_adaptive_scaffold_body_
 import 'package:fluffychat/widgets/log_view.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/zeon/pages/mining/zeon_mining_page.dart';
+import 'package:fluffychat/zeon/pages/profile_setup/zeon_profile_setup_page.dart';
 import 'package:fluffychat/zeon/pages/recover/zeon_recover_page.dart';
 import 'package:fluffychat/zeon/pages/welcome/zeon_welcome_page.dart';
 import 'package:flutter/cupertino.dart';
@@ -91,6 +92,15 @@ abstract class AppRoutes {
           redirect: loggedInRedirect,
         ),
       ],
+    ),
+    // Post-registration profile setup. Reachable only after a fresh
+    // registration (i.e. user is already logged-in), so we deliberately do
+    // NOT attach `loggedInRedirect` here — otherwise the user would be sent
+    // straight to /rooms and never see this page.
+    GoRoute(
+      path: '/profile-setup',
+      pageBuilder: (context, state) =>
+          defaultPageBuilder(context, const ZeonProfileSetupPage()),
     ),
     GoRoute(
       path: '/logs',
