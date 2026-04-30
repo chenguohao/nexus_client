@@ -41,17 +41,20 @@ enum AdaptiveDestinationEnum {
           ),
         );
       case AdaptiveDestinationEnum.settings:
+        // Despite the enum name being "settings" for backwards compatibility,
+        // this destination now renders the Zeon Profile page (Sovereign style)
+        // which contains the Settings shortcut as one of its list items.
         return const NavigationDestination(
-          key: Key('settings_navigation_destination'),
+          key: Key('profile_navigation_destination'),
           icon: TwakeNavigationIcon(
             color: Color(0xFFC6C6C6),
-            icon: Icons.settings_outlined,
+            icon: Icons.person_outline,
           ),
           selectedIcon: TwakeNavigationIcon(
-            icon: Icons.settings,
+            icon: Icons.person,
             isSelected: true,
           ),
-          label: 'SETTINGS',
+          label: 'PROFILE',
         );
     }
   }
@@ -75,9 +78,9 @@ enum AdaptiveDestinationEnum {
         );
       case AdaptiveDestinationEnum.settings:
         return const BottomNavigationBarItem(
-          icon: Icon(Icons.settings_outlined, color: Color(0xFF919191)),
-          activeIcon: Icon(Icons.settings, color: Colors.white),
-          label: 'SETTINGS',
+          icon: Icon(Icons.person_outline, color: Color(0xFF919191)),
+          activeIcon: Icon(Icons.person, color: Colors.white),
+          label: 'PROFILE',
         );
     }
   }

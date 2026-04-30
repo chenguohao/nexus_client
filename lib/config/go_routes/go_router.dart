@@ -38,6 +38,7 @@ import 'package:fluffychat/widgets/layouts/agruments/app_adaptive_scaffold_body_
 import 'package:fluffychat/widgets/log_view.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/zeon/pages/mining/zeon_mining_page.dart';
+import 'package:fluffychat/zeon/pages/profile/zeon_profile_page.dart';
 import 'package:fluffychat/zeon/pages/profile_setup/zeon_profile_setup_page.dart';
 import 'package:fluffychat/zeon/pages/recover/zeon_recover_page.dart';
 import 'package:fluffychat/zeon/pages/welcome/zeon_welcome_page.dart';
@@ -261,6 +262,15 @@ abstract class AppRoutes {
                     redirect: loggedOutRedirect,
                   ),
               ],
+            ),
+            // Zeon "我的" / Profile entry — Sovereign-style profile screen.
+            // Shows avatar / nickname / UID, the locally-held wallet address
+            // (only visible to self), and the settings shortcut list.
+            GoRoute(
+              path: 'me',
+              pageBuilder: (context, state) =>
+                  defaultPageBuilder(context, const ZeonProfilePage()),
+              redirect: loggedOutRedirect,
             ),
             GoRoute(
               path: 'notifications',
