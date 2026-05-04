@@ -2680,7 +2680,7 @@
   "chatFolders": "Chat Folders",
   "displayName": "Display Name",
   "bio": "Bio (optional)",
-  "matrixId": "Matrix ID",
+  "matrixId": "Zeon ID",
   "email": "Email",
   "company": "Company",
   "basicInfo": "BASIC INFO",

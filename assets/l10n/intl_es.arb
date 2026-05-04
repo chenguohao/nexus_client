@@ -2435,7 +2435,7 @@
   "disable_notifications": "Desactivar notificaciones",
   "contactsCount": "Contactos ({count})",
   "newDirectMessage": "Mensaje directo nuevo",
-  "matrixId": "Identificador Matrix",
+  "matrixId": "Zeon ID",
   "notificationAndSounds": "Notificaciones y sonidos",
   "errorGettingPdf": "Error al obtener el PDF",
   "paste": "Pegar",
