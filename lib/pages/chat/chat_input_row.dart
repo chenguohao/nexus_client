@@ -67,8 +67,8 @@ class ChatInputRow extends StatelessWidget {
                                   size:
                                       ChatInputRowStyle.chatInputRowMoreBtnSize,
                                   tooltip: L10n.of(context)!.more,
-                                  icon: Icons.add_circle,
-                                  iconColor: const Color(0xFFC6C6C6),
+                                  icon: Icons.add,
+                                  iconColor: Colors.white,
                                   onTap: () =>
                                       controller.onSendFileClick(context),
                                 ),

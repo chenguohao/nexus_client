@@ -93,7 +93,7 @@ class ChatEventList extends StatelessWidget {
 
   Widget _chatEmptyBuilder(Timeline timeline) {
     if (controller.room?.isDirectChat ?? true) {
-      return DraftChatEmpty(onTap: () => controller.inputFocus.requestFocus());
+      return const DraftChatEmpty();
     } else {
       return _groupChatEmptyBuilder(timeline);
     }

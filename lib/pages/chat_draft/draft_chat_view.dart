@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
@@ -16,6 +18,7 @@ import 'package:fluffychat/pages/chat_draft/draft_chat_view_style.dart';
 import 'package:fluffychat/pages/contacts_tab/widgets/add_contact/add_contact_dialog.dart';
 import 'package:fluffychat/resource/image_paths.dart';
 import 'package:fluffychat/utils/android_utils.dart';
+import 'package:fluffychat/utils/date_time_extension.dart';
 import 'package:fluffychat/utils/string_extension.dart';
 import 'package:fluffychat/widgets/avatar/avatar.dart';
 import 'package:fluffychat/widgets/matrix.dart';
@@ -43,25 +46,25 @@ class DraftChatView extends StatelessWidget {
       },
       child: KeyboardDismissOnTap(
         child: Scaffold(
-          backgroundColor: DraftChatViewStyle.responsive.isMobile(context)
-              ? LinagoraSysColors.material().background
-              : LinagoraSysColors.material().onPrimary,
+          backgroundColor: const Color(0xFF131314),
           appBar: AppBar(
-            backgroundColor: DraftChatViewStyle.responsive.isMobile(context)
-                ? LinagoraSysColors.material().surface
-                : LinagoraSysColors.material().onPrimary,
+            backgroundColor: const Color(0xFF131314).withOpacity(0.80),
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
             automaticallyImplyLeading: false,
             toolbarHeight: ChatViewStyle.appBarHeight(context),
+            iconTheme: const IconThemeData(color: Colors.white),
             title: Padding(
               padding: ChatViewStyle.paddingLeading(context),
               child: Row(
                 children: [
                   DraftChatViewStyle.responsive.isMobile(context)
                       ? Padding(
-                          padding: const EdgeInsets.only(left: 12),
+                          padding: const EdgeInsets.only(left: 8, right: 4),
                           child: TwakeIconButton(
                             tooltip: L10n.of(context)!.back,
-                            icon: Icons.arrow_back_ios,
+                            icon: Icons.arrow_back,
+                            iconColor: Colors.white,
                             onTap: () => context.pop(),
                             paddingAll: 8.0,
                             margin: const EdgeInsets.symmetric(vertical: 12.0),
@@ -81,9 +84,7 @@ class DraftChatView extends StatelessWidget {
             bottom: PreferredSize(
               preferredSize: const Size(double.infinity, 1),
               child: Container(
-                color: LinagoraStateLayer(
-                  LinagoraSysColors.material().surfaceTint,
-                ).opacityLayer1,
+                color: Colors.white.withOpacity(0.10),
                 height: 1,
               ),
             ),
@@ -112,9 +113,7 @@ class DraftChatView extends StatelessWidget {
                     onDragDone: (details) => controller.handleDragDone(details),
                     onDragEntered: controller.onDragEntered,
                     onDragExited: controller.onDragExited,
-                    child: DraftChatEmpty(
-                      onTap: () => controller.handleDraftAction(context),
-                    ),
+                    child: const DraftChatEmpty(),
                   ),
                 ),
               ),
@@ -128,18 +127,12 @@ class DraftChatView extends StatelessWidget {
                   return const BlockedMessageView();
                 },
                 child: Container(
-                  decoration: DraftChatViewStyle.responsive.isMobile(context)
-                      ? BoxDecoration(
-                          color: LinagoraSysColors.material().surface,
-                          border: Border(
-                            top: BorderSide(
-                              color: LinagoraStateLayer(
-                                LinagoraSysColors.material().surfaceTint,
-                              ).opacityLayer3,
-                            ),
-                          ),
-                        )
-                      : null,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF131314),
+                    border: Border(
+                      top: BorderSide(color: Color(0x0DFFFFFF)),
+                    ),
+                  ),
                   padding: EdgeInsets.only(
                     top: 8,
                     bottom: DraftChatViewStyle.bottomBarInputPadding(context),
@@ -319,7 +312,7 @@ class DraftChatView extends StatelessWidget {
   }
 }
 
-class _EmptyChatTitle extends StatelessWidget {
+class _EmptyChatTitle extends StatefulWidget {
   const _EmptyChatTitle({
     required this.receiverId,
     this.displayName,
@@ -333,65 +326,181 @@ class _EmptyChatTitle extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<_EmptyChatTitle> createState() => _EmptyChatTitleState();
+}
+
+class _EmptyChatTitleState extends State<_EmptyChatTitle> {
+  Profile? _profile;
+  CachedPresence? _presence;
+  StreamSubscription<CachedPresence>? _presenceSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _loadProfile();
+      _loadPresence();
+      _listenPresence();
+    });
+  }
+
+  @override
+  void dispose() {
+    _presenceSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await Matrix.of(context).client.getProfileFromUserId(
+        widget.receiverId,
+        getFromRooms: false,
+      );
+      if (mounted) setState(() => _profile = profile);
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _profile = Profile(
+            avatarUrl: null,
+            displayName: null,
+            userId: widget.receiverId,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _loadPresence() async {
+    final client = Matrix.of(context).client;
+    final cached = client.presences[widget.receiverId];
+    if (cached != null && mounted) {
+      setState(() => _presence = cached);
+    }
+    try {
+      final response = await client.getPresence(widget.receiverId);
+      if (mounted) {
+        setState(
+          () => _presence = CachedPresence.fromPresenceResponse(
+            response,
+            widget.receiverId,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted && _presence == null) {
+        setState(
+          () => _presence = CachedPresence.neverSeen(widget.receiverId),
+        );
+      }
+    }
+  }
+
+  void _listenPresence() {
+    _presenceSub = Matrix.of(context).onLatestPresenceChanged.stream.listen((
+      event,
+    ) {
+      if (event.userid == widget.receiverId && mounted) {
+        setState(() => _presence = event);
+      }
+    });
+  }
+
+  String _localizedPresence(BuildContext context, CachedPresence? presence) {
+    final l10n = L10n.of(context)!;
+    if (presence == null) return l10n.loadingStatus;
+    if (presence.presence == PresenceType.online) return l10n.online;
+    final lastActive = presence.lastActiveTimestamp;
+    if (lastActive != null) {
+      final now = DateTime.now();
+      if (lastActive.isLessThanOneMinuteAgo()) return l10n.online;
+      if (lastActive.isLessThanOneHourAgo()) {
+        return l10n.onlineMinAgo(now.difference(lastActive).inMinutes);
+      }
+      if (lastActive.isLessThanADayAgo()) {
+        return l10n.onlineHourAgo(
+          (now.difference(lastActive).inMinutes / 60).round(),
+        );
+      }
+      if (lastActive.isLessThan30DaysAgo()) {
+        return l10n.onlineDayAgo(now.difference(lastActive).inDays);
+      }
+      return l10n.aWhileAgo;
+    }
+    return l10n.offline;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final name =
+        _profile?.displayName ?? widget.displayName ?? widget.receiverId;
+    final status = _localizedPresence(context, _presence).toUpperCase();
     return InkWell(
       splashColor: Colors.transparent,
       hoverColor: Colors.transparent,
       highlightColor: Colors.transparent,
-      onTap: onTap,
-      child: FutureBuilder<Profile>(
-        future: _getReceiverProfile(context, receiverId),
-        builder: (context, snapshot) {
-          return Row(
-            children: [
-              Padding(
-                padding: DraftChatViewStyle.emptyChatChildrenPadding,
-                child: Hero(
-                  tag: 'content_banner',
+      onTap: widget.onTap,
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 12),
+            child: Hero(
+              tag: 'content_banner',
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: ColorFiltered(
+                  colorFilter: const ColorFilter.matrix(<double>[
+                    0.2126, 0.7152, 0.0722, 0, 0,
+                    0.2126, 0.7152, 0.0722, 0, 0,
+                    0.2126, 0.7152, 0.0722, 0, 0,
+                    0, 0, 0, 1, 0,
+                  ]),
                   child: Avatar(
                     fontSize: ChatAppBarTitleStyle.avatarFontSize,
-                    mxContent: snapshot.data?.avatarUrl,
-                    name:
-                        snapshot.data?.displayName ?? displayName ?? receiverId,
+                    mxContent: _profile?.avatarUrl,
+                    name: name,
                     size: ChatAppBarTitleStyle.avatarSize(context),
                   ),
                 ),
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      (snapshot.data?.displayName ?? displayName ?? receiverId)
-                          .capitalize(context),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface,
-                        letterSpacing:
-                            ChatAppBarTitleStyle.letterSpacingRoomName,
-                      ),
-                    ),
-                  ],
+            ),
+          ),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name.capitalize(context),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Inter',
+                    letterSpacing: -0.3,
+                    height: 1.0,
+                  ),
                 ),
-              ),
-            ],
-          );
-        },
+                const SizedBox(height: 4),
+                Text(
+                  status,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0x99C6C6C6),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    fontFamily: 'Inter',
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
-  }
-
-  Future<Profile> _getReceiverProfile(
-    BuildContext context,
-    String receiverId,
-  ) async {
-    try {
-      return await Matrix.of(
-        context,
-      ).client.getProfileFromUserId(receiverId, getFromRooms: false);
-    } catch (e) {
-      return Profile(avatarUrl: null, displayName: null, userId: receiverId);
-    }
   }
 }

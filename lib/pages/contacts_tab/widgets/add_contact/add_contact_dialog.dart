@@ -157,6 +157,13 @@ class AddContactDialogController extends State<AddContactDialog> {
     );
 
     if (existedContact == null) {
+      // 预检：确认这个 mxid 在服务器上是真实存在的。
+      // 失败时把错误塞进 [usernameErrorMessage]，对话框会在 ZEON ID 输入框
+      // 下方直接显红字（snackbar 在 modal bottom sheet 里会被 sheet 自身遮住，
+      // 用户看不到）。
+      final exists = await _verifyUserExists(mxid);
+      if (!exists) return;
+
       final result =
           await TwakeDialog.showFutureLoadingDialogFullScreen<
             Either<Failure, Success>
@@ -206,6 +213,40 @@ class AddContactDialogController extends State<AddContactDialog> {
     }
 
     chatWithUser(mxid, contact: existedContact);
+  }
+
+  /// 调用 `client.getUserProfile()` 探测目标 mxid 是否真实存在。
+  /// - 存在 → 返回 true
+  /// - 服务器明确 404 (`M_NOT_FOUND`) → 返回 false 并把错误塞进
+  ///   [usernameErrorMessage]，UI 会在输入框下方直接显红字
+  /// - 其它异常（限流、网络）→ 返回 false 并显示通用错误
+  ///
+  /// 不在这里弹 snackbar，因为 modal bottom sheet 自身会盖住屏幕底部，
+  /// 用户看不到 snackbar；行内错误才是该对话框唯一可靠的反馈通道。
+  Future<bool> _verifyUserExists(String mxid) async {
+    final client = Matrix.of(context).client;
+    final result =
+        await TwakeDialog.showFutureLoadingDialogFullScreen<String?>(
+          future: () async {
+            try {
+              await client.getUserProfile(mxid);
+              return null; // 存在
+            } on MatrixException catch (e) {
+              if (e.error == MatrixError.M_NOT_FOUND) {
+                return 'This user does not exist.';
+              }
+              return 'Unable to verify user: ${e.errorMessage}';
+            } catch (_) {
+              return 'Unable to verify user. Please try again.';
+            }
+          },
+        );
+    final errorMessage = result.result;
+    if (errorMessage != null) {
+      usernameErrorMessage.value = errorMessage;
+      return false;
+    }
+    return true;
   }
 
   void chatWithUser(String matrixId, {PresentationContact? contact}) {

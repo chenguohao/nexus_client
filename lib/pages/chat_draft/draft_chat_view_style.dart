@@ -3,8 +3,6 @@ import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/pages/chat/chat_input_row_style.dart';
 import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class DraftChatViewStyle {
   static ResponsiveUtils responsive = getIt.get<ResponsiveUtils>();
@@ -18,15 +16,16 @@ class DraftChatViewStyle {
 
   static InputDecoration bottomBarInputDecoration(BuildContext context) =>
       InputDecoration(
-        hintText: L10n.of(context)!.message,
+        hintText: 'EXECUTE MESSAGE...',
         isDense: true,
         hintMaxLines: 1,
         contentPadding: ChatInputRowStyle.contentPadding(context),
-        hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: responsive.isMobile(context)
-              ? LinagoraRefColors.material().tertiary[50]
-              : LinagoraRefColors.material().tertiary[30],
+        hintStyle: TextStyle(
+          color: Colors.white.withOpacity(0.40),
           fontFamily: 'Inter',
+          fontSize: 13,
+          fontWeight: FontWeight.w400,
+          letterSpacing: 2.0,
         ),
       );
 

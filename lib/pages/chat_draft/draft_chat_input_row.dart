@@ -102,7 +102,8 @@ class DraftChatInputRow extends StatelessWidget {
                           child: TwakeIconButton(
                             size: ChatInputRowStyle.chatInputRowMoreBtnSize,
                             tooltip: L10n.of(context)!.more,
-                            icon: Icons.add_circle_outline,
+                            icon: Icons.add,
+                            iconColor: Colors.white,
                             onTap: () => onSendFileClick(context),
                           ),
                         );

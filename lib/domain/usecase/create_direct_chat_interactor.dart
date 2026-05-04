@@ -39,9 +39,16 @@ class CreateDirectChatInteractor {
       if (e.error == MatrixError.M_FORBIDDEN) {
         yield const Left(NoPermissionForCreateChat());
         return;
-      } else {
-        yield Left(CreateDirectChatFailed(exception: e));
       }
+      // 其他 Matrix 错误（M_NOT_FOUND / 限流 / 偶发网络异常）这里只是预检，
+      // 不能 yield Failure，否则会触发"创建失败"的 snackbar，但下面 createRoom
+      // 仍会成功并 yield Success，导致用户先看到一闪而过的失败提示再看到成功。
+      // 让 createRoom 成为唯一的真相源。
+      Logs().w(
+        'CreateDirectChatInteractor: getUserProfile($contactMxId) failed, '
+        'continuing anyway',
+        e,
+      );
     }
     String? roomId;
     try {
@@ -135,8 +142,15 @@ class CreateDirectChatInteractor {
         }
       }
 
-      // Mark as direct chat so both sides recognise it as a DM
+      // Mark as direct chat so both sides recognise it as a DM.
       await Room(id: roomId, client: client).addToDirectChat(contactMxId);
+
+      // `setAccountData` 只是把 m.direct 推到服务器，本地 client.accountData
+      // 要等下一次 /sync 回包才会刷新。这中间有几百毫秒的"窗口期"——在这段
+      // 时间里 room.isDirectChat 仍然是 false，ChatAppBarTitle 会按群聊展示
+      // ("N MEMBERS" + 群头像兜底)，造成一次很扎眼的视觉跳变。
+      // 这里直接乐观更新本地 accountData，让 isDirectChat 立刻为 true。
+      _patchLocalDirectChats(client, contactMxId, roomId);
 
       yield Right(CreateDirectChatSuccess(roomId: roomId));
     } catch (e, s) {
@@ -151,5 +165,26 @@ class CreateDirectChatInteractor {
       }
       yield Left(CreateDirectChatFailed(exception: e));
     }
+  }
+
+  /// 在 [Client.accountData] 的 `m.direct` 上乐观追加 (userId -> roomId)，
+  /// 让 [Room.isDirectChat] 这种依赖 m.direct 的读路径立刻看到 DM 标记，
+  /// 不必等待下一次 /sync 回包。
+  void _patchLocalDirectChats(Client client, String userId, String roomId) {
+    final raw = client.accountData['m.direct']?.content;
+    final patched = <String, Object?>{
+      if (raw != null) ...raw,
+    };
+    final existing = patched[userId];
+    final dmRooms = <String>[
+      if (existing is List) ...existing.whereType<String>(),
+    ];
+    if (dmRooms.contains(roomId)) return;
+    dmRooms.add(roomId);
+    patched[userId] = dmRooms;
+    client.accountData['m.direct'] = BasicEvent(
+      type: 'm.direct',
+      content: patched,
+    );
   }
 }
