@@ -146,10 +146,13 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
       // Import key into secure storage
       final privateKey = await _keyService.importPrivateKey(privateKeyHex);
       final walletAddress = _keyService.address(privateKey);
-      final quickLoginUser = walletAddress
-          .toLowerCase()
-          .replaceAll('0x', '')
-          .substring(0, 16);
+
+      // Resolve the wallet address to its 6-char UID (= Matrix localpart).
+      // The mapping lives server-side because UID generation may have used a
+      // collision-resolution salt that the client cannot reproduce locally.
+      final quickLoginUser = await _apiService.lookupUid(
+        walletAddress: walletAddress,
+      );
 
       final matrixPassword = _keyService.matrixQuickLoginPassword(privateKey);
 

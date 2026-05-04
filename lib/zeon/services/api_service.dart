@@ -77,6 +77,23 @@ class ApiService {
         jsonDecode(response.body) as Map<String, dynamic>);
   }
 
+  /// Resolves a wallet address to its 6-char Zeon UID, which is also the
+  /// Matrix localpart. Used by the key-card recovery flow before /quick-login.
+  Future<String> lookupUid({required String walletAddress}) async {
+    final uri = Uri.parse('$baseUrl/lookup-uid');
+    final body = jsonEncode({'wallet_address': walletAddress});
+    final response = await http
+        .post(uri, headers: {'Content-Type': 'application/json'}, body: body)
+        .timeout(const Duration(seconds: 10));
+    _assertOk(response, 'lookup-uid');
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    final uid = json['uid'] as String?;
+    if (uid == null || uid.isEmpty) {
+      throw const ApiException('[lookup-uid] empty uid in response');
+    }
+    return uid;
+  }
+
   void _assertOk(http.Response response, String endpoint) {
     if (response.statusCode != 200) {
       String message = 'HTTP ${response.statusCode}';

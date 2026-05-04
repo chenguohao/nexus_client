@@ -6,6 +6,7 @@ import 'package:matrix/matrix.dart';
 import '../../../pages/settings_dashboard/settings/settings.dart';
 import '../../../utils/platform_infos.dart';
 import '../../../widgets/matrix.dart';
+import '../../../widgets/zeon/zeon_profile_header.dart';
 import '../../services/key_service.dart';
 
 /// Zeon "我的" / Profile screen.
@@ -36,7 +37,6 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
 
   Uri? _avatarUri;
   String? _displayName;
-  String? _uid;
 
   String? _walletAddress;
   bool _walletVisible = false;
@@ -65,7 +65,6 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
       setState(() {
         _avatarUri = profile.avatarUrl;
         _displayName = profile.displayName;
-        _uid = userId.localpart;
       });
     } catch (e) {
       Logs().w('ZeonProfilePage: load profile failed: $e');
@@ -191,10 +190,10 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
     );
   }
 
-  void _onTapQrCode() {
-    if (PlatformInfos.isMobile) {
-      context.push('/rooms/profile/qr');
-    }
+  void _onTapWallet() {
+    // Reveals & scrolls to the wallet section. For now we just toggle the
+    // wallet visibility so the user instantly sees their address.
+    setState(() => _walletVisible = true);
   }
 
   // ── Build ──────────────────────────────────────────────────────────────
@@ -210,25 +209,25 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
             const IgnorePointer(child: _BackgroundGlow()),
             Column(
               children: [
-                _TopAppBar(onTapQr: _onTapQrCode),
+                _TopAppBar(onTapWallet: _onTapWallet),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 520),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const SizedBox(height: 24),
-                            _IdentitySection(
+                            const SizedBox(height: 16),
+                            ZeonProfileHeader(
                               avatarUri: _avatarUri,
-                              displayName: _displayName,
-                              uid: _uid,
-                              onCopyUid: () => _copy(_uid, 'UID'),
+                              displayName: _displayName ?? '',
+                              mxid: Matrix.of(context).client.userID,
+                              padding: EdgeInsets.zero,
                             ),
-                            const SizedBox(height: 40),
+                            const SizedBox(height: 36),
                             const _SectionLabel(text: 'WEB3 · 钱包'),
                             const SizedBox(height: 12),
                             _WalletSection(
@@ -288,35 +287,35 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _TopAppBar extends StatelessWidget {
-  final VoidCallback onTapQr;
+  final VoidCallback onTapWallet;
 
-  const _TopAppBar({required this.onTapQr});
+  const _TopAppBar({required this.onTapWallet});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 56,
+      height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 20),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: Color(0x14FFFFFF))),
       ),
       child: Row(
         children: [
-          const Icon(Icons.shield_outlined, color: Colors.white, size: 18),
-          const SizedBox(width: 10),
+          const Icon(Icons.shield, color: Colors.white, size: 20),
+          const SizedBox(width: 12),
           const Text(
             'ZEON',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
-              letterSpacing: 4.0,
+              letterSpacing: 5.4,
             ),
           ),
           const Spacer(),
           _CornerIconButton(
-            icon: Icons.qr_code_2,
-            onTap: onTapQr,
+            icon: Icons.account_balance_wallet_outlined,
+            onTap: onTapWallet,
           ),
         ],
       ),
@@ -356,169 +355,6 @@ class _CornerIconButtonState extends State<_CornerIconButton> {
           ),
           child: Icon(widget.icon, color: Colors.white, size: 20),
         ),
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Section: Identity (avatar + nickname + UID)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _IdentitySection extends StatelessWidget {
-  final Uri? avatarUri;
-  final String? displayName;
-  final String? uid;
-  final VoidCallback onCopyUid;
-
-  const _IdentitySection({
-    required this.avatarUri,
-    required this.displayName,
-    required this.uid,
-    required this.onCopyUid,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        _AvatarTile(uri: avatarUri),
-        const SizedBox(height: 28),
-        Text(
-          displayName == null || displayName!.isEmpty ? '——' : displayName!,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 36,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.5,
-            height: 1.05,
-          ),
-        ),
-        const SizedBox(height: 16),
-        _UidBadge(uid: uid, onCopy: onCopyUid),
-      ],
-    );
-  }
-}
-
-class _AvatarTile extends StatelessWidget {
-  final Uri? uri;
-
-  const _AvatarTile({required this.uri});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 144,
-      height: 144,
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1B1C),
-        border: Border.all(color: const Color(0x33474747)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 24,
-            spreadRadius: 1,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: _AvatarImage(uri: uri),
-    );
-  }
-}
-
-class _AvatarImage extends StatelessWidget {
-  final Uri? uri;
-
-  const _AvatarImage({required this.uri});
-
-  @override
-  Widget build(BuildContext context) {
-    if (uri == null) {
-      return _placeholder();
-    }
-    final client = Matrix.of(context).client;
-    final thumb = uri!.getThumbnail(
-      client,
-      width: 288,
-      height: 288,
-      method: ThumbnailMethod.scale,
-    );
-    return Image.network(
-      thumb.toString(),
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => _placeholder(),
-      loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return _placeholder();
-      },
-    );
-  }
-
-  Widget _placeholder() {
-    return Center(
-      child: Icon(
-        Icons.person_outline,
-        size: 72,
-        color: Colors.white.withValues(alpha: 0.18),
-      ),
-    );
-  }
-}
-
-class _UidBadge extends StatelessWidget {
-  final String? uid;
-  final VoidCallback onCopy;
-
-  const _UidBadge({required this.uid, required this.onCopy});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1B1C),
-        border: Border.all(color: const Color(0x33474747)),
-        borderRadius: BorderRadius.circular(2),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'UID',
-            style: TextStyle(
-              color: Color(0xFFC6C6C6),
-              fontSize: 9,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2.4,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            uid ?? '——————',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 13,
-              fontFamily: 'monospace',
-              fontWeight: FontWeight.w500,
-              letterSpacing: 2.4,
-            ),
-          ),
-          const SizedBox(width: 10),
-          GestureDetector(
-            onTap: onCopy,
-            behavior: HitTestBehavior.opaque,
-            child: const Icon(
-              Icons.content_copy,
-              size: 13,
-              color: Color(0xFF919191),
-            ),
-          ),
-        ],
       ),
     );
   }

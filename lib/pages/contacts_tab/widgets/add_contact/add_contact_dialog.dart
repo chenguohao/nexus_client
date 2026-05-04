@@ -3,6 +3,7 @@ import 'package:dartz/dartz.dart' hide State;
 import 'package:debounce_throttle/debounce_throttle.dart';
 import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/data/model/addressbook/address_book.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
@@ -23,8 +24,8 @@ import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 Future<void> showAddContactDialog(
@@ -35,12 +36,13 @@ Future<void> showAddContactDialog(
   if (PlatformInfos.isMobile) {
     return showModalBottomSheet(
       context: context,
-      backgroundColor: LinagoraSysColors.material().onPrimary,
+      backgroundColor: ZeonColors.background,
+      barrierColor: Colors.black.withValues(alpha: 0.7),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
       ),
       useSafeArea: true,
-      scrollControlDisabledMaxHeightRatio: 0.8,
+      isScrollControlled: true,
       builder: (context) {
         return AddContactDialog(displayName: displayName, matrixId: matrixId);
       },
@@ -49,11 +51,12 @@ Future<void> showAddContactDialog(
 
   return showDialog(
     context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.7),
     builder: (context) {
       return Dialog(
-        backgroundColor: LinagoraSysColors.material().onPrimary,
+        backgroundColor: ZeonColors.background,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
+          borderRadius: BorderRadius.all(Radius.circular(4)),
         ),
         insetPadding: const EdgeInsets.all(16),
         child: AddContactDialog(displayName: displayName, matrixId: matrixId),
@@ -73,22 +76,54 @@ class AddContactDialog extends StatefulWidget {
 }
 
 class AddContactDialogController extends State<AddContactDialog> {
-  String firstName = '';
-  String lastName = '';
-  final matrixIdHintText = '@example:twake.app';
+  /// 备注昵称最大长度（防止 displayName 撑爆 UI）
+  static const int nicknameMaxLength = 32;
+
+  /// 当前已登录账户所在的服务器域名（如 `zeon.chat`）。
+  /// 加好友时把它当作默认 server，用户只需要输入 localpart。
+  /// 未登录时为 null，此时退化为完整 mxid 输入。
+  String? _defaultServerName;
+
+  String? get defaultServerName => _defaultServerName;
+
+  late final ValueNotifier<String> nickname;
   late final ValueNotifier<String> userName;
+
   final usernameErrorMessage = ValueNotifier<String?>(null);
+
   late final validateUsernameDebouncer = Debouncer<String?>(
     const Duration(milliseconds: 1200),
     initialValue: null,
     onChanged: (value) {
-      if (value?.isValidMatrixId == true || value?.isEmpty == true) {
+      if (value == null || value.isEmpty) {
+        usernameErrorMessage.value = null;
+        return;
+      }
+      if (resolvedMxid.isValidMatrixId) {
         usernameErrorMessage.value = null;
       } else {
         usernameErrorMessage.value = L10n.of(context)!.invalidUsername;
       }
     },
   );
+
+  /// 把用户输入解析成完整 mxid：
+  /// - 已经以 `@` 开头 → 视为完整 mxid，原样返回（兼容多服务器）
+  /// - 否则用 [defaultServerName] 拼接成 `@input:server`
+  String get resolvedMxid {
+    final input = userName.value.trim();
+    if (input.isEmpty) return '';
+    if (input.startsWith('@')) return input;
+    final server = _defaultServerName;
+    if (server == null || server.isEmpty) return input;
+    return '@$input:$server';
+  }
+
+  static String? _extractServerName(String? mxid) {
+    if (mxid == null || !mxid.startsWith('@')) return null;
+    final colonIndex = mxid.indexOf(':');
+    return colonIndex < 0 ? null : mxid.substring(colonIndex + 1);
+  }
 
   List<PresentationContact> get availableContacts =>
       getIt
@@ -107,11 +142,18 @@ class AddContactDialogController extends State<AddContactDialog> {
     validateUsernameDebouncer.value = value;
   }
 
-  Future<void> onSave() async {
-    if (!userName.value.isValidMatrixId) return;
+  void onNicknameChanged(String value) => nickname.value = value;
 
+  /// 当前表单是否可提交：昵称非空 + mxid 合法（拼上默认 server 后）
+  bool get canSubmit =>
+      nickname.value.trim().isNotEmpty && resolvedMxid.isValidMatrixId;
+
+  Future<void> onSave() async {
+    if (!canSubmit) return;
+
+    final mxid = resolvedMxid;
     final existedContact = availableContacts.firstWhereOrNull(
-      (contact) => contact.matrixId == userName.value,
+      (contact) => contact.matrixId == mxid,
     );
 
     if (existedContact == null) {
@@ -124,8 +166,8 @@ class AddContactDialogController extends State<AddContactDialog> {
                 .execute(
                   addressBooks: [
                     AddressBook(
-                      mxid: userName.value,
-                      displayName: '$firstName $lastName',
+                      mxid: mxid,
+                      displayName: nickname.value.trim(),
                     ),
                   ],
                 )
@@ -157,13 +199,13 @@ class AddContactDialogController extends State<AddContactDialog> {
             ),
           );
         } else {
-          chatWithUser(userName.value, contact: createdContact);
+          chatWithUser(mxid, contact: createdContact);
         }
       }
       return;
     }
 
-    chatWithUser(userName.value, contact: existedContact);
+    chatWithUser(mxid, contact: existedContact);
   }
 
   void chatWithUser(String matrixId, {PresentationContact? contact}) {
@@ -190,16 +232,31 @@ class AddContactDialogController extends State<AddContactDialog> {
     );
   }
 
+  /// 长度限制 formatter，给昵称 / 钱包地址输入框复用
+  static List<TextInputFormatter> lengthLimit(int max) => [
+    LengthLimitingTextInputFormatter(max),
+  ];
+
   @override
   void initState() {
     super.initState();
-    firstName = widget.displayName ?? '';
-
+    nickname = ValueNotifier(widget.displayName ?? '');
+    // 如果外部传入的是完整 mxid（@user:server），保留原样让它走"完整模式"。
+    // 如果传入的就是 localpart，原样塞进去也能正常拼装。
     userName = ValueNotifier(widget.matrixId ?? '');
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _defaultServerName ??= _extractServerName(
+      Matrix.of(context).client.userID,
+    );
+  }
+
+  @override
   void dispose() {
+    nickname.dispose();
     userName.dispose();
     usernameErrorMessage.dispose();
     validateUsernameDebouncer.cancel();

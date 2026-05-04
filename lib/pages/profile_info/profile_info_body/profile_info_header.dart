@@ -1,20 +1,26 @@
 import 'package:dartz/dartz.dart' hide State;
 import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
-import 'package:fluffychat/di/global/get_it_initializer.dart';
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/domain/app_state/user_info/get_user_info_state.dart';
-import 'package:fluffychat/domain/model/user_info/user_info.dart';
-import 'package:fluffychat/pages/profile_info/profile_info_body/profile_info_body_view_style.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/presence_extension.dart';
-import 'package:fluffychat/utils/responsive/responsive_utils.dart';
-import 'package:fluffychat/widgets/avatar/avatar.dart';
 import 'package:fluffychat/widgets/matrix.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:fluffychat/widgets/zeon/zeon_profile_header.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
-class ProfileInfoHeader extends StatefulWidget {
+/// Header section of a contact's profile (Contact info page).
+///
+/// Renders the shared [ZeonProfileHeader] so that this surface stays visually
+/// consistent with the user's own profile page (`ZeonProfilePage`) and the
+/// chat-side contact panel (`ChatProfileInfoAppBar`). The current presence
+/// text — when available — is passed through as the header's `subtitle`.
+///
+/// `animationController` and `onAvatarInfoTap` are kept on the public API for
+/// backwards compatibility with the existing `ProfileInfoBodyView` call site;
+/// the animation is no longer consumed here because the editorial layout does
+/// not collapse, and tapping the avatar simply forwards to the legacy callback.
+class ProfileInfoHeader extends StatelessWidget {
   const ProfileInfoHeader({
     required this.user,
     required this.userInfoNotifier,
@@ -29,190 +35,45 @@ class ProfileInfoHeader extends StatefulWidget {
   final VoidCallback onAvatarInfoTap;
 
   @override
-  State<ProfileInfoHeader> createState() => _ProfileInfoHeaderState();
-}
-
-class _ProfileInfoHeaderState extends State<ProfileInfoHeader> {
-  bool isTextSelected = false;
-
-  final responsive = getIt.get<ResponsiveUtils>();
-
-  @override
   Widget build(BuildContext context) {
-    if (responsive.isMobile(context)) {
-      return _buildMobileHeader(context);
-    }
-    return _buildNonMobileHeader(context);
-  }
-
-  Widget _buildMobileHeader(BuildContext context) {
     final client = Matrix.of(context).client;
-    final presence = client.presences[widget.user.id];
-    final sysColors = LinagoraSysColors.material();
+    final presence = client.presences[user.id];
 
     return ValueListenableBuilder(
-      valueListenable: widget.userInfoNotifier,
-      builder: (context, userInfo, child) {
+      valueListenable: userInfoNotifier,
+      builder: (context, userInfo, _) {
         final userInfoModel = userInfo
             .getSuccessOrNull<GetUserInfoSuccess>()
             ?.userInfo;
         final displayName =
-            userInfoModel?.displayName ?? widget.user.calcDisplayname();
+            userInfoModel?.displayName ?? user.calcDisplayname();
 
-        return SelectionArea(
-          onSelectionChanged: (value) {
-            final newSelected = value != null && value.plainText.isNotEmpty;
-            if (newSelected != isTextSelected) {
-              setState(() => isTextSelected = newSelected);
-            }
-          },
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              if (!isTextSelected) {
-                widget.onAvatarInfoTap();
-                return;
-              }
-              FocusScope.of(context).unfocus();
-            },
-            child: Container(
-              height: Tween<double>(
-                begin: ProfileInfoBodyViewStyle.minAvatarBackgroundHeight,
-                end: ProfileInfoBodyViewStyle.maxAvatarBackgroundHeight,
-              ).transform(widget.animationController.value),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  const SizedBox(
-                    height: ProfileInfoBodyViewStyle.avatarSize,
-                    width: ProfileInfoBodyViewStyle.avatarSize,
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Tween<Alignment>(
-                      begin: Alignment.center,
-                      end: Alignment.centerLeft,
-                    ).transform(widget.animationController.value),
-                    child: Text(
-                      displayName,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: ColorTween(
-                          begin: sysColors.onSurface,
-                          end: sysColors.onPrimary,
-                        ).transform(widget.animationController.value),
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  if (presence != null) ...[
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Tween<Alignment>(
-                        begin: Alignment.center,
-                        end: Alignment.centerLeft,
-                      ).transform(widget.animationController.value),
-                      child: Text(
-                        presence.getLocalizedStatusMessage(context),
-                        style: presence
-                            .getPresenceTextStyle(context)
-                            ?.copyWith(
-                              color: ColorTween(
-                                begin: sysColors.onSurface,
-                                end: sysColors.onPrimary,
-                              ).transform(widget.animationController.value),
-                            ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                ],
-              ),
+        // Prefer the latest avatar from the user-info call; fall back to the
+        // avatar embedded in the User object (which Matrix sync gives us).
+        final remoteAvatar = userInfoModel?.avatarUrl;
+        final avatarUri = (remoteAvatar != null && remoteAvatar.isNotEmpty)
+            ? Uri.tryParse(remoteAvatar)
+            : user.avatarUrl;
+
+        Widget? subtitle;
+        if (presence != null) {
+          subtitle = Text(
+            presence.getLocalizedStatusMessage(context),
+            style: const TextStyle(
+              color: ZeonColors.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.6,
             ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildNonMobileHeader(BuildContext context) {
-    final client = Matrix.of(context).client;
-    final presence = client.presences[widget.user.id];
-
-    return ValueListenableBuilder(
-      valueListenable: widget.userInfoNotifier,
-      builder: (context, userInfo, child) {
-        final userInfoModel = userInfo
-            .getSuccessOrNull<GetUserInfoSuccess>()
-            ?.userInfo;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: ProfileInfoBodyViewStyle.avatarPadding,
-              child: _buildAvatarWidget(
-                context: context,
-                userInfo: userInfo,
-                userInfoModel: userInfoModel,
-              ),
-            ),
-            Text(
-              userInfoModel?.displayName ?? widget.user.calcDisplayname(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: LinagoraTextStyle.material().bodyMedium2.copyWith(
-                color: LinagoraSysColors.material().onSurface,
-              ),
-            ),
-            if (presence != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                presence.getLocalizedStatusMessage(context),
-                style: presence.getPresenceTextStyle(context),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildAvatarWidget({
-    required BuildContext context,
-    required Either<Failure, Success> userInfo,
-    required UserInfo? userInfoModel,
-  }) {
-    return userInfo.fold(
-      (failure) {
-        return Avatar(
-          mxContent: widget.user.avatarUrl,
-          name: userInfoModel?.displayName ?? widget.user.calcDisplayname(),
-          size: 160,
-        );
-      },
-      (success) {
-        if (success is GettingUserInfo) {
-          return const SizedBox(
-            width: 160,
-            height: 160,
-            child: Center(child: CupertinoActivityIndicator(animating: true)),
           );
         }
-        if (success is GetUserInfoSuccess) {
-          return Avatar(
-            mxContent: userInfoModel?.avatarUrl != null
-                ? Uri.tryParse(userInfoModel?.avatarUrl ?? '')
-                : widget.user.avatarUrl,
-            name: userInfoModel?.displayName ?? widget.user.calcDisplayname(),
-            size: 160,
-          );
-        }
-        return Avatar(
-          mxContent: widget.user.avatarUrl,
-          name: userInfoModel?.displayName ?? widget.user.calcDisplayname(),
-          size: 160,
+
+        return ZeonProfileHeader(
+          avatarUri: avatarUri,
+          displayName: displayName,
+          mxid: user.id,
+          subtitle: subtitle,
+          onTapAvatar: onAvatarInfoTap,
         );
       },
     );
