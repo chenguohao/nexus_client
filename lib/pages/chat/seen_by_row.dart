@@ -67,8 +67,10 @@ class SeenByRow extends StatelessWidget {
           size: MessageTimeStyle.seenByRowIconSize,
         );
       case MessageStatus.sent:
+        // 服务器已收到、还没有任何人读过 → 单勾（Telegram 约定）。
+        // 给不存在 / 不上线的用户发消息会一直停在这个状态。
         return Icon(
-          Icons.done_all,
+          Icons.check,
           color: MessageTimeStyle.seenByRowIconSecondaryColor(
             timelineOverlayMessage,
             context,
@@ -76,6 +78,7 @@ class SeenByRow extends StatelessWidget {
           size: MessageTimeStyle.seenByRowIconSize,
         );
       case MessageStatus.hasBeenSeen:
+        // 至少一个接收方设备发过 m.read → 双勾（Telegram 约定的"已读"）。
         return Icon(
           Icons.done_all,
           color: MessageTimeStyle.seenByRowIconPrimaryColor(

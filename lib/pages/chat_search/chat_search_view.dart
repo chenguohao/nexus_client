@@ -38,10 +38,13 @@ class ChatSearchView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: LinagoraSysColors.material().onPrimary,
+      backgroundColor: const Color(0xFF131314),
       appBar: AppBar(
         toolbarHeight: AppConfig.toolbarHeight(context),
-        backgroundColor: LinagoraSysColors.material().onPrimary,
+        backgroundColor: const Color(0xFF131314),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
         title: _ChatSearchAppBar(controller),
       ),
@@ -218,18 +221,24 @@ class _SearchItem extends StatelessWidget {
                                     ? L10n.of(context)!.you
                                     : user.calcDisplayname(),
                                 maxLines: 1,
-                                style: ListItemStyle.titleTextStyle(
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
                                   fontFamily: 'Inter',
+                                  letterSpacing: -0.1,
                                 ),
                               ),
                             ),
                             Text(
                               event.originServerTs.localizedTimeShort(context),
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(
-                                    color: LinagoraRefColors.material()
-                                        .tertiary[30],
-                                  ),
+                              style: const TextStyle(
+                                color: Color(0x99C6C6C6),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Inter',
+                                letterSpacing: 0.4,
+                              ),
                             ),
                           ],
                         ),
@@ -280,8 +289,20 @@ class _MessageContent extends StatelessWidget {
               ),
           searchWord: searchWord,
           maxLines: 2,
-          style: LinagoraTextStyle.material().bodyMedium3.copyWith(
-            color: LinagoraSysColors.material().onSurface,
+          style: const TextStyle(
+            color: Color(0xCCC6C6C6),
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+            fontFamily: 'Inter',
+            height: 1.4,
+          ),
+          highlightStyle: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            fontFamily: 'Inter',
+            height: 1.4,
+            backgroundColor: Color(0x33FFFFFF),
           ),
         );
     }
@@ -300,40 +321,45 @@ class _ChatSearchAppBar extends StatelessWidget {
         Padding(
           padding: ChatViewStyle.paddingLeading(context),
           child: TwakeIconButton(
-            icon: Icons.arrow_back_ios,
+            icon: Icons.arrow_back,
+            iconColor: Colors.white,
             onTap: controller.onBack,
             tooltip: L10n.of(context)!.back,
           ),
         ),
         Expanded(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(
-              ChatListHeaderStyle.searchRadiusBorder,
-            ),
-            child: Padding(
-              padding: ChatSearchStyle.inputPadding,
-              child: TextField(
-                controller: controller.textEditingController,
-                contextMenuBuilder: mobileTwakeContextMenuBuilder,
-                focusNode: controller.inputFocus,
-                textInputAction: TextInputAction.search,
-                autofocus: true,
-                decoration: ChatListHeaderStyle.searchInputDecoration(context)
-                    .copyWith(
-                      suffixIcon: ValueListenableBuilder(
-                        valueListenable: controller.textEditingController,
-                        builder: (context, value, child) =>
-                            value.text.isNotEmpty
-                            ? IconButton(
-                                onPressed: () {
-                                  controller.textEditingController.clear();
-                                },
-                                icon: const Icon(Icons.close),
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ),
+          child: Padding(
+            padding: ChatSearchStyle.inputPadding,
+            child: TextField(
+              controller: controller.textEditingController,
+              contextMenuBuilder: mobileTwakeContextMenuBuilder,
+              focusNode: controller.inputFocus,
+              textInputAction: TextInputAction.search,
+              autofocus: true,
+              cursorColor: Colors.white,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontFamily: 'Inter',
               ),
+              decoration: ChatListHeaderStyle.searchInputDecoration(context)
+                  .copyWith(
+                    suffixIcon: ValueListenableBuilder(
+                      valueListenable: controller.textEditingController,
+                      builder: (context, value, child) =>
+                          value.text.isNotEmpty
+                          ? IconButton(
+                              onPressed: () {
+                                controller.textEditingController.clear();
+                              },
+                              icon: const Icon(
+                                Icons.close,
+                                color: Color(0xFFC6C6C6),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ),
             ),
           ),
         ),

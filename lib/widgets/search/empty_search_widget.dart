@@ -1,9 +1,5 @@
-import 'package:fluffychat/resource/image_paths.dart';
-import 'package:fluffychat/widgets/search/empty_search_widget_style.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class EmptySearchWidget extends StatelessWidget {
   const EmptySearchWidget({super.key});
@@ -11,21 +7,59 @@ class EmptySearchWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EmptySearchWidgetStyle.bodyPadding,
+      padding: const EdgeInsets.fromLTRB(32, 64, 32, 32),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          SvgPicture.asset(
-            ImagePaths.icEmptySearch,
-            width: EmptySearchWidgetStyle.iconWidth,
-            height: EmptySearchWidgetStyle.iconHeight,
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1C1B1C),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: const Color(0x33474747)),
+            ),
+            child: const Icon(
+              Icons.search_off,
+              size: 26,
+              color: Color(0xCCC6C6C6),
+            ),
           ),
-          Padding(
-            padding: EmptySearchWidgetStyle.textPadding,
-            child: Text(
-              L10n.of(context)!.noResults,
-              style: Theme.of(context).textTheme.titleLarge!.copyWith(
-                color: LinagoraRefColors.material().neutral[40],
-              ),
+          const SizedBox(height: 18),
+          const Text(
+            'NO RESULTS',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xCCC6C6C6),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Inter',
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            L10n.of(context)!.noResults,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'Inter',
+              letterSpacing: -0.3,
+              height: 1.2,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Try a different keyword.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(0xB3C6C6C6),
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              fontFamily: 'Inter',
+              height: 1.45,
             ),
           ),
         ],

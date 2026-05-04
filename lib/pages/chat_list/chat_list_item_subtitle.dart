@@ -63,12 +63,21 @@ class ChatListItemSubtitle extends StatelessWidget with ChatListItemMixin {
               return const SizedBox.shrink();
             }
             final isMentioned = lastEvent.isMention == true;
-            return lastEvent.senderId == Matrix.of(context).client.userID
+            final myUserId = Matrix.of(context).client.userID;
+            // 与会话内消息保持一致的 Telegram 约定：
+            // - 无他人已读 → 单勾
+            // - 有他人已读 → 双勾
+            // 注意：Matrix SDK 的 event.receipts 会包含发送者本人的 m.read，
+            // 必须过滤掉自己，否则永远显示双勾。
+            final readByOthers = lastEvent.receipts.any(
+              (r) => r.user.id != myUserId,
+            );
+            return lastEvent.senderId == myUserId
                 ? Icon(
-                    Icons.done_all,
-                    color: lastEvent.receipts.isEmpty
-                        ? const Color(0xFF919191)
-                        : const Color(0xFFC6C6C6),
+                    readByOthers ? Icons.done_all : Icons.check,
+                    color: readByOthers
+                        ? const Color(0xFFC6C6C6)
+                        : const Color(0xFF919191),
                     size: 18,
                   )
                 : AnimatedContainer(
