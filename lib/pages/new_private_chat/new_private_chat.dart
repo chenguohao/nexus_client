@@ -92,12 +92,7 @@ class NewPrivateChatController extends State<NewPrivateChat>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    await handleDidChangeAppLifecycleState(
-      state,
-      client: Matrix.of(context).client,
-    );
-  }
+  void didChangeAppLifecycleState(AppLifecycleState state) {}
 
   @override
   void dispose() {

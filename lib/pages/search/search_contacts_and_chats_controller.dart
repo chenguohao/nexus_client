@@ -1,9 +1,7 @@
 import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
-import 'package:fluffychat/domain/app_state/contact/get_phonebook_contact_state.dart';
 import 'package:fluffychat/domain/app_state/search/search_state.dart';
-import 'package:fluffychat/domain/model/contact/contact.dart';
 import 'package:fluffychat/domain/usecase/search/search_recent_chat_interactor.dart';
 import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
 import 'package:fluffychat/pages/search/search_debouncer_mixin.dart';
@@ -15,11 +13,10 @@ import 'package:fluffychat/presentation/model/search/presentation_search_state_e
 import 'package:fluffychat/utils/extension/presentation_search_extension.dart';
 import 'package:fluffychat/utils/extension/value_notifier_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
-import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart' hide Contact;
+import 'package:matrix/matrix.dart';
 
 class SearchContactsAndChatsController
     with SearchDebouncerMixin, SearchMixin, ContactsViewControllerMixin {
@@ -80,78 +77,6 @@ class SearchContactsAndChatsController
         });
   }
 
-  List<PresentationSearch> contactPresentationSearchMatchedOnMobile({
-    required String keyword,
-  }) {
-    final tomContacts =
-        contactManger
-            .getContactsNotifier()
-            .value
-            .getSuccessOrNull<GetContactsSuccess>()
-            ?.contacts ??
-        [];
-
-    final phoneBookContacts = _tryToGetPhonebookContacts();
-    final tomPresentationSearchContacts = tomContacts
-        .expand((contact) => contact.toPresentationContacts())
-        .toList();
-
-    final phoneBookPresentationSearchContacts = phoneBookContacts
-        .expand((contact) => contact.toPresentationContacts())
-        .toList();
-
-    final phoneBookPresentationSearchMatched =
-        phoneBookPresentationSearchContacts
-            .expand((contact) => contact.toPresentationSearch())
-            .where((contact) {
-              final matrixId = (contact as ContactPresentationSearch).matrixId;
-              return matrixId != null &&
-                  matrixId.isNotEmpty &&
-                  contact.doesMatchKeyword(keyword);
-            })
-            .toList();
-    final tomContactPresentationSearchMatched = tomPresentationSearchContacts
-        .expand((contact) => contact.toPresentationSearch())
-        .where((contact) => contact.doesMatchKeyword(keyword))
-        .toList();
-
-    return combineDuplicateContactAndChat(
-      recentChat: tomContactPresentationSearchMatched,
-      contacts: phoneBookPresentationSearchMatched,
-    );
-  }
-
-  List<Contact> _tryToGetPhonebookContacts() {
-    final phoneBookContacts =
-        contactManger
-            .getPhonebookContactsNotifier()
-            .value
-            .getSuccessOrNull<GetPhonebookContactsSuccess>()
-            ?.contacts ??
-        contactManger
-            .getPhonebookContactsNotifier()
-            .value
-            .getFailureOrNull<LookUpPhonebookContactPartialFailed>()
-            ?.contacts ??
-        contactManger
-            .getPhonebookContactsNotifier()
-            .value
-            .getFailureOrNull<GetPhonebookContactsFailure>()
-            ?.contacts ??
-        contactManger
-            .getPhonebookContactsNotifier()
-            .value
-            .getFailureOrNull<RequestTokenFailure>()
-            ?.contacts ??
-        contactManger
-            .getPhonebookContactsNotifier()
-            .value
-            .getFailureOrNull<RegisterTokenFailure>()
-            ?.contacts ??
-        [];
-    return phoneBookContacts;
-  }
-
   List<PresentationSearch> contactPresentationSearchMatchedOnWeb({
     required String keyword,
   }) {
@@ -194,9 +119,7 @@ class SearchContactsAndChatsController
             if (success is SearchRecentChatSuccess) {
               recentAndContactsNotifier.value = combineDuplicateContactAndChat(
                 recentChat: success.toPresentation().contacts,
-                contacts: PlatformInfos.isMobile
-                    ? contactPresentationSearchMatchedOnMobile(keyword: keyword)
-                    : contactPresentationSearchMatchedOnWeb(keyword: keyword),
+                contacts: contactPresentationSearchMatchedOnWeb(keyword: keyword),
               );
             }
           });

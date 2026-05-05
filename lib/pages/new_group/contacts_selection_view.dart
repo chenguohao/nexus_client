@@ -11,9 +11,7 @@ import 'package:fluffychat/presentation/model/contact/get_presentation_contacts_
 import 'package:fluffychat/presentation/model/contact/get_presentation_contacts_failure.dart';
 import 'package:fluffychat/presentation/model/contact/presentation_contact_success.dart';
 import 'package:fluffychat/presentation/model/search/presentation_search.dart';
-import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/widgets/app_bars/searchable_app_bar.dart';
-import 'package:fluffychat/widgets/contacts_warning_banner/contacts_warning_banner_view.dart';
 import 'package:fluffychat/widgets/sliver_expandable_list.dart';
 import 'package:fluffychat/widgets/twake_components/twake_fab.dart';
 import 'package:fluffychat/widgets/twake_components/twake_text_button.dart';
@@ -67,22 +65,12 @@ class ContactsSelectionView extends StatelessWidget {
               child: CustomScrollView(
                 slivers: [
                   SliverToBoxAdapter(
-                    child: ContactsWarningBannerView(
-                      warningBannerNotifier: controller.warningBannerNotifier,
-                      closeContactsWarningBanner:
-                          controller.closeContactsWarningBanner,
-                      goToSettingsForPermissionActions: () =>
-                          controller.displayContactPermissionDialog(context),
-                    ),
-                  ),
-                  SliverToBoxAdapter(
                     child: SelectedParticipantsList(
                       contactsSelectionController: controller,
                     ),
                   ),
                   _sliverRecentContacts(),
                   _sliverContactsList(),
-                  if (PlatformInfos.isMobile) _sliverPhonebookList(),
                 ],
               ),
             ),
@@ -163,64 +151,30 @@ class ContactsSelectionView extends StatelessWidget {
       builder: (context, state, child) {
         return state.fold(
           (failure) {
-            if (PlatformInfos.isMobile) {
-              return child!;
-            }
             final presentationRecentContact =
                 controller.presentationRecentContactNotifier.value;
             if (presentationRecentContact.isNotEmpty) {
               return child!;
             }
-            if (PlatformInfos.isWeb) {
-              if (failure is GetPresentationContactsFailure ||
-                  failure is GetPresentationContactsEmpty) {
-                final keyword = controller.textEditingController.text;
-                if (keyword.isEmpty) {
-                  return const SliverToBoxAdapter(child: EmptyContactBody());
-                } else {
-                  return SliverToBoxAdapter(
-                    child: Padding(
-                      padding: ContactsSelectionListStyle.notFoundPadding,
-                      child: NoContactsFound(
-                        keyword: controller.textEditingController.text.isEmpty
-                            ? null
-                            : controller.textEditingController.text,
-                      ),
+            if (failure is GetPresentationContactsFailure ||
+                failure is GetPresentationContactsEmpty) {
+              final keyword = controller.textEditingController.text;
+              if (keyword.isEmpty) {
+                return const SliverToBoxAdapter(child: EmptyContactBody());
+              } else {
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: ContactsSelectionListStyle.notFoundPadding,
+                    child: NoContactsFound(
+                      keyword: controller.textEditingController.text.isEmpty
+                          ? null
+                          : controller.textEditingController.text,
                     ),
-                  );
-                }
+                  ),
+                );
               }
-              return child!;
-            } else {
-              return controller.presentationPhonebookContactNotifier.value.fold(
-                (_) {
-                  if (controller.presentationPhonebookContactNotifier.value
-                      .isRight()) {
-                    return child!;
-                  }
-                  if (failure is GetPresentationContactsFailure ||
-                      failure is GetPresentationContactsEmpty) {
-                    final keyword = controller.textEditingController.text;
-                    if (keyword.isEmpty) {
-                      return const SliverToBoxAdapter(
-                        child: EmptyContactBody(),
-                      );
-                    } else {
-                      return SliverToBoxAdapter(
-                        child: Padding(
-                          padding: ContactsSelectionListStyle.notFoundPadding,
-                          child: NoContactsFound(
-                            keyword: controller.textEditingController.text,
-                          ),
-                        ),
-                      );
-                    }
-                  }
-                  return child!;
-                },
-                (success) => child!,
-              );
             }
+            return child!;
           },
           (success) {
             if (success is ContactsLoading) {
@@ -234,11 +188,6 @@ class ContactsSelectionView extends StatelessWidget {
                   .value
                   .isNotEmpty) {
                 return child!;
-              }
-              if (!PlatformInfos.isWeb) {
-                if (controller.phoneBookFilterSuccess) {
-                  return child!;
-                }
               }
               return SliverToBoxAdapter(
                 child: ContactItem(
@@ -291,105 +240,6 @@ class ContactsSelectionView extends StatelessWidget {
               );
             }
 
-            return child!;
-          },
-        );
-      },
-      child: const SliverToBoxAdapter(child: SizedBox()),
-    );
-  }
-
-  Widget _sliverPhonebookList() {
-    return ValueListenableBuilder(
-      valueListenable: controller.presentationPhonebookContactNotifier,
-      builder: (context, phonebookContactState, child) {
-        return phonebookContactState.fold(
-          (failure) {
-            if (!PlatformInfos.isMobile) {
-              return child!;
-            }
-            final presentationRecentContact =
-                controller.presentationRecentContactNotifier.value;
-            if (failure is GetPresentationContactsFailure) {
-              if (presentationRecentContact.isEmpty) {
-                return controller.presentationContactNotifier.value.fold((
-                  failure,
-                ) {
-                  if (failure is GetPresentationContactsFailure ||
-                      failure is GetPresentationContactsEmpty) {
-                    return SliverToBoxAdapter(
-                      child: Padding(
-                        padding: ContactsSelectionListStyle.notFoundPadding,
-                        child: NoContactsFound(
-                          keyword: controller.textEditingController.text.isEmpty
-                              ? null
-                              : controller.textEditingController.text,
-                        ),
-                      ),
-                    );
-                  }
-                  return child!;
-                }, (_) => child!);
-              }
-            }
-            if (failure is GetPresentationContactsEmpty) {
-              if (presentationRecentContact.isEmpty) {
-                return controller.presentationContactNotifier.value.fold((
-                  failure,
-                ) {
-                  if (failure is GetPresentationContactsFailure ||
-                      failure is GetPresentationContactsEmpty) {
-                    if (controller.textEditingController.text.isEmpty) {
-                      return const SliverToBoxAdapter(
-                        child: EmptyContactBody(),
-                      );
-                    } else {
-                      return SliverToBoxAdapter(
-                        child: Padding(
-                          padding: ContactsSelectionListStyle.notFoundPadding,
-                          child: NoContactsFound(
-                            keyword: controller.textEditingController.text,
-                          ),
-                        ),
-                      );
-                    }
-                  }
-                  return child!;
-                }, (_) => child!);
-              }
-            }
-            return child!;
-          },
-          (success) {
-            if (success is PresentationContactsSuccess) {
-              final contacts = success.contacts;
-              return SliverExpandableList(
-                title: L10n.of(context)!.linagoraContactsCount(contacts.length),
-                itemCount: contacts.length,
-                itemBuilder: (context, index) {
-                  if (contacts[index].matrixId != null &&
-                      contacts[index].matrixId!.isNotEmpty) {
-                    final disabled = controller.disabledContactIds.contains(
-                      contacts[index].matrixId,
-                    );
-                    return ContactItem(
-                      disableBannedUser: bannedHighlight,
-                      room: room,
-                      contact: contacts[index],
-                      selectedContactsMapNotifier:
-                          controller.selectedContactsMapNotifier,
-                      onSelectedContact: controller.onSelectedContact,
-                      highlightKeyword: controller.textEditingController.text,
-                      disabled: disabled,
-                      paddingTop: index == 0
-                          ? ContactsSelectionListStyle.listPaddingTop
-                          : 0,
-                    );
-                  }
-                  return const SizedBox();
-                },
-              );
-            }
             return child!;
           },
         );

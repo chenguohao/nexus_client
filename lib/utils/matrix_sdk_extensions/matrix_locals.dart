@@ -111,7 +111,11 @@ class MatrixLocals extends MatrixLocalizations {
 
   @override
   String couldNotDecryptMessage(String errorText) {
-    return l10n.couldNotDecryptMessage(errorText);
+    // 旧设备登出后，Megolm session key 不在新设备里，历史加密消息永久无法解密。
+    // 这里返回一个简短、不喧宾夺主的占位符，避免聊天列表预览被一长串
+    // "Could not decrypt message: This can happen if the message was sent before..."
+    // 占满，让用户误以为列表在 loading。
+    return '🔒 Encrypted message';
   }
 
   @override

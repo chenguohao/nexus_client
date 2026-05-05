@@ -196,10 +196,7 @@ class SearchController extends State<Search> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    await searchContactAndRecentChatController
-        ?.handleDidChangeAppLifecycleState(state, client: client);
-  }
+  void didChangeAppLifecycleState(AppLifecycleState state) {}
 
   @override
   void dispose() {

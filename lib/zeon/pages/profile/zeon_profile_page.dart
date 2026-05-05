@@ -8,6 +8,7 @@ import '../../../utils/platform_infos.dart';
 import '../../../widgets/matrix.dart';
 import '../../../widgets/zeon/zeon_profile_header.dart';
 import '../../services/key_service.dart';
+import '../../services/zeon_soft_logout.dart';
 
 /// Zeon "我的" / Profile screen.
 ///
@@ -168,7 +169,9 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
           await matrix.backgroundPush!.removeCurrentPusher();
         } catch (_) {/* best-effort */}
       }
-      await matrix.client.logout();
+      // 软登出：保留本地 Megolm/Olm 密钥，仅废弃 server token，
+      // 这样同账号再次登录可以继续解密历史消息。
+      await ZeonSoftLogout.execute(matrix.client);
     } catch (e) {
       Logs().w('ZeonProfilePage: logout failed: $e');
     }

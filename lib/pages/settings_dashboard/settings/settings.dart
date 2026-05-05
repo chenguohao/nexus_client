@@ -16,6 +16,7 @@ import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/url_launcher.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/twake_app.dart';
+import 'package:fluffychat/zeon/services/zeon_soft_logout.dart';
 import 'package:flutter/material.dart';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
@@ -119,8 +120,10 @@ class SettingsController extends State<Settings> with ConnectPageMixin {
           if (matrix.backgroundPush != null) {
             await matrix.backgroundPush!.removeCurrentPusher();
           }
+          // 软登出 + ToM/Federation 配置清理。
+          // 不调用 client.logout()——保留本地 Hive，使同账号再次登录可解密历史。
           await Future.wait([
-            matrix.client.logout(),
+            ZeonSoftLogout.execute(matrix.client),
             _deleteTomConfigurations(matrix.client),
             _deleteFederationConfigurations(matrix.client),
           ]);
@@ -138,8 +141,9 @@ class SettingsController extends State<Settings> with ConnectPageMixin {
           if (matrix.backgroundPush != null) {
             await matrix.backgroundPush!.removeCurrentPusher();
           }
+          // 软登出，参见 _logoutActionsOnMobile 注释。
           await Future.wait([
-            matrix.client.logout(),
+            ZeonSoftLogout.execute(matrix.client),
             _deleteTomConfigurations(matrix.client),
             _deleteFederationConfigurations(matrix.client),
           ]);

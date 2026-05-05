@@ -4,7 +4,6 @@ import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
 import 'package:fluffychat/pages/new_private_chat/widget/loading_contact_widget.dart';
-import 'package:fluffychat/presentation/enum/contacts/warning_contacts_banner_enum.dart';
 import 'package:fluffychat/presentation/extensions/value_notifier_custom.dart';
 import 'package:fluffychat/presentation/model/contact/get_presentation_contacts_empty.dart';
 import 'package:fluffychat/presentation/model/contact/get_presentation_contacts_failure.dart';
@@ -21,19 +20,13 @@ import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 class ExpansionList extends StatelessWidget {
   final ValueNotifierCustom<Either<Failure, Success>>
   presentationContactsNotifier;
-  final ValueNotifierCustom<Either<Failure, Success>>
-  presentationPhonebookContactNotifier;
   final Function() goToNewGroupChat;
   final Function(BuildContext context, PresentationContact contact)
   onExternalContactTap;
   final Function(BuildContext context, PresentationContact contact)
   onContactTap;
   final TextEditingController textEditingController;
-  final ValueNotifier<WarningContactsBannerState> warningBannerNotifier;
-  final Function()? closeContactsWarningBanner;
-  final Function()? goToSettingsForPermissionActions;
   final VoidCallback? goToCreateContact;
-  final bool phoneBookFilterSuccess;
 
   const ExpansionList({
     super.key,
@@ -42,12 +35,7 @@ class ExpansionList extends StatelessWidget {
     required this.onExternalContactTap,
     required this.onContactTap,
     required this.textEditingController,
-    required this.warningBannerNotifier,
-    this.closeContactsWarningBanner,
-    this.goToSettingsForPermissionActions,
-    required this.presentationPhonebookContactNotifier,
     this.goToCreateContact,
-    required this.phoneBookFilterSuccess,
   });
 
   @override
@@ -56,7 +44,6 @@ class ExpansionList extends StatelessWidget {
       children: [
         ..._buildResponsiveButtons(context),
         _sliverContactsList(),
-        if (PlatformInfos.isMobile) _sliverPhonebookList(),
       ],
     );
   }
@@ -68,42 +55,20 @@ class ExpansionList extends StatelessWidget {
         return state.fold(
           (failure) {
             final textControllerIsEmpty = textEditingController.text.isEmpty;
-            if (PlatformInfos.isWeb) {
-              if (failure is GetPresentationContactsFailure ||
-                  failure is GetPresentationContactsEmpty) {
-                return Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    NoContactsFound(
-                      keyword: textControllerIsEmpty
-                          ? null
-                          : textEditingController.text,
-                    ),
-                  ],
-                );
-              }
-              return child!;
-            } else {
-              return presentationPhonebookContactNotifier.value.fold((_) {
-                if (presentationPhonebookContactNotifier.value.isRight()) {
-                  return child!;
-                }
-                if (failure is GetPresentationContactsFailure ||
-                    failure is GetPresentationContactsEmpty) {
-                  return Column(
-                    children: [
-                      const SizedBox(height: 12),
-                      NoContactsFound(
-                        keyword: textControllerIsEmpty
-                            ? null
-                            : textEditingController.text,
-                      ),
-                    ],
-                  );
-                }
-                return child!;
-              }, (success) => child!);
+            if (failure is GetPresentationContactsFailure ||
+                failure is GetPresentationContactsEmpty) {
+              return Column(
+                children: [
+                  const SizedBox(height: 12),
+                  NoContactsFound(
+                    keyword: textControllerIsEmpty
+                        ? null
+                        : textEditingController.text,
+                  ),
+                ],
+              );
             }
+            return child!;
           },
           (success) {
             if (success is ContactsLoading) {
@@ -111,11 +76,6 @@ class ExpansionList extends StatelessWidget {
             }
 
             if (success is PresentationExternalContactSuccess) {
-              if (!PlatformInfos.isWeb) {
-                if (phoneBookFilterSuccess) {
-                  return child!;
-                }
-              }
               return TwakeInkWell(
                 onTap: () {
                   onContactTap(context, success.contact);
@@ -158,46 +118,6 @@ class ExpansionList extends StatelessWidget {
               );
             }
 
-            return child!;
-          },
-        );
-      },
-      child: const SizedBox(),
-    );
-  }
-
-  Widget _sliverPhonebookList() {
-    return ValueListenableBuilder(
-      valueListenable: presentationPhonebookContactNotifier,
-      builder: (context, phonebookContactState, child) {
-        return phonebookContactState.fold(
-          (failure) {
-            return child!;
-          },
-          (success) {
-            if (success is PresentationContactsSuccess) {
-              final contacts = success.contacts;
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: contacts.length,
-                itemBuilder: (context, index) {
-                  if (contacts[index].matrixId != null &&
-                      contacts[index].matrixId!.isNotEmpty) {
-                    return TwakeInkWell(
-                      onTap: () {
-                        onContactTap(context, contacts[index]);
-                      },
-                      child: ExpansionContactListTile(
-                        contact: contacts[index],
-                        highlightKeyword: textEditingController.text,
-                      ),
-                    );
-                  }
-                  return child!;
-                },
-              );
-            }
             return child!;
           },
         );

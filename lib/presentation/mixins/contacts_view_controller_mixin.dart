@@ -4,13 +4,11 @@ import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
-import 'package:fluffychat/domain/app_state/contact/get_phonebook_contact_state.dart';
 import 'package:fluffychat/domain/app_state/search/search_state.dart';
 import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
 import 'package:fluffychat/domain/model/contact/contact_type.dart';
 import 'package:fluffychat/domain/model/extensions/contact/contact_extension.dart';
 import 'package:fluffychat/domain/usecase/search/search_recent_chat_interactor.dart';
-import 'package:fluffychat/presentation/enum/contacts/warning_contacts_banner_enum.dart';
 import 'package:fluffychat/presentation/extensions/contact/presentation_contact_extension.dart';
 import 'package:fluffychat/presentation/extensions/value_notifier_custom.dart';
 import 'package:fluffychat/presentation/model/contact/get_presentation_contacts_empty.dart';
@@ -21,30 +19,17 @@ import 'package:fluffychat/presentation/model/contact/presentation_contact_succe
 import 'package:fluffychat/presentation/model/search/presentation_search.dart';
 import 'package:fluffychat/presentation/model/search/presentation_search_state_extension.dart';
 import 'package:fluffychat/utils/extension/presentation_search_extension.dart';
-import 'package:fluffychat/utils/permission_dialog.dart';
-import 'package:fluffychat/utils/permission_service.dart';
-import 'package:fluffychat/utils/platform_infos.dart';
-import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
-import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:matrix/matrix.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 mixin class ContactsViewControllerMixin {
   static const _debouncerIntervalInMilliseconds = 300;
-
   static const _defaultLimitRecentContacts = 6;
 
   final TextEditingController textEditingController = TextEditingController();
 
-  final PermissionHandlerService _permissionHandlerService =
-      PermissionHandlerService();
-
-  final SearchRecentChatInteractor _searchRecentChatInteractor = getIt
-      .get<SearchRecentChatInteractor>();
-
-  ValueNotifier<WarningContactsBannerState> warningBannerNotifier =
-      ValueNotifier(WarningContactsBannerState.hide);
+  final SearchRecentChatInteractor _searchRecentChatInteractor =
+      getIt.get<SearchRecentChatInteractor>();
 
   // FIXME: Consider can use FocusNode instead ?
   final ValueNotifier<bool> isSearchModeNotifier = ValueNotifier(false);
@@ -57,11 +42,6 @@ mixin class ContactsViewControllerMixin {
         const Right(ContactsInitial()),
       );
 
-  final presentationPhonebookContactNotifier =
-      ValueNotifierCustom<Either<Failure, Success>>(
-        const Right(GetPhonebookContactsInitial()),
-      );
-
   final FocusNode searchFocusNode = FocusNode();
 
   final Debouncer<String> _debouncer = Debouncer(
@@ -71,120 +51,12 @@ mixin class ContactsViewControllerMixin {
 
   final contactsManager = getIt.get<ContactsManager>();
 
-  PermissionStatus? contactsPermissionStatus;
-
-  bool get phoneBookFilterSuccess => presentationPhonebookContactNotifier.value
-      .fold((_) => false, (success) => success is GetPhonebookContactsSuccess);
-
-  Future displayContactPermissionDialog(BuildContext context) async {
-    final fetchContactsPermissionStatus =
-        await _permissionHandlerService.contactsPermissionStatus;
-
-    contactsPermissionStatus = fetchContactsPermissionStatus;
-
-    if (PlatformInfos.isMobile && !fetchContactsPermissionStatus.isGranted) {
-      await showDialog(
-        useRootNavigator: false,
-        context: context,
-        builder: (dialogContext) {
-          return PermissionDialog(
-            icon: const Icon(Icons.contact_page_outlined),
-            permission: Permission.contacts,
-            explainTextRequestPermission: Text(
-              L10n.of(context)!.explainPermissionToAccessContacts,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            onRefuseTap: _handleDenyPermissionDialog,
-            onAcceptButton: () async {
-              Navigator.of(dialogContext).pop();
-              await _handleRequestContactsPermission(
-                client: Matrix.of(context).client,
-              );
-            },
-          );
-        },
-      );
-    }
-  }
-
-  void _handleDenyPermissionDialog() {
-    warningBannerNotifier.value = WarningContactsBannerState.display;
-    contactsManager.updateNotShowWarningContactsDialogAgain = true;
-  }
-
-  Future<void> _initWarningBanner() async {
-    if (!PlatformInfos.isMobile) {
-      return;
-    }
-    final currentContactPermission =
-        await _permissionHandlerService.contactsPermissionStatus;
-    Logs().i(
-      'ContactsViewControllerMixin::_initWarningBanner: Contact Permission $currentContactPermission',
-    );
-
-    if (currentContactPermission.isGranted) {
-      contactsPermissionStatus = currentContactPermission;
-      warningBannerNotifier.value = WarningContactsBannerState.hide;
-      return;
-    }
-
-    if (!contactsManager.isDoNotShowWarningContactsBannerAgain &&
-        contactsManager.isDoNotShowWarningContactsDialogAgain) {
-      warningBannerNotifier.value = WarningContactsBannerState.display;
-      return;
-    }
-  }
-
-  Future<void> handleDidChangeAppLifecycleState(
-    AppLifecycleState state, {
-    required Client client,
-  }) async {
-    if (!PlatformInfos.isMobile) {
-      return;
-    }
-    Logs().i(
-      'ContactsViewControllerMixin::handleDidChangeAppLifecycleState: $state',
-    );
-
-    if (state == AppLifecycleState.resumed) {
-      final currentContactPermission =
-          await _permissionHandlerService.contactsPermissionStatus;
-
-      Logs().i(
-        'ContactsViewControllerMixin::handleDidChangeAppLifecycleState: Contact Permission $currentContactPermission',
-      );
-
-      if (currentContactPermission != contactsPermissionStatus &&
-          currentContactPermission.isDenied) {
-        if (!contactsManager.isDoNotShowWarningContactsBannerAgain) {
-          warningBannerNotifier.value = WarningContactsBannerState.display;
-        }
-        contactsPermissionStatus = currentContactPermission;
-        return;
-      }
-
-      if (currentContactPermission != contactsPermissionStatus &&
-          currentContactPermission.isGranted) {
-        contactsPermissionStatus = currentContactPermission;
-        warningBannerNotifier.value = WarningContactsBannerState.hide;
-        contactsManager.synchronizePhonebookContacts(withMxId: client.userID!);
-        return;
-      }
-    }
-  }
-
   void initialFetchContacts({
     required BuildContext context,
     required Client client,
     required MatrixLocalizations matrixLocalizations,
     bool forceRun = false,
   }) async {
-    if (PlatformInfos.isMobile &&
-        !contactsManager.isDoNotShowWarningContactsDialogAgain) {
-      await displayContactPermissionDialog(context);
-    } else {
-      await _initWarningBanner();
-    }
     _refreshAllContacts(
       context: context,
       client: client,
@@ -207,15 +79,10 @@ mixin class ContactsViewControllerMixin {
       );
     });
 
-    if (client.userID == null) {
-      return;
-    }
+    if (client.userID == null) return;
     await contactsManager.initialSynchronizeContacts(
       withMxId: client.userID!,
-      isAvailableSupportPhonebookContacts:
-          PlatformInfos.isMobile &&
-          contactsPermissionStatus != null &&
-          contactsPermissionStatus == PermissionStatus.granted,
+      isAvailableSupportPhonebookContacts: false,
       forceRun: forceRun,
     );
   }
@@ -225,12 +92,6 @@ mixin class ContactsViewControllerMixin {
     required Client client,
     required MatrixLocalizations matrixLocalizations,
   }) async {
-    if (PlatformInfos.isMobile &&
-        !contactsManager.isDoNotShowWarningContactsDialogAgain) {
-      await displayContactPermissionDialog(context);
-    } else {
-      await _initWarningBanner();
-    }
     _refreshAllContacts(
       context: context,
       client: client,
@@ -253,15 +114,10 @@ mixin class ContactsViewControllerMixin {
       );
     });
 
-    if (client.userID == null) {
-      return;
-    }
+    if (client.userID == null) return;
     await contactsManager.synchronizeContactsOnContactTab(
       withMxId: client.userID!,
-      isAvailableSupportPhonebookContacts:
-          PlatformInfos.isMobile &&
-          contactsPermissionStatus != null &&
-          contactsPermissionStatus == PermissionStatus.granted,
+      isAvailableSupportPhonebookContacts: false,
     );
   }
 
@@ -277,13 +133,6 @@ mixin class ContactsViewControllerMixin {
         matrixLocalizations: matrixLocalizations,
       ),
     );
-    contactsManager.getPhonebookContactsNotifier().addListener(
-      () => _refreshAllContacts(
-        context: context,
-        client: client,
-        matrixLocalizations: matrixLocalizations,
-      ),
-    );
   }
 
   void _refreshAllContacts({
@@ -293,7 +142,6 @@ mixin class ContactsViewControllerMixin {
   }) {
     final keyword = _debouncer.value.trim();
     _refreshContacts(keyword);
-    _refreshPhoneBookContacts(keyword);
     _refreshRecentContacts(
       context: context,
       client: client,
@@ -313,14 +161,12 @@ mixin class ContactsViewControllerMixin {
         if (externalContactState != null) {
           return externalContactState;
         }
-
         if (failure is GetContactsFailure) {
           return _handleSearchExternalContact(
             keyword,
             otherResult: Left(GetPresentationContactsFailure(keyword: keyword)),
           );
         }
-
         if (failure is GetContactsIsEmpty) {
           return _handleSearchExternalContact(
             keyword,
@@ -336,15 +182,13 @@ mixin class ContactsViewControllerMixin {
               .expand((contact) => contact.toPresentationContacts())
               .toList();
 
-          final combinedContacts = _combineTomContacts(filteredContacts);
-
-          if (combinedContacts.isEmpty) {
+          if (filteredContacts.isEmpty) {
             return externalContactState ??
                 Left(GetPresentationContactsEmpty(keyword: keyword));
           } else {
             return Right(
               GetPresentationContactsSuccess(
-                contacts: combinedContacts,
+                contacts: filteredContacts,
                 keyword: keyword,
               ),
             );
@@ -368,106 +212,6 @@ mixin class ContactsViewControllerMixin {
       );
     }
     return null;
-  }
-
-  Future<void> _refreshPhoneBookContacts(String keyword) async {
-    if (presentationPhonebookContactNotifier.isDisposed) return;
-    presentationPhonebookContactNotifier.value = contactsManager
-        .getPhonebookContactsNotifier()
-        .value
-        .fold(
-          (failure) {
-            if (failure is LookUpPhonebookContactPartialFailed) {
-              final filteredContacts = failure.contacts
-                  .searchContacts(keyword)
-                  .expand((contact) => contact.toPresentationContacts())
-                  .toList();
-              if (filteredContacts.isEmpty) {
-                return Left(GetPresentationContactsEmpty(keyword: keyword));
-              } else {
-                return Right(
-                  GetPresentationContactsSuccess(
-                    contacts: filteredContacts,
-                    keyword: keyword,
-                  ),
-                );
-              }
-            }
-
-            if (failure is GetPhonebookContactsFailure) {
-              final filteredContacts = failure.contacts
-                  .searchContacts(keyword)
-                  .expand((contact) => contact.toPresentationContacts())
-                  .toList();
-              if (filteredContacts.isEmpty) {
-                return Left(GetPresentationContactsEmpty(keyword: keyword));
-              } else {
-                return Right(
-                  GetPresentationContactsSuccess(
-                    contacts: filteredContacts,
-                    keyword: keyword,
-                  ),
-                );
-              }
-            }
-
-            if (failure is RequestTokenFailure) {
-              final filteredContacts = failure.contacts
-                  .searchContacts(keyword)
-                  .expand((contact) => contact.toPresentationContacts())
-                  .toList();
-              if (filteredContacts.isEmpty) {
-                return Left(GetPresentationContactsEmpty(keyword: keyword));
-              } else {
-                return Right(
-                  GetPresentationContactsSuccess(
-                    contacts: filteredContacts,
-                    keyword: keyword,
-                  ),
-                );
-              }
-            }
-
-            if (failure is RegisterTokenFailure) {
-              final filteredContacts = failure.contacts
-                  .searchContacts(keyword)
-                  .expand((contact) => contact.toPresentationContacts())
-                  .toList();
-              if (filteredContacts.isEmpty) {
-                return Left(GetPresentationContactsEmpty(keyword: keyword));
-              } else {
-                return Right(
-                  GetPresentationContactsSuccess(
-                    contacts: filteredContacts,
-                    keyword: keyword,
-                  ),
-                );
-              }
-            }
-
-            return Left(failure);
-          },
-          (success) {
-            if (success is GetPhonebookContactsSuccess) {
-              final filteredContacts = success.contacts
-                  .searchContacts(keyword)
-                  .expand((contact) => contact.toPresentationContacts())
-                  .toList();
-              _refreshContacts(keyword);
-              if (filteredContacts.isEmpty) {
-                return Left(GetPresentationContactsEmpty(keyword: keyword));
-              } else {
-                return Right(
-                  GetPresentationContactsSuccess(
-                    contacts: filteredContacts,
-                    keyword: keyword,
-                  ),
-                );
-              }
-            }
-            return Right(success);
-          },
-        );
   }
 
   Either<Failure, Success> _handleSearchExternalContact(
@@ -591,84 +335,13 @@ mixin class ContactsViewControllerMixin {
     isSearchModeNotifier.value = false;
   }
 
-  Future<void> _handleRequestContactsPermission({
-    required Client client,
-  }) async {
-    final currentContactsPermissionStatus = await _permissionHandlerService
-        .requestContactsPermissionActions();
-    if (currentContactsPermissionStatus == PermissionStatus.granted) {
-      contactsManager.synchronizePhonebookContacts(withMxId: client.userID!);
-      warningBannerNotifier.value = WarningContactsBannerState.hide;
-    } else {
-      contactsManager.updateNotShowWarningContactsDialogAgain = true;
-
-      if (!contactsManager.isDoNotShowWarningContactsBannerAgain) {
-        warningBannerNotifier.value = WarningContactsBannerState.display;
-      }
-    }
-    contactsPermissionStatus = currentContactsPermissionStatus;
-  }
-
-  void closeContactsWarningBanner() {
-    contactsManager.updateNotShowWarningContactsBannerAgain = true;
-    warningBannerNotifier.value = WarningContactsBannerState.notDisplayAgain;
-  }
-
-  void goToSettingsForPermissionActions() {
-    _permissionHandlerService.goToSettingsForPermissionActions();
-  }
-
-  List<PresentationContact> _combineTomContacts(
-    List<PresentationContact> filteredTomContacts,
-  ) {
-    final foundMatrixIdsInPhonebook = _flatMatrixIdsFromPhonebookContacts();
-
-    return filteredTomContacts.where((contact) {
-      if (contact.matrixId == null) return true;
-      return !foundMatrixIdsInPhonebook.contains(contact.matrixId);
-    }).toList();
-  }
-
-  List<String> _flatMatrixIdsFromPhonebookContacts() {
-    final phonebookContacts =
-        contactsManager
-            .getPhonebookContactsNotifier()
-            .value
-            .getSuccessOrNull<GetPhonebookContactsSuccess>()
-            ?.contacts ??
-        [];
-
-    final Set<String> matrixIds = {};
-
-    for (final contact in phonebookContacts) {
-      final emailMatrixIds =
-          contact.emails
-              ?.where((email) => email.matrixId != null)
-              .map((email) => email.matrixId!) ??
-          [];
-
-      final phoneMatrixIds =
-          contact.phoneNumbers
-              ?.where((phone) => phone.matrixId != null)
-              .map((phone) => phone.matrixId!) ??
-          [];
-
-      matrixIds.addAll(emailMatrixIds);
-      matrixIds.addAll(phoneMatrixIds);
-    }
-
-    return matrixIds.toList();
-  }
-
   void disposeContactsMixin() {
     textEditingController.clear();
     searchFocusNode.dispose();
     textEditingController.dispose();
-    warningBannerNotifier.dispose();
     isSearchModeNotifier.dispose();
     presentationRecentContactNotifier.dispose();
     presentationContactNotifier.dispose();
-    presentationPhonebookContactNotifier.dispose();
   }
 
   @visibleForTesting

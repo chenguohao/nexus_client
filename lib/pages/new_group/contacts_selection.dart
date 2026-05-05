@@ -52,9 +52,7 @@ abstract class ContactsSelectionController<T extends StatefulWidget>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    await handleDidChangeAppLifecycleState(state, client: client);
-  }
+  void didChangeAppLifecycleState(AppLifecycleState state) {}
 
   @override
   void dispose() {

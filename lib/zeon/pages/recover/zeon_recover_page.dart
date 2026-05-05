@@ -13,6 +13,7 @@ import '../../services/key_service.dart';
 import '../../services/steganography_service.dart';
 import '../../services/zeon_key_card_qr_decode.dart';
 import '../../services/zeon_matrix_client_database.dart';
+import '../../services/zeon_soft_logout.dart';
 import '../mining/zeon_mining_logic.dart' show ZeonMiningLogic;
 
 class ZeonRecoverPage extends StatefulWidget {
@@ -226,6 +227,11 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
       _apiService.baseUrl.replaceFirst(':8080', ':8008'),
     );
     Logs().i('ZeonRecoverPage: logging in as $matrixUserId to $homeserverUri');
+
+    // Soft-logout 之后本地 Hive 仍保留前一个用户的所有数据。
+    // 同账号 → 保留（历史 E2E 消息可继续解密）。
+    // 跨账号 → 必须先清空，否则会用到错误用户的密钥。
+    await ZeonSoftLogout.ensureCleanForUser(client, matrixUserId);
 
     try {
       await ZeonMatrixClientDatabase.ensureOpenBeforeInit(client);

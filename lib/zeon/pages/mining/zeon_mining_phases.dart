@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:qr/qr.dart';
 
@@ -7,7 +5,7 @@ import 'zeon_mining_logic.dart' show StepStatus;
 import 'zeon_mining_page.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
-// IDLE PHASE — Energy orb with long-press charge
+// IDLE PHASE — Progress bar + L-corner hold button
 // ══════════════════════════════════════════════════════════════════════════════
 
 class IdlePhaseView extends StatelessWidget {
@@ -16,6 +14,7 @@ class IdlePhaseView extends StatelessWidget {
   final VoidCallback onOrbDown;
   final VoidCallback onOrbUp;
   final VoidCallback onBack;
+  final Animation<double> lAnim;
 
   const IdlePhaseView({
     super.key,
@@ -24,6 +23,7 @@ class IdlePhaseView extends StatelessWidget {
     required this.onOrbDown,
     required this.onOrbUp,
     required this.onBack,
+    required this.lAnim,
   });
 
   @override
@@ -33,314 +33,256 @@ class IdlePhaseView extends StatelessWidget {
         children: [
           // Top bar
           _TopBar(onBack: onBack),
-          // Headline
-          const SizedBox(height: 10),
-          const Text(
-            '建立主权节点',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 2.6,
-            ),
-          ),
-          const SizedBox(height: 9),
-          const Text(
-            'PROOF OF WORK  ·  ON-CHAIN IDENTITY',
-            style: TextStyle(
-              color: Color(0x47FFFFFF),
-              fontSize: 11,
-              letterSpacing: 5.6,
-            ),
-          ),
-          const SizedBox(height: 38),
-          // Orb
-          _OrbWidget(
-            chargeP: chargeP,
-            isCharging: isCharging,
-            onDown: onOrbDown,
-            onUp: onOrbUp,
-          ),
-          // Hint text
-          const SizedBox(height: 30),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: isCharging
-                ? Column(
-                    key: const ValueKey('charging'),
-                    children: const [
-                      Text('Charging',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 2.86,
-                          )),
-                      SizedBox(height: 7),
-                      Text('RELEASE TO CANCEL',
-                          style: TextStyle(
-                            color: Color(0x8CFFFFFF),
-                            fontSize: 10,
-                            letterSpacing: 2.2,
-                          )),
-                    ],
-                  )
-                : Column(
-                    key: const ValueKey('hint'),
-                    children: const [
-                      Text('长按激活算力',
-                          style: TextStyle(
-                            color: Color(0x8CFFFFFF),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 2.86,
-                          )),
-                      SizedBox(height: 7),
-                      Text('HOLD TO INITIALIZE',
-                          style: TextStyle(
-                            color: Color(0x1AFFFFFF),
-                            fontSize: 10,
-                            letterSpacing: 3.0,
-                          )),
-                    ],
-                  ),
-          ),
-          const Spacer(),
-          // Device key preview
+          // Progress bar section (upper center)
+          const SizedBox(height: 48),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-              decoration: const BoxDecoration(color: Color(0xFF1C1B1C)),
-              child: Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Color(0x47FFFFFF),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      '0x1a2b3c4d…8f9e',
-                      style: TextStyle(
-                        color: Color(0x8CFFFFFF),
-                        fontSize: 11,
-                        fontFamily: 'monospace',
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'DEVICE KEY READY',
-                    style: TextStyle(
-                      color: Color(0x1AFFFFFF),
-                      fontSize: 10,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ],
-              ),
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: _IdleProgressBar(
+              progress: chargeP,
+              isHolding: isCharging,
             ),
           ),
-          const SizedBox(height: 12),
-          const Text(
-            'Private key stored locally.\nZeon cannot access your account.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0x1AFFFFFF),
-              fontSize: 10,
-              letterSpacing: 1.5,
-              height: 1.7,
+          // Spacer pushes button toward lower half
+          const Spacer(),
+          // L-corner hold button (lower center)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: _LCornerButton(
+              lAnim: lAnim,
+              isHolding: isCharging,
+              onHoldStart: onOrbDown,
+              onHoldEnd: onOrbUp,
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 72),
         ],
       ),
     );
   }
 }
 
-// ── Orb widget ────────────────────────────────────────────────────────────────
+// ── Progress bar ──────────────────────────────────────────────────────────────
 
-class _OrbWidget extends StatelessWidget {
-  final double chargeP;
-  final bool isCharging;
-  final VoidCallback onDown;
-  final VoidCallback onUp;
+class _IdleProgressBar extends StatelessWidget {
+  final double progress;
+  final bool isHolding;
+  const _IdleProgressBar({required this.progress, required this.isHolding});
 
-  const _OrbWidget({
-    required this.chargeP,
-    required this.isCharging,
-    required this.onDown,
-    required this.onUp,
+  @override
+  Widget build(BuildContext context) {
+    final pct = (progress * 100).toInt();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              isHolding ? 'INITIALIZING' : 'HOLD TO INITIALIZE',
+              style: const TextStyle(
+                color: Color(0x47FFFFFF),
+                fontSize: 9,
+                letterSpacing: 2.8,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            AnimatedOpacity(
+              opacity: isHolding ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                '$pct%',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  letterSpacing: 1.5,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'monospace',
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 1,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Stack(
+                children: [
+                  Container(
+                    width: constraints.maxWidth,
+                    height: 1,
+                    color: const Color(0x1AFFFFFF),
+                  ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 16),
+                    width: constraints.maxWidth * progress,
+                    height: 1,
+                    color: Colors.white,
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── L-corner button ───────────────────────────────────────────────────────────
+
+class _LCornerButton extends StatelessWidget {
+  final Animation<double> lAnim;
+  final bool isHolding;
+  final VoidCallback onHoldStart;
+  final VoidCallback onHoldEnd;
+
+  static const _btnWidth = 220.0;
+  static const _btnHeight = 56.0;
+
+  const _LCornerButton({
+    required this.lAnim,
+    required this.isHolding,
+    required this.onHoldStart,
+    required this.onHoldEnd,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => onDown(),
-      onTapUp: (_) => onUp(),
-      onTapCancel: onUp,
-      child: SizedBox(
-        width: 210,
-        height: 210,
-        child: Stack(
-          children: [
-            // Ambient glow
-            Positioned.fill(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 50),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.04 + chargeP * 0.12),
-                      blurRadius: 60 + chargeP * 40,
-                      spreadRadius: 10 + chargeP * 20,
-                    ),
-                  ],
-                ),
+      onTapDown: (_) => onHoldStart(),
+      onTapUp: (_) => onHoldEnd(),
+      onTapCancel: onHoldEnd,
+      child: AnimatedBuilder(
+        animation: lAnim,
+        builder: (context, _) {
+          return CustomPaint(
+            painter: _LCornerPainter(
+              gap: lAnim.value,
+              buttonWidth: _btnWidth,
+              buttonHeight: _btnHeight,
+            ),
+            child: SizedBox(
+              width: _btnWidth + 64,
+              height: _btnHeight + 64,
+              child: Center(
+                child: _LButtonInner(isHolding: isHolding),
               ),
             ),
-            // SVG-like arc (via CustomPaint)
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _OrbArcPainter(progress: chargeP),
-              ),
-            ),
-            // Orb body
-            Positioned(
-              left: 20, right: 20, top: 20, bottom: 20,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 50),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: const RadialGradient(
-                    center: Alignment(-0.24, -0.4),
-                    colors: [Color(0xFF2A2A2B), Color(0xFF1C1B1C), Color(0xFF131314)],
-                    stops: [0, 0.55, 1],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _LButtonInner extends StatelessWidget {
+  final bool isHolding;
+  const _LButtonInner({required this.isHolding});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: _LCornerButton._btnWidth,
+      height: _LCornerButton._btnHeight,
+      decoration: BoxDecoration(
+        color: isHolding
+            ? const Color(0x14FFFFFF)
+            : const Color(0x08FFFFFF),
+        border: Border.all(
+          color: isHolding
+              ? const Color(0x33FFFFFF)
+              : const Color(0x1AFFFFFF),
+          width: 1,
+        ),
+      ),
+      child: Center(
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 150),
+          child: isHolding
+              ? const Text(
+                  'INITIALIZING',
+                  key: ValueKey('init'),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    letterSpacing: 3.5,
+                    fontWeight: FontWeight.w600,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withValues(alpha: 0.06 + chargeP * 0.28),
-                      blurRadius: 28 + chargeP * 55,
-                      spreadRadius: chargeP * 12,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            // Core circle
-            Positioned(
-              left: 62, right: 62, top: 62, bottom: 62,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 50),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: const Color(0xFF131314),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.14 + chargeP * 0.66),
-                  ),
-                ),
-                child: Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 150),
-                    child: isCharging
-                        ? Text(
-                            '${(chargeP * 100).floor()}%',
-                            key: const ValueKey('pct'),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.5,
-                            ),
-                          )
-                        : const Icon(
-                            Icons.bolt,
-                            key: ValueKey('bolt'),
-                            color: Color(0xBFFFFFFF),
-                            size: 32,
-                          ),
+                )
+              : const Text(
+                  'HOLD TO INITIALIZE',
+                  key: ValueKey('hold'),
+                  style: TextStyle(
+                    color: Color(0x8CFFFFFF),
+                    fontSize: 11,
+                    letterSpacing: 3.0,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
 }
 
-class _OrbArcPainter extends CustomPainter {
-  final double progress;
-  _OrbArcPainter({required this.progress});
+// ── L-corner painter ──────────────────────────────────────────────────────────
+
+class _LCornerPainter extends CustomPainter {
+  final double gap; // 0.0 (hugging) → 1.0 (expanded)
+  final double buttonWidth;
+  final double buttonHeight;
+
+  static const _lLen = 14.0;
+  static const _minGap = 4.0;
+  static const _maxGap = 18.0;
+
+  const _LCornerPainter({
+    required this.gap,
+    required this.buttonWidth,
+    required this.buttonHeight,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 3;
-
-    // Track ring
-    final trackPaint = Paint()
-      ..color = const Color(0x12FFFFFF)
-      ..strokeWidth = 2
+    final currentGap = _minGap + gap * (_maxGap - _minGap);
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.35 + gap * 0.35)
+      ..strokeWidth = 1.5
+      ..strokeCap = StrokeCap.square
       ..style = PaintingStyle.stroke;
-    canvas.drawCircle(center, radius, trackPaint);
 
-    // Tick marks
-    final tickPaint = Paint()
-      ..color = const Color(0x2EFFFFFF)
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
-    for (int i = 0; i < 60; i++) {
-      final angle = (i / 60) * 2 * pi - pi / 2;
-      final isLong = i % 5 == 0;
-      final r1 = radius - (isLong ? 5 : 3);
-      final r2 = radius;
-      canvas.drawLine(
-        Offset(center.dx + r1 * cos(angle), center.dy + r1 * sin(angle)),
-        Offset(center.dx + r2 * cos(angle), center.dy + r2 * sin(angle)),
-        tickPaint..strokeWidth = isLong ? 1.2 : 0.7,
-      );
-    }
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final bw = buttonWidth / 2;
+    final bh = buttonHeight / 2;
 
-    if (progress <= 0) return;
+    final tl = Offset(cx - bw - currentGap, cy - bh - currentGap);
+    final tr = Offset(cx + bw + currentGap, cy - bh - currentGap);
+    final bl = Offset(cx - bw - currentGap, cy + bh + currentGap);
+    final br = Offset(cx + bw + currentGap, cy + bh + currentGap);
 
-    // Progress arc
-    final arcPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [Color(0xFFAAAAAA), Color(0xFFFFFFFF)],
-      ).createShader(Rect.fromCircle(center: center, radius: radius))
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -pi / 2,
-      2 * pi * progress,
-      false,
-      arcPaint,
-    );
-
-    // Leading dot
-    final dotAngle = -pi / 2 + 2 * pi * progress;
-    final dotCenter = Offset(
-      center.dx + radius * cos(dotAngle),
-      center.dy + radius * sin(dotAngle),
-    );
-    final dotPaint = Paint()..color = Colors.white;
-    canvas.drawCircle(dotCenter, 4, dotPaint);
+    // ┌ top-left
+    canvas.drawLine(tl, Offset(tl.dx + _lLen, tl.dy), paint);
+    canvas.drawLine(tl, Offset(tl.dx, tl.dy + _lLen), paint);
+    // ┐ top-right
+    canvas.drawLine(tr, Offset(tr.dx - _lLen, tr.dy), paint);
+    canvas.drawLine(tr, Offset(tr.dx, tr.dy + _lLen), paint);
+    // └ bottom-left
+    canvas.drawLine(bl, Offset(bl.dx + _lLen, bl.dy), paint);
+    canvas.drawLine(bl, Offset(bl.dx, bl.dy - _lLen), paint);
+    // ┘ bottom-right
+    canvas.drawLine(br, Offset(br.dx - _lLen, br.dy), paint);
+    canvas.drawLine(br, Offset(br.dx, br.dy - _lLen), paint);
   }
 
   @override
-  bool shouldRepaint(_OrbArcPainter old) => old.progress != progress;
+  bool shouldRepaint(_LCornerPainter old) =>
+      old.gap != gap ||
+      old.buttonWidth != buttonWidth ||
+      old.buttonHeight != buttonHeight;
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -885,9 +827,9 @@ class _SuccessPhaseViewState extends State<SuccessPhaseView>
           ),
           // ── Footer text ──
           _buildFadeSlide(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
-              child: const Text(
+            child: const Padding(
+              padding: EdgeInsets.fromLTRB(24, 16, 24, 28),
+              child: Text(
                 'THIS IDENTITY TOKEN IS CRYPTOGRAPHICALLY SIGNED.\nVERIFICATION REQUIRES LEVEL 2 ARCHITECTURE ACCESS.',
                 textAlign: TextAlign.center,
                 style: TextStyle(

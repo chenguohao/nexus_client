@@ -37,16 +37,20 @@ class ZeonMiningPage extends StatefulWidget {
 }
 
 class ZeonMiningPageState extends State<ZeonMiningPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // Phase
   _Phase _phase = _Phase.idle;
 
-  // Orb charge state
+  // Hold / charge state
   bool _isCharging = false;
   double _chargeP = 0.0;
   DateTime? _chargeStart;
   Timer? _chargeTimer;
   static const _chargeDuration = Duration(seconds: 3);
+
+  // L-corner animation
+  late AnimationController _lCtrl;
+  late Animation<double> _lAnim;
 
   // Mining state
   final List<MiningStep> steps = [
@@ -90,6 +94,11 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
       miningService: _miningService,
       apiService: _apiService,
     );
+    _lCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _lAnim = CurvedAnimation(parent: _lCtrl, curve: Curves.easeOut);
   }
 
   @override
@@ -97,6 +106,7 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
     _chargeTimer?.cancel();
     _hashScrollTimer?.cancel();
     _hashScrambleTimer?.cancel();
+    _lCtrl.dispose();
     super.dispose();
   }
 
@@ -109,6 +119,7 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
       _chargeStart = DateTime.now();
       _chargeP = 0.0;
     });
+    _lCtrl.forward();
     _chargeTimer = Timer.periodic(const Duration(milliseconds: 16), (t) {
       if (!mounted) {
         t.cancel();
@@ -127,6 +138,7 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
   void _onOrbUp() {
     if (!_isCharging || _chargeP >= 1.0) return;
     _chargeTimer?.cancel();
+    _lCtrl.reverse();
     // Animate back to 0
     final fromP = _chargeP;
     final start = DateTime.now();
@@ -147,6 +159,7 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
   }
 
   void _onChargeComplete() {
+    _lCtrl.reverse();
     setState(() {
       _isCharging = false;
       _phase = _Phase.mining;
@@ -407,6 +420,7 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
               onOrbDown: _onOrbDown,
               onOrbUp: _onOrbUp,
               onBack: () => context.go('/home'),
+              lAnim: _lAnim,
             ),
           _Phase.mining => MiningPhaseView(
               key: const ValueKey('mining'),
