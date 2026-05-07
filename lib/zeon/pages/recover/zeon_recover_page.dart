@@ -163,14 +163,14 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: const Color(0xFF0E0E0F),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: const Color(0x4D474747)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  success ? Icons.check_circle_outline : Icons.error_outline,
+                  success ? Icons.check_box : Icons.error_outline,
                   color: success
                       ? const Color(0xFF4FFFB0)
                       : const Color(0xFFFFB4AB),
@@ -203,9 +203,9 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
                   onTap: () => Navigator.pop(dialogContext),
                   child: Container(
                     height: 44,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.zero,
                     ),
                     alignment: Alignment.center,
                     child: const Text(
@@ -653,7 +653,7 @@ class _MnemonicInputViewState extends State<_MnemonicInputView> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.zero,
                     border: Border.all(color: const Color(0x33FFFFFF)),
                   ),
                   child: const Text(
@@ -771,7 +771,7 @@ class _WordCell extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFF0E0E0F),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.zero,
         border: Border.all(color: const Color(0x33474747)),
       ),
       child: TextField(
@@ -846,7 +846,7 @@ class _PasswordInputDialogState extends State<_PasswordInputDialog> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: const Color(0xFF0E0E0F),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
             border: Border.all(color: const Color(0x4D474747)),
           ),
           child: Column(
@@ -874,10 +874,10 @@ class _PasswordInputDialogState extends State<_PasswordInputDialog> {
               ),
               const SizedBox(height: 24),
               Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1C1B1C),
-                  borderRadius: BorderRadius.circular(4),
-                  border: const Border(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF1C1B1C),
+                  borderRadius: BorderRadius.zero,
+                  border: Border(
                     bottom: BorderSide(color: Color(0x80474747)),
                   ),
                 ),
@@ -917,7 +917,7 @@ class _PasswordInputDialogState extends State<_PasswordInputDialog> {
                       child: Container(
                         height: 44,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(color: const Color(0x33474747)),
                         ),
                         alignment: Alignment.center,
@@ -939,9 +939,9 @@ class _PasswordInputDialogState extends State<_PasswordInputDialog> {
                       onTap: _onConfirm,
                       child: Container(
                         height: 44,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                         ),
                         alignment: Alignment.center,
                         child: const Text(

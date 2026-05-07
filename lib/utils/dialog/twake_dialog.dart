@@ -152,38 +152,39 @@ class TwakeDialog {
     required Future<T> Function() future,
     required BuildContext context,
   }) async {
-    return await showFutureLoadingDialog(
+    T? value;
+    Object? error;
+    StackTrace? stackTrace;
+
+    showDialog<void>(
       context: context,
-      future: future,
-      maxWidth: double.infinity,
-      loadingIcon: LottieBuilder.asset(
-        ImagePaths.lottieTwakeLoading,
-        width: lottieSizeMobile,
-        height: lottieSizeMobile,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      useRootNavigator: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: _ZeonLoadingOverlay(),
       ),
-      barrierColor: LinagoraSysColors.material().onPrimary.withOpacity(0.75),
-      loadingTitle: L10n.of(context)!.loading,
-      loadingTitleStyle: Theme.of(context).textTheme.titleMedium,
-      errorTitle: L10n.of(context)!.errorDialogTitle,
-      errorTitleStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-        color: LinagoraSysColors.material().onSurfaceVariant,
-      ),
-      errorDescriptionStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: LinagoraSysColors.material().onSurfaceVariant,
-      ),
-      errorBackLabel: L10n.of(context)!.cancel,
-      errorBackLabelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-        color: Theme.of(context).colorScheme.primary,
-      ),
-      errorNextLabel: L10n.of(context)!.next,
-      errorNextLabelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-        color: LinagoraSysColors.material().onPrimary,
-      ),
-      backgroundNextLabel: Theme.of(context).colorScheme.primary,
-      backgroundErrorDialog: LinagoraSysColors.material().onPrimary,
-      isMobileResponsive: true,
-      maxWidthButton: maxWidthDialogButtonMobile,
     );
+
+    try {
+      value = await future();
+    } catch (e, st) {
+      error = e;
+      stackTrace = st;
+    }
+
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: false).pop();
+    }
+
+    if (error != null) {
+      return LoadingDialogResult<T>(
+        error: error,
+        stackTrace: stackTrace ?? StackTrace.current,
+      );
+    }
+    return LoadingDialogResult<T>(result: value as T);
   }
 
   static Future<void> showStreamDialogFullScreen({
@@ -251,25 +252,47 @@ class ProgressDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.transparent,
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          LottieBuilder.asset(
-            ImagePaths.lottieTwakeLoading,
-            width: lottieSize,
-            height: lottieSize,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            L10n.of(context)!.loading,
-            style: PlatformInfos.isWeb
-                ? Theme.of(context).textTheme.titleLarge
-                : Theme.of(context).textTheme.titleMedium,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+    return const _ZeonLoadingOverlay();
+  }
+}
+
+class _ZeonLoadingOverlay extends StatelessWidget {
+  const _ZeonLoadingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 220,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1B1C),
+          borderRadius: BorderRadius.zero,
+          border: Border.all(color: const Color(0x4D474747)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'PROCESSING',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 3.0,
+              ),
+            ),
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              backgroundColor: const Color(0xFF2A2A2B),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Colors.white.withValues(alpha: 0.9),
+              ),
+              minHeight: 2,
+            ),
+          ],
+        ),
       ),
     );
   }

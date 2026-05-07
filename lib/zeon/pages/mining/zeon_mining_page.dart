@@ -14,6 +14,7 @@ import '../../services/api_service.dart';
 import '../../services/key_service.dart';
 import '../../services/mining_service.dart';
 import '../../services/zeon_matrix_client_database.dart';
+import '../../widgets/zeon_dialog.dart';
 import '../../../widgets/matrix.dart';
 
 // ── Phase enum ────────────────────────────────────────────────────────────────
@@ -333,23 +334,13 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
     _hashScrollTimer?.cancel();
     _hashScrambleTimer?.cancel();
     if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1B1C),
-        title: const Text('Registration Failed', style: TextStyle(color: Colors.white)),
-        content: Text(error, style: const TextStyle(color: Color(0xFF919191))),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              if (mounted) setState(() => _phase = _Phase.idle);
-            },
-            child: const Text('OK', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+    ZeonDialog.alert(
+      context,
+      title: 'REGISTRATION FAILED',
+      message: error,
+    ).then((_) {
+      if (mounted) setState(() => _phase = _Phase.idle);
+    });
   }
 
   // ── Key card save ───────────────────────────────────────────────────────────
@@ -399,24 +390,7 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
   }
 
   void _showSaveError(String message) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1B1C),
-        title: const Text('Error',
-            style: TextStyle(color: Colors.redAccent, fontSize: 16)),
-        content: Text(
-          message,
-          style: const TextStyle(color: Color(0xFFCCCCCC), fontSize: 13),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('OK', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+    ZeonDialog.alert(context, title: 'ERROR', message: message);
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -527,7 +501,7 @@ class _SecureKeyDialogState extends State<_SecureKeyDialog> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: const Color(0xFF0E0E0F),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
             border: Border.all(
               color: const Color(0x4D474747),
             ),
@@ -585,7 +559,7 @@ class _SecureKeyDialogState extends State<_SecureKeyDialog> {
                       child: Container(
                         height: 44,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                           border: Border.all(
                             color: const Color(0x33474747),
                           ),
@@ -610,9 +584,9 @@ class _SecureKeyDialogState extends State<_SecureKeyDialog> {
                       onTap: _onConfirm,
                       child: Container(
                         height: 44,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.zero,
                         ),
                         alignment: Alignment.center,
                         child: const Text(
@@ -643,10 +617,10 @@ class _SecureKeyDialogState extends State<_SecureKeyDialog> {
     required VoidCallback onToggle,
   }) {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1B1C),
-        borderRadius: BorderRadius.circular(4),
-        border: const Border(
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1B1C),
+        borderRadius: BorderRadius.zero,
+        border: Border(
           bottom: BorderSide(color: Color(0x80474747)),
         ),
       ),

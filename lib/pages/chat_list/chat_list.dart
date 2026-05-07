@@ -42,6 +42,7 @@ import 'package:matrix/matrix.dart';
 
 import '../../../utils/account_bundles.dart';
 import '../../widgets/matrix.dart';
+import 'package:fluffychat/zeon/widgets/zeon_dialog.dart';
 
 class ChatList extends StatefulWidget {
   static BuildContext? contextForVoip;
@@ -323,15 +324,14 @@ class ChatListController extends State<ChatList>
   }
 
   Future<void> archiveAction() async {
-    final confirmed =
-        await showOkCancelAlertDialog(
-          useRootNavigator: false,
-          context: context,
-          title: L10n.of(context)!.areYouSure,
-          okLabel: L10n.of(context)!.yes,
-          cancelLabel: L10n.of(context)!.cancel,
-        ) ==
-        OkCancelResult.ok;
+    final confirmed = await ZeonDialog.confirm(
+      context,
+      title: L10n.of(context)!.areYouSure,
+      okLabel: L10n.of(context)!.yes,
+      cancelLabel: L10n.of(context)!.cancel,
+      destructive: true,
+      useRootNavigator: false,
+    );
     if (!confirmed) return;
     await TwakeDialog.showFutureLoadingDialogFullScreen(
       future: () => _archiveSelectedRooms(),

@@ -8,7 +8,11 @@ import 'package:matrix/matrix.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
 mixin LeaveChatMixin {
-  Future<void> leaveChat(BuildContext context, Room? room) async {
+  Future<void> leaveChat(
+    BuildContext context,
+    Room? room, {
+    bool skipConfirmation = false,
+  }) async {
     if (!context.mounted) {
       return;
     }
@@ -18,15 +22,17 @@ mixin LeaveChatMixin {
         throw RoomNullException();
       }
 
-      final confirmResult = await showConfirmAlertDialog(
-        context: context,
-        title: L10n.of(context)!.leaveChatTitle,
-        message: L10n.of(context)!.leaveChatDescription,
-        okLabel: L10n.of(context)!.leave,
-        cancelLabel: L10n.of(context)!.cancel,
-        showCloseButton: PlatformInfos.isWeb,
-      );
-      if (confirmResult == ConfirmResult.cancel) return;
+      if (!skipConfirmation) {
+        final confirmResult = await showConfirmAlertDialog(
+          context: context,
+          title: L10n.of(context)!.leaveChatTitle,
+          message: L10n.of(context)!.leaveChatDescription,
+          okLabel: L10n.of(context)!.leave,
+          cancelLabel: L10n.of(context)!.cancel,
+          showCloseButton: PlatformInfos.isWeb,
+        );
+        if (confirmResult == ConfirmResult.cancel) return;
+      }
 
       final result = await TwakeDialog.showFutureLoadingDialogFullScreen(
         future: room.leave,

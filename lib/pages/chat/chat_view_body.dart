@@ -68,21 +68,29 @@ class ChatViewBody extends StatelessWidget with MessageContentMixin {
                     Expanded(
                       child: GestureDetector(
                         onTap: controller.clearSingleSelectedEvent,
-                        child: ValueListenableBuilder(
-                          valueListenable:
-                              controller.openingChatViewStateNotifier,
-                          builder: (context, viewState, __) {
-                            if (viewState is ViewEventListLoading ||
-                                controller.timeline == null) {
-                              return const ChatLoadingView();
-                            }
+                        child: Stack(
+                          children: [
+                            ValueListenableBuilder(
+                              valueListenable:
+                                  controller.openingChatViewStateNotifier,
+                              builder: (context, viewState, __) {
+                                if (viewState is ViewEventListLoading ||
+                                    controller.timeline == null) {
+                                  return const ChatLoadingView();
+                                }
 
-                            if (viewState is ViewEventListSuccess) {
-                              return ChatEventList(controller: controller);
-                            }
+                                if (viewState is ViewEventListSuccess) {
+                                  return ChatEventList(
+                                    controller: controller,
+                                  );
+                                }
 
-                            return const SizedBox.shrink();
-                          },
+                                return const SizedBox.shrink();
+                              },
+                            ),
+                            if (controller.room?.isAbandonedDMRoom == true)
+                              const _RejectedInviteBanner(),
+                          ],
                         ),
                       ),
                     ),
@@ -92,53 +100,7 @@ class ChatViewBody extends StatelessWidget with MessageContentMixin {
                         child: Container(
                           alignment: Alignment.center,
                           child: controller.room?.isAbandonedDMRoom == true
-                              ? Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom:
-                                        ChatViewBodyStyle.bottomSheetPadding(
-                                          context,
-                                        ),
-                                    left: ChatViewBodyStyle.bottomSheetPadding(
-                                      context,
-                                    ),
-                                    right: ChatViewBodyStyle.bottomSheetPadding(
-                                      context,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      if (!controller.isSupportChat)
-                                        TextButton.icon(
-                                          style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.all(16),
-                                            foregroundColor: Theme.of(
-                                              context,
-                                            ).colorScheme.error,
-                                          ),
-                                          icon: const Icon(
-                                            Icons.archive_outlined,
-                                          ),
-                                          onPressed: () => controller.leaveChat(
-                                            context,
-                                            controller.room,
-                                          ),
-                                          label: Text(L10n.of(context)!.leave),
-                                        ),
-                                      TextButton.icon(
-                                        style: TextButton.styleFrom(
-                                          padding: const EdgeInsets.all(16),
-                                        ),
-                                        icon: const Icon(Icons.chat_outlined),
-                                        onPressed: controller.recreateChat,
-                                        label: Text(
-                                          L10n.of(context)!.reopenChat,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
+                              ? _AbandonedDMBar(controller: controller)
                               : _inputMessageWidget(context),
                         ),
                       ),
@@ -367,6 +329,141 @@ class ChatViewBody extends StatelessWidget with MessageContentMixin {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Zeon-styled bottom bar for abandoned DM rooms ────────────────────────────
+
+class _AbandonedDMBar extends StatelessWidget {
+  final ChatController controller;
+  const _AbandonedDMBar({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = L10n.of(context)!;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1B1C),
+        border: Border(top: BorderSide(color: Color(0x33474747))),
+      ),
+      child: controller.isSupportChat
+          ? const SizedBox.shrink()
+          : _ZeonBarButton(
+              label: l10n.leave.toUpperCase(),
+              destructive: true,
+              icon: Icons.logout,
+              onTap: controller.leaveAbandonedDMAndGoHome,
+            ),
+    );
+  }
+}
+
+// ── Rejected-invite overlay shown in the centre of the chat area ─────────────
+
+class _RejectedInviteBanner extends StatelessWidget {
+  const _RejectedInviteBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1C1B1C),
+          borderRadius: BorderRadius.zero,
+          border: Border.all(color: const Color(0x4D474747)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.block,
+                  color: Color(0xFFFFB4AB),
+                  size: 13,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'INVITATION DECLINED',
+                  style: const TextStyle(
+                    color: Color(0xFFFFB4AB),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              '对方拒绝了你的聊天请求。\n若仍想联系，请前往通讯录重新发起邀请。',
+              style: TextStyle(
+                color: Color(0xFF919191),
+                fontSize: 12,
+                height: 1.6,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _ZeonBarButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool destructive;
+  final VoidCallback onTap;
+
+  const _ZeonBarButton({
+    required this.label,
+    required this.icon,
+    required this.destructive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        destructive ? const Color(0xFFFFB4AB) : const Color(0xFFC6C6C6);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.zero,
+          border: Border.all(
+            color: destructive
+                ? const Color(0x55FFB4AB)
+                : const Color(0x33474747),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 14, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -1,4 +1,3 @@
-import 'package:fluffychat/pages/chat/dialog_reject_invite_style.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
@@ -9,77 +8,62 @@ class DialogRejectInviteWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = L10n.of(context)!;
     return Material(
       color: Colors.transparent,
       child: Center(
-        child: UnconstrainedBox(
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(
-                DialogAcceptInviteStyle.borderRadiusDialog,
+        child: Container(
+          width: 320,
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1C1B1C),
+            borderRadius: BorderRadius.zero,
+            border: Border.all(color: const Color(0x4D474747)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.declineTheInvitation.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 2.0,
+                ),
               ),
-              color: Theme.of(context).colorScheme.surface,
-            ),
-            margin: DialogAcceptInviteStyle.marginDialog,
-            padding: DialogAcceptInviteStyle.paddingDialog,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: DialogAcceptInviteStyle.paddingTitle,
-                  child: Column(
-                    children: [
-                      Text(
-                        L10n.of(context)!.declineTheInvitation,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: Theme.of(context).colorScheme.onSurface,
-                            ),
-                      ),
-                      const SizedBox(height: 16.0),
-                      SizedBox(
-                        width: DialogAcceptInviteStyle.dialogTextWidth,
-                        child: Text(
-                          L10n.of(
-                            context,
-                          )!.doYouReallyWantToDeclineThisInvitation,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
+              const SizedBox(height: 12),
+              Text(
+                l10n.doYouReallyWantToDeclineThisInvitation,
+                style: const TextStyle(
+                  color: Color(0xFFC6C6C6),
+                  fontSize: 13,
+                  height: 1.5,
                 ),
-                Padding(
-                  padding: DialogAcceptInviteStyle.paddingButton,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _ActionButton(
-                        context: context,
-                        text: L10n.of(context)!.declineAndRemove,
-                        onPressed: () => Navigator.of(
-                          context,
-                        ).pop(DialogRejectInviteResult.reject),
-                      ),
-                      const SizedBox(width: 8),
-                      _ActionButton(
-                        context: context,
-                        text: L10n.of(context)!.cancel,
-                        onPressed: () => Navigator.of(
-                          context,
-                        ).pop(DialogRejectInviteResult.cancel),
-                      ),
-                    ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _ZeonButton(
+                    text: l10n.cancel,
+                    primary: false,
+                    onPressed: () => Navigator.of(context)
+                        .pop(DialogRejectInviteResult.cancel),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  _ZeonButton(
+                    text: l10n.declineAndRemove,
+                    primary: true,
+                    destructive: true,
+                    onPressed: () => Navigator.of(context)
+                        .pop(DialogRejectInviteResult.reject),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -87,35 +71,41 @@ class DialogRejectInviteWidget extends StatelessWidget {
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.text,
-    required this.onPressed,
-    required this.context,
-  });
-
+class _ZeonButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
-  final BuildContext context;
+  final bool primary;
+  final bool destructive;
+
+  const _ZeonButton({
+    required this.text,
+    required this.onPressed,
+    this.primary = false,
+    this.destructive = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(
-        DialogAcceptInviteStyle.borderRadiusActionButton,
-      ),
+    return GestureDetector(
       onTap: onPressed,
       child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(
-            DialogAcceptInviteStyle.borderRadiusActionButton,
-          ),
+          color: primary ? Colors.white : Colors.transparent,
+          borderRadius: BorderRadius.zero,
+          border: primary ? null : Border.all(color: const Color(0x33474747)),
         ),
-        padding: DialogAcceptInviteStyle.paddingActionButton,
         child: Text(
           text,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
+          style: TextStyle(
+            color: destructive
+                ? const Color(0xFFFFB4AB)
+                : primary
+                    ? const Color(0xFF131314)
+                    : const Color(0xFFC6C6C6),
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
           ),
         ),
       ),

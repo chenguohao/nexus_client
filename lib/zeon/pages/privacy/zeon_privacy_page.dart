@@ -506,7 +506,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: const Color(0xFF0E0E0F),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
             border: Border.all(color: const Color(0x4D474747)),
           ),
           child: Column(
@@ -590,10 +590,10 @@ class _PasswordDialogState extends State<_PasswordDialog> {
     required VoidCallback onToggle,
   }) {
     return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFF1C1B1C),
-        borderRadius: BorderRadius.circular(4),
-        border: const Border(bottom: BorderSide(color: Color(0x80474747))),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1B1C),
+        borderRadius: BorderRadius.zero,
+        border: Border(bottom: BorderSide(color: Color(0x80474747))),
       ),
       child: TextField(
         controller: controller,
@@ -644,13 +644,13 @@ class _BackupKeyWarningDialog extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: const Color(0xFF0E0E0F),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
             border: Border.all(color: const Color(0x4D474747)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.warning_amber_rounded,
+              const Icon(Icons.warning_amber,
                   color: Color(0xFFFFB4AB), size: 32),
               const SizedBox(height: 16),
               const Text(
@@ -720,7 +720,7 @@ class _MnemonicDisplayDialog extends StatelessWidget {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             color: const Color(0xFF0E0E0F),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.zero,
             border: Border.all(color: const Color(0x4D474747)),
           ),
           child: Column(
@@ -759,7 +759,7 @@ class _MnemonicDisplayDialog extends StatelessWidget {
                 itemBuilder: (_, i) => Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF1A1A1B),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.zero,
                     border: Border.all(color: const Color(0x22FFFFFF)),
                   ),
                   alignment: Alignment.center,
@@ -857,7 +857,7 @@ class _DialogButton extends StatelessWidget {
         height: 44,
         decoration: BoxDecoration(
           color: primary ? Colors.white : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.zero,
           border: primary
               ? null
               : Border.all(color: const Color(0x33474747)),

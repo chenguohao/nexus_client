@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:collection/collection.dart';
 import 'package:dartz/dartz.dart' hide State;
 import 'package:debounce_throttle/debounce_throttle.dart';
@@ -72,6 +71,7 @@ import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:fluffychat/utils/room_status_extension.dart';
 import 'package:fluffychat/utils/twake_snackbar.dart';
+import 'package:fluffychat/zeon/widgets/zeon_dialog.dart';
 import 'package:fluffychat/widgets/context_menu/context_menu_action.dart';
 import 'package:fluffychat/widgets/context_menu/context_menu_action_item_widget.dart';
 import 'package:fluffychat/widgets/matrix.dart';
@@ -513,17 +513,22 @@ class ChatController extends State<Chat>
     final success = await TwakeDialog.showFutureLoadingDialogFullScreen(
       future: () async {
         final client = room.client;
-        final waitForSync = client.onSync.stream.firstWhere(
+        final waitForLeaveSync = client.onSync.stream.firstWhere(
           (s) => s.rooms?.leave?.containsKey(room.id) ?? false,
         );
         await room.leave();
-        await waitForSync;
-        return await client.startDirectChat(userId, enableEncryption: true);
+        await waitForLeaveSync;
+        final newRoomId =
+            await client.startDirectChat(userId, enableEncryption: true);
+        // Wait for the new room's join/invite state to be synced so that
+        // isAbandonedDMRoom is evaluated correctly on navigation.
+        await client.waitForRoomInSync(newRoomId, join: true);
+        return newRoomId;
       },
     );
     final roomId = success.result;
     if (roomId == null) return;
-    context.go('/rooms/$roomId');
+    if (context.mounted) context.go('/rooms/$roomId');
   }
 
   Future<void> requestHistory({int? historyCount, StateFilter? filter}) async {
@@ -684,7 +689,33 @@ class ChatController extends State<Chat>
   }
 
   void onBackPress() {
+    if (room?.isAbandonedDMRoom == true) {
+      leaveAbandonedDMAndGoHome();
+      return;
+    }
     context.pop();
+  }
+
+  /// Called by the Leave button and back button in the abandoned-DM bar.
+  /// Shows a loading overlay (which covers any intermediate UI flash), then
+  /// navigates home once the leave + forget operations complete.
+  void leaveAbandonedDMAndGoHome() {
+    final targetRoom = room;
+    if (targetRoom == null) {
+      context.go('/rooms');
+      return;
+    }
+    TwakeDialog.showFutureLoadingDialogFullScreen(
+      future: () async {
+        await targetRoom.leave();
+        try {
+          await targetRoom.client.forgetRoom(targetRoom.id);
+        } catch (_) {}
+      },
+    ).then((_) {
+      final navContext = TwakeApp.routerKey.currentContext ?? context;
+      if (navContext.mounted) navContext.go('/rooms');
+    });
   }
 
   Future<void>? _setReadMarkerFuture;
@@ -781,15 +812,15 @@ class ChatController extends State<Chat>
     if (commandMatch != null &&
         !room!.client.commands.keys.contains(commandMatch[1]!.toLowerCase())) {
       final l10n = L10n.of(context)!;
-      final dialogResult = await showOkCancelAlertDialog(
-        context: context,
-        useRootNavigator: false,
+      final dialogResult = await ZeonDialog.confirm(
+        context,
         title: l10n.commandInvalid,
         message: l10n.commandMissing(commandMatch[0]!),
         okLabel: l10n.sendAsText,
         cancelLabel: l10n.cancel,
+        useRootNavigator: false,
       );
-      if (dialogResult == OkCancelResult.cancel) return;
+      if (!dialogResult) return;
       parseCommands = false;
     }
 
@@ -1055,15 +1086,14 @@ class ChatController extends State<Chat>
   }
 
   void redactEventsAction() async {
-    final confirmed =
-        await showOkCancelAlertDialog(
-          useRootNavigator: false,
-          context: context,
-          title: L10n.of(context)!.messageWillBeRemovedWarning,
-          okLabel: L10n.of(context)!.remove,
-          cancelLabel: L10n.of(context)!.cancel,
-        ) ==
-        OkCancelResult.ok;
+    final confirmed = await ZeonDialog.confirm(
+      context,
+      title: L10n.of(context)!.messageWillBeRemovedWarning,
+      okLabel: L10n.of(context)!.remove,
+      cancelLabel: L10n.of(context)!.cancel,
+      destructive: true,
+      useRootNavigator: false,
+    );
     if (!confirmed) return;
     for (final event in selectedEvents) {
       await TwakeDialog.showFutureLoadingDialogFullScreen(
@@ -2102,18 +2132,17 @@ class ChatController extends State<Chat>
   }
 
   void goToNewRoomAction() async {
-    if (OkCancelResult.ok !=
-        await showOkCancelAlertDialog(
-          useRootNavigator: false,
-          context: context,
-          title: L10n.of(context)!.goToTheNewRoom,
-          message: room!
-              .getState(EventTypes.RoomTombstone)!
-              .parsedTombstoneContent
-              .body,
-          okLabel: L10n.of(context)!.ok,
-          cancelLabel: L10n.of(context)!.cancel,
-        )) {
+    if (!await ZeonDialog.confirm(
+      context,
+      title: L10n.of(context)!.goToTheNewRoom,
+      message: room!
+          .getState(EventTypes.RoomTombstone)!
+          .parsedTombstoneContent
+          .body,
+      okLabel: L10n.of(context)!.ok,
+      cancelLabel: L10n.of(context)!.cancel,
+      useRootNavigator: false,
+    )) {
       return;
     }
     final result = await TwakeDialog.showFutureLoadingDialogFullScreen(
@@ -2172,14 +2201,14 @@ class ChatController extends State<Chat>
   }
 
   void unpinEvent(String eventId) async {
-    final response = await showOkCancelAlertDialog(
-      context: context,
+    final response = await ZeonDialog.confirm(
+      context,
       title: L10n.of(context)!.unpin,
       message: L10n.of(context)!.confirmEventUnpin,
       okLabel: L10n.of(context)!.unpin,
       cancelLabel: L10n.of(context)!.cancel,
     );
-    if (response == OkCancelResult.ok) {
+    if (response) {
       final events = room!.pinnedEventIds
         ..removeWhere((oldEvent) => oldEvent == eventId);
       TwakeDialog.showFutureLoadingDialogFullScreen(
@@ -2850,15 +2879,26 @@ class ChatController extends State<Chat>
       builder: (c) => const DialogRejectInviteWidget(),
     );
 
-    if (result == null) return;
+    if (result == null || result == DialogRejectInviteResult.cancel) return;
 
-    switch (result) {
-      case DialogRejectInviteResult.cancel:
-        return;
-      case DialogRejectInviteResult.reject:
-        await leaveChat(context, room);
-        return;
-    }
+    // Leave + forget the room so it disappears from the list immediately,
+    // then navigate back to the room list. We skip leaveChat() here because
+    // the user already confirmed in the dialog above and we want to also
+    // forget the room (not just leave) regardless of DM/group type.
+    final targetRoom = room;
+    if (targetRoom == null) return;
+
+    await TwakeDialog.showFutureLoadingDialogFullScreen(
+      future: () async {
+        await targetRoom.leave();
+        try {
+          await targetRoom.client.forgetRoom(targetRoom.id);
+        } catch (_) {}
+      },
+    );
+
+    final navContext = TwakeApp.routerKey.currentContext ?? context;
+    if (navContext.mounted) navContext.go('/rooms');
   }
 
   String get displayInviterName {

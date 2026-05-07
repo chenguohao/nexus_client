@@ -1,5 +1,5 @@
-import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:fluffychat/presentation/mixins/chat_list_item_mixin.dart';
+import 'package:fluffychat/zeon/widgets/zeon_dialog.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item_subtitle.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item_title.dart';
 import 'package:fluffychat/utils/dialog/twake_dialog.dart';
@@ -67,14 +67,15 @@ class ChatListItem extends StatelessWidget with ChatListItemMixin {
         );
         return;
       }
-      final confirmed = await showOkCancelAlertDialog(
-        useRootNavigator: false,
-        context: context,
+      final confirmed = await ZeonDialog.confirm(
+        context,
         title: L10n.of(context)!.areYouSure,
         okLabel: L10n.of(context)!.yes,
         cancelLabel: L10n.of(context)!.no,
+        destructive: true,
+        useRootNavigator: false,
       );
-      if (confirmed == OkCancelResult.cancel) return;
+      if (!confirmed) return;
       await TwakeDialog.showFutureLoadingDialogFullScreen(
         future: () => room.leave(),
       );
