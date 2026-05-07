@@ -12,7 +12,6 @@ import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
 import 'package:fluffychat/domain/app_state/room/report_content_state.dart';
 import 'package:fluffychat/domain/model/chat/message_report_reason.dart';
-import 'package:fluffychat/domain/model/contact/contact.dart';
 import 'package:fluffychat/domain/model/extensions/contact/contact_extension.dart';
 import 'package:fluffychat/domain/model/file_info/file_info.dart';
 import 'package:fluffychat/domain/model/room/room_extension.dart';
@@ -99,6 +98,7 @@ import 'package:linagora_design_flutter/linagora_design_flutter.dart'
 import 'package:linagora_design_flutter/reaction/reaction_picker.dart';
 import 'package:matrix/matrix.dart' hide Contact;
 import 'package:scroll_to_index/scroll_to_index.dart';
+import 'package:fluffychat/zeon/services/zeon_privacy_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:universal_html/html.dart' as html;
 
@@ -360,14 +360,21 @@ class ChatController extends State<Chat>
     final isDirectChat = room?.isDirectChat == true;
     if (!isDirectChat) return null;
 
-    final List<Contact> contacts = state.fold(
-      (failure) => [],
-      (success) => success is GetContactsSuccess ? success.contacts : [],
-    );
-    return room?.getParticipants().firstWhereOrNull(
-      (user) =>
-          user.id != client.userID &&
-          contacts.none((contact) => contact.inTomAddressBook(user.id)),
+    // 只在通讯录成功加载后才判断是否需要显示横幅。
+    // 加载中（ContactsInitial / ContactsLoading）或请求失败时返回 null，
+    // 避免因数据未就绪而把"已添加的联系人"误判为"未添加"。
+    return state.fold(
+      (_) => null,
+      (success) {
+        if (success is! GetContactsSuccess) return null;
+        return room?.getParticipants().firstWhereOrNull(
+          (user) =>
+              user.id != client.userID &&
+              success.contacts.none(
+                (contact) => contact.inTomAddressBook(user.id),
+              ),
+        );
+      },
     );
   }
 
@@ -725,7 +732,9 @@ class ChatController extends State<Chat>
       Logs().d('Set read marker...', currentEventId);
 
       try {
-        await timeline.setReadMarker(eventId: currentEventId);
+        if (ZeonPrivacySettings.instance.sendReadReceipts) {
+          await timeline.setReadMarker(eventId: currentEventId);
+        }
       } catch (e, s) {
         Logs().e('Failed to set read marker', e, s);
         return;
@@ -2240,10 +2249,12 @@ class ChatController extends State<Chat>
     });
     if (!currentlyTyping) {
       currentlyTyping = true;
-      room!.setTyping(
-        true,
-        timeout: const Duration(seconds: 30).inMilliseconds,
-      );
+      if (ZeonPrivacySettings.instance.sendTyping) {
+        room!.setTyping(
+          true,
+          timeout: const Duration(seconds: 30).inMilliseconds,
+        );
+      }
     }
     inputText.value = text;
   }
@@ -2857,6 +2868,13 @@ class ChatController extends State<Chat>
       return room!.lastEvent?.senderFromMemoryOrFallback.displayName ??
           room!.getLocalizedDisplayname();
     }
+  }
+
+  Uri? get inviterAvatarUri {
+    if (room!.isDirectChat) {
+      return room!.avatar;
+    }
+    return room!.lastEvent?.senderFromMemoryOrFallback.avatarUrl;
   }
 
   void _resetLocationPath() {
@@ -3595,6 +3613,7 @@ class ChatController extends State<Chat>
   @override
   void initState() {
     super.initState();
+    ZeonPrivacySettings.instance.ensureLoaded();
     _initializePinnedEvents();
     _listenOnJumpToEventFromSearch();
     registerPasteShortcutListeners();

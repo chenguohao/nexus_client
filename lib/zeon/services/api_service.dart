@@ -1,17 +1,21 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 class ApiService {
+  // 编译时从配置文件注入（config/debug.json 或 config/release.json）。
+  //
+  // Debug:   ZEON_SERVER_URL=http://192.168.31.212:8080  （局域网直连，裸 HTTP）
+  // Release: ZEON_SERVER_URL=https://zeon-im.com         （生产域名，不带端口）
+  //
+  // 注意：生产环境不能带 :8080 端口，因为 8080 跑的是裸 HTTP，
+  // 必须经过 Nginx 反向代理在 443 端口统一终止 TLS 后再内部转发。
+  static const envServerUrl = String.fromEnvironment('ZEON_SERVER_URL');
+
   final String baseUrl;
 
-  ApiService({String? baseUrl})
-      : baseUrl = baseUrl ??
-            (Platform.isAndroid
-                ? 'http://10.0.2.2:8080'
-                : 'http://127.0.0.1:8080');
+  ApiService({String? baseUrl}) : baseUrl = baseUrl ?? envServerUrl;
 
   Future<String> getChallenge(String deviceFingerprint) async {
     final uri = Uri.parse('$baseUrl/get-challenge')

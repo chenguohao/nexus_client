@@ -227,16 +227,43 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
 
   /// Log into the Matrix client using credentials obtained from the Zeon API.
   /// Returns null on success, or an error string on failure.
+  ///
+  /// Each registration always creates an independent client instance via
+  /// [MatrixState.getLoginClient]. When that client emits [LoginState.loggedIn],
+  /// [MatrixState._handleAddAnotherAccount] fires automatically and adds the
+  /// client to [widget.clients] + persists its name — no manual wiring needed.
   Future<String?> _loginMatrixClient({
     required String matrixUserId,
     required String accessToken,
     required String deviceId,
   }) async {
-    final client = Matrix.of(context).client;
-    final homeserverUri = Uri.parse(
-      _apiService.baseUrl.replaceFirst(':8080', ':8008'),
-    );
+    final matrixState = Matrix.of(context);
+
+    // Release: Zeon Server and Dendrite share the same domain (Cloudflare
+    // routes by path). Debug: derive the Dendrite address from the Zeon URL.
+    final homeserverUri = Uri.parse(ApiService.envServerUrl.isNotEmpty
+        ? ApiService.envServerUrl
+        : _apiService.baseUrl.replaceFirst(':8080', ':8008'));
     Logs().i('ZeonMiningPage: logging in as $matrixUserId to $homeserverUri');
+
+    // Get a fresh per-registration client candidate. If no clients are logged
+    // in yet this returns the existing first client; otherwise it creates a
+    // new one with a timestamped name. Either way its LoginState.loggedIn
+    // event is wired to _handleAddAnotherAccount, which handles storage.
+    final client = await matrixState.getLoginClient();
+
+    // ZeonSoftLogout preserves the local Hive database intentionally (soft
+    // logout keeps E2E keys). However, if the same client object is reused
+    // for a *different* user, that user would inherit the previous user's
+    // rooms and messages. Clear the store only when the incoming userId
+    // differs from the one already cached on this client instance.
+    //
+    // We use MatrixState.clearClientForReinit instead of
+    // ZeonSoftLogout.ensureCleanForUser because client.clear() emits a
+    // loggedOut event as a side-effect, which would trigger
+    // _handleLastLogout() and navigate away from this page before init()
+    // runs. clearClientForReinit suppresses that navigation.
+    await matrixState.clearClientForReinit(client, matrixUserId);
 
     try {
       await ZeonMatrixClientDatabase.ensureOpenBeforeInit(client);
@@ -271,11 +298,7 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
       return 'Login succeeded but client state is not logged-in';
     }
 
-    // After Zeon login, Dendrite does not advertise a Twake TOM server in its
-    // well-known discovery, so the Dio interceptor base URL stays null and
-    // /_twake/* requests fail. The Zeon server (port 8080) implements the
-    // /_twake/* endpoints, so register it as the TOM server and persist it.
-    final matrixState = Matrix.of(context);
+    // Set up TOM services so /_twake/* requests reach the Zeon server.
     await matrixState.setUpAndStoreZeonToMServices(
       ToMServerInformation(baseUrl: Uri.parse(_apiService.baseUrl)),
     );

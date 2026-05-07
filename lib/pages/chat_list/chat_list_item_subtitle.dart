@@ -115,33 +115,43 @@ class ChatListItemSubtitle extends StatelessWidget with ChatListItemMixin {
           },
         ),
         const SizedBox(width: 4),
-        AnimatedContainer(
-          duration: TwakeThemes.animationDuration,
-          curve: TwakeThemes.animationCurve,
-          padding: const EdgeInsets.symmetric(horizontal: 5),
-          height: unreadBadgeSize,
-          width: ChatListItemStyle.notificationBadgeSize(
-            room.isUnreadOrInvited,
-            room.hasNewMessages,
-            room.notificationCount,
-          ),
-          decoration: BoxDecoration(
+        // When there is a numeric count: show a rectangular badge with the
+        // number.  When the room is merely unread/invited (no count): show a
+        // small round dot so it doesn't look like an empty white box.
+        if (room.notificationCount > 0)
+          AnimatedContainer(
+            duration: TwakeThemes.animationDuration,
+            curve: TwakeThemes.animationCurve,
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            height: unreadBadgeSize,
+            width: ChatListItemStyle.notificationBadgeSize(
+              room.isUnreadOrInvited,
+              room.hasNewMessages,
+              room.notificationCount,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Center(
+              child: Text(
+                room.notificationCount.toString(),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF131314),
+                ),
+              ),
+            ),
+          )
+        else if (room.isUnreadOrInvited || room.hasNewMessages)
+          const Icon(
+            Icons.notifications_none,
+            size: 16,
             color: Colors.white,
-            borderRadius: BorderRadius.circular(3),
-          ),
-          child: Center(
-            child: room.notificationCount > 0
-                ? Text(
-                    room.notificationCount.toString(),
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Color(0xFF131314),
-                    ),
-                  )
-                : Container(),
-          ),
-        ),
+          )
+        else
+          const SizedBox.shrink(),
       ],
     );
   }
@@ -158,13 +168,16 @@ class ChatListItemSubtitle extends StatelessWidget with ChatListItemMixin {
       l10n: L10n.of(context)!,
       typingWidget: typingTextWidget(typingText, context),
       notTypingWidget: isGroup
-          ? chatListItemSubtitleForGroup(
-              context: context,
-              room: room,
-              event: lastEvent,
-            )
-          : isMediaEvent
-          ? chatListItemMediaPreviewSubTitle(context, lastEvent)
+          // Groups keep the thumbnail preview for image/video messages.
+          ? (isMediaEvent
+              ? chatListItemMediaPreviewSubTitle(context, lastEvent)
+              : chatListItemSubtitleForGroup(
+                  context: context,
+                  room: room,
+                  event: lastEvent,
+                ))
+          // Direct chats always show text so that invite/media labels are
+          // visible and the "chat request" context is clear.
           : textContentWidget(
               room,
               lastEvent,

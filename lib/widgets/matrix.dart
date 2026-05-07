@@ -224,20 +224,12 @@ class MatrixState extends State<Matrix>
   void _listenSyncPresence(Client client) {
     _presenceSubscription?.cancel();
     _presenceSubscription = client.onSync.stream.listen((sync) {
-      CachedPresence? lastActivePresence;
-
+      // 逐个推送 sync 里每个用户的 presence 事件。
+      // 原来的写法只取"最近活跃的那一个"，同一批次其余用户的在线状态
+      // 会被静默丢弃，导致聊天页面永远收不到对方的状态更新。
       for (final newPresence in sync.presence ?? []) {
         final cachedPresence = CachedPresence.fromMatrixEvent(newPresence);
-        final newTs = cachedPresence.lastActiveTimestamp;
-        final oldTs = lastActivePresence?.lastActiveTimestamp;
-        if (lastActivePresence == null ||
-            (newTs != null && (oldTs == null || newTs.isAfter(oldTs)))) {
-          lastActivePresence = cachedPresence;
-        }
-      }
-
-      if (lastActivePresence != null) {
-        onLatestPresenceChanged.add(lastActivePresence);
+        onLatestPresenceChanged.add(cachedPresence);
       }
     });
   }
@@ -284,6 +276,48 @@ class MatrixState extends State<Matrix>
   bool get hasComplexBundles => accountBundles.values.any((v) => v.length > 1);
 
   Client? _loginClientCandidate;
+
+  /// True while a client is being cleared and immediately re-initialized for a
+  /// different user (e.g. new registration after soft-logout). During this
+  /// window [client.clear()] emits [LoginState.loggedOut] as a side-effect,
+  /// but we must NOT navigate away — the caller will call [client.init()]
+  /// right after and navigate itself.
+  bool _clearingForReinit = false;
+
+  /// Clears [client]'s local database when the incoming [newUserId] differs
+  /// from the cached one, WITHOUT triggering the logout navigation that
+  /// [client.clear()] would normally cause.
+  ///
+  /// Must be called BEFORE [ZeonMatrixClientDatabase.ensureOpenBeforeInit] and
+  /// [client.init()]. Safe no-op when the user IDs match or the client is
+  /// fresh (no cached userId).
+  Future<void> clearClientForReinit(Client client, String newUserId) async {
+    final previousUserId = client.userID;
+    if (previousUserId == null || previousUserId == newUserId) {
+      Logs().i(
+        'MatrixState::clearClientForReinit: same user '
+        '(${previousUserId ?? "<none>"}), keeping local store',
+      );
+      return;
+    }
+
+    Logs().i(
+      'MatrixState::clearClientForReinit: user changed '
+      '($previousUserId → $newUserId), wiping local store',
+    );
+
+    // Suppress the logout navigation that client.clear() emits as a
+    // side-effect. The flag is read by _handleLastLogout(), which will
+    // return early while it is set.
+    _clearingForReinit = true;
+    try {
+      await client.clear();
+    } catch (e) {
+      Logs().e('MatrixState::clearClientForReinit: clear() failed', e);
+    } finally {
+      _clearingForReinit = false;
+    }
+  }
 
   Future<Client> getLoginClient() async {
     if (widget.clients.isNotEmpty && !client.isLogged()) {
@@ -1025,14 +1059,22 @@ class MatrixState extends State<Matrix>
         'Matrix::_setUpToMServicesWhenChangingActiveClient: toMConfigurations - $toMConfigurations',
       );
       if (toMConfigurations == null) {
-        // No stored TOM configuration found.
-        // The Zeon server (port 8080) implements /_twake/* endpoints.  We
-        // derive the Zeon URL from the homeserver URL by replacing port 8008
-        // with 8080 so that cold-app-restart sessions still have a usable
-        // TOM base URL without re-login.
+        // No stored TOM configuration found (e.g. first cold-start after
+        // upgrade).  Derive a best-effort Tom base URL:
+        //   1. If ZEON_SERVER_URL was baked in at compile time, use it.
+        //      (Dev emulator: http://10.0.2.2:8080 / Prod: https://zeon-im.com)
+        //   2. Otherwise fall back to the homeserver URL without port override.
+        //      Production Nginx routes /_twake/* to the Zeon service internally,
+        //      so the homeserver URL is the correct external entry point.
+        //
+        // The old approach of doing homeserver.replace(port: 8080) was broken:
+        // it kept HTTPS scheme while targeting plain-HTTP port 8080, causing a
+        // TLS handshake failure (WRONG_VERSION_NUMBER).
         final homeserver = client.homeserver;
         if (homeserver != null) {
-          final zeonUri = homeserver.replace(port: 8080);
+          const envUrl = String.fromEnvironment('ZEON_SERVER_URL');
+          final zeonUri =
+              envUrl.isNotEmpty ? Uri.parse(envUrl) : homeserver;
           _setUpToMServer(ToMServerInformation(baseUrl: zeonUri));
           _setUpHomeServer(homeserver);
         } else {
@@ -1048,11 +1090,12 @@ class MatrixState extends State<Matrix>
         );
       }
     } catch (e) {
-      // On error, derive the Zeon server URL from the homeserver (same port
-      // substitution as the null-config path above).
+      // Same logic as the null-config path above.
       final homeserver = client.homeserver;
       if (homeserver != null) {
-        final zeonUri = homeserver.replace(port: 8080);
+        const envUrl = String.fromEnvironment('ZEON_SERVER_URL');
+        final zeonUri =
+            envUrl.isNotEmpty ? Uri.parse(envUrl) : homeserver;
         _setUpToMServer(ToMServerInformation(baseUrl: zeonUri));
         _setUpHomeServer(homeserver);
       } else {
@@ -1193,6 +1236,16 @@ class MatrixState extends State<Matrix>
   }
 
   Future<void> _handleLastLogout() async {
+    // Ignore the loggedOut event that client.clear() emits as a side-effect
+    // when we are in the middle of wiping and re-initializing a client for a
+    // new user. The calling registration page owns the navigation in that case.
+    if (_clearingForReinit) {
+      Logs().d(
+        'MatrixState::_handleLastLogout: suppressed during clearClientForReinit',
+      );
+      return;
+    }
+
     waitForFirstSync = false;
     matrixState.reSyncContacts();
     await matrixState.cancelListenSynchronizeContacts();

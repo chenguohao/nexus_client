@@ -19,8 +19,8 @@ import 'package:fluffychat/generated/l10n/app_localizations.dart';
 /// - UID 短码 pill 徽章（带可选复制按钮）
 /// - 可选 [subtitle] 行（如在线状态文本）
 ///
-/// mxid 显示策略：默认隐藏 `@` 前缀和 `:server` 后缀，仅显示 6 位 localpart
-/// （Zeon 用户的公开短码）。复制时仍复制完整 mxid 以方便粘贴到 IM 协议世界。
+/// mxid 显示策略：默认隐藏 `@` 前缀和 `:server` 后缀，仅显示 localpart
+/// （Zeon 用户的公开短码）。复制时同样只复制 localpart（即 6 位 UID）。
 class ZeonProfileHeader extends StatelessWidget {
   const ZeonProfileHeader({
     super.key,
@@ -116,7 +116,7 @@ class ZeonProfileHeader extends StatelessWidget {
   }
 
   void _copyMxid(BuildContext context, String mxid) {
-    TwakeClipboard.instance.copyText(mxid);
+    TwakeClipboard.instance.copyText(displayUid(mxid));
     TwakeSnackBar.show(context, L10n.of(context)!.copiedToClipboard);
   }
 }

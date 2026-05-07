@@ -108,58 +108,113 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
 
   Future<void> _confirmAndLogout() async {
     if (_loggingOut) return;
-    final confirmed = await showDialog<bool>(
+
+    // Use a record to return both the confirmation and the checkbox state.
+    final result = await showDialog<(bool confirmed, bool clearData)>(
       context: context,
       barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1C1B1C),
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(4)),
-        ),
-        title: const Text(
-          '确认登出',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-          ),
-        ),
-        content: const Text(
-          '登出后，需要使用密钥卡片才能在本设备恢复登录。',
-          style: TextStyle(
-            color: Color(0xFFC6C6C6),
-            fontSize: 13,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text(
-              '取消',
-              style: TextStyle(
-                color: Color(0xFFC6C6C6),
-                letterSpacing: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
+      builder: (ctx) {
+        var clearData = false;
+        return StatefulBuilder(
+          builder: (ctx, setInnerState) => AlertDialog(
+            backgroundColor: const Color(0xFF1C1B1C),
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(4)),
             ),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              '登出',
+            title: const Text(
+              '确认登出',
               style: TextStyle(
-                color: Color(0xFFFFB4AB),
-                letterSpacing: 1.4,
+                color: Colors.white,
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
               ),
             ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '登出后，需要使用密钥卡片才能在本设备恢复登录。',
+                  style: TextStyle(
+                    color: Color(0xFFC6C6C6),
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Clear data checkbox
+                GestureDetector(
+                  onTap: () => setInnerState(() => clearData = !clearData),
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: Checkbox(
+                          value: clearData,
+                          onChanged: (v) =>
+                              setInnerState(() => clearData = v ?? false),
+                          side: const BorderSide(
+                            color: Color(0xFF636363),
+                            width: 1.5,
+                          ),
+                          activeColor: const Color(0xFFFFB4AB),
+                          checkColor: const Color(0xFF1C1B1C),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(2)),
+                          ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Text(
+                        '同时清空本地聊天记录',
+                        style: TextStyle(
+                          color: Color(0xFF919191),
+                          fontSize: 12,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, (false, false)),
+                child: const Text(
+                  '取消',
+                  style: TextStyle(
+                    color: Color(0xFFC6C6C6),
+                    letterSpacing: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, (true, clearData)),
+                child: const Text(
+                  '登出',
+                  style: TextStyle(
+                    color: Color(0xFFFFB4AB),
+                    letterSpacing: 1.4,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
-    if (confirmed != true) return;
+
+    if (result == null || !result.$1) return;
+    final clearData = result.$2;
 
     setState(() => _loggingOut = true);
     try {
@@ -169,21 +224,26 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
           await matrix.backgroundPush!.removeCurrentPusher();
         } catch (_) {/* best-effort */}
       }
-      // 软登出：保留本地 Megolm/Olm 密钥，仅废弃 server token，
-      // 这样同账号再次登录可以继续解密历史消息。
+      if (clearData) {
+        // Hard logout: wipe the local Hive database entirely. The next login
+        // will start with a clean slate (no message history, no crypto keys).
+        await matrix.client.clear();
+      }
+      // Soft logout: invalidates the server token and sets accessToken = null
+      // so isLogged() returns false. If clearData was true, the database is
+      // already wiped above; soft logout then becomes a no-op for local data.
       await ZeonSoftLogout.execute(matrix.client);
     } catch (e) {
       Logs().w('ZeonProfilePage: logout failed: $e');
     }
     if (!mounted) return;
     setState(() => _loggingOut = false);
-    // Matrix loggedOutRedirect will pick up from here.
     context.go('/home');
   }
 
   // ── Section actions ─────────────────────────────────────────────────────
 
-  void _onTapPrivacy() => context.push('/rooms/security');
+  void _onTapPrivacy() => context.push('/rooms/zeon-privacy');
 
   void _onTapAbout() => PlatformInfos.showAboutDialogFullScreen();
 
@@ -483,18 +543,8 @@ class _WalletSection extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
           Container(height: 1, color: const Color(0x1AFFFFFF)),
-          const SizedBox(height: 12),
-          const Text(
-            '兼容 MetaMask、TokenPocket 等主流 Web3 钱包，可接收链上转账。私钥仅加密保存在本设备，平台不持有任何副本。',
-            style: TextStyle(
-              color: Color(0xFFC6C6C6),
-              fontSize: 11,
-              height: 1.55,
-              fontWeight: FontWeight.w300,
-            ),
-          ),
+
         ],
       ),
     );

@@ -1,10 +1,11 @@
 package app.zeon.android
 
+import android.content.Context
+import android.view.WindowManager
+import androidx.multidex.MultiDex
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
-
-import android.content.Context
-import androidx.multidex.MultiDex
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     override fun attachBaseContext(base: Context) {
@@ -17,7 +18,23 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
-        // do nothing, because the engine was been configured in provideEngine
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            "app.zeon/window_manager",
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setSecure" -> {
+                    val secure = call.argument<Boolean>("secure") ?: false
+                    if (secure) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    }
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     companion object {

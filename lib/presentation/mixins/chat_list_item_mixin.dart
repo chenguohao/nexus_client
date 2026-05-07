@@ -26,7 +26,57 @@ mixin ChatListItemMixin {
     bool isGroup,
     Event? event,
   ) {
+    // ── Direct-chat invite: always show this label regardless of event state.
+    // Must be checked BEFORE the event == null guard because invited rooms
+    // often have no accessible lastEvent on the receiving side.
+    if (!isGroup && room.membership == Membership.invite) {
+      return Text(
+        '向你发来聊天请求',
+        softWrap: false,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: Color(0xFFC6C6C6),
+          fontSize: 14,
+          fontFamily: 'Inter',
+        ),
+      );
+    }
+
     if (event == null) return const SizedBox.shrink();
+
+    // For direct-chat image/video messages, show a short text label instead
+    // of a filename or raw body that would not make sense out of context.
+    if (!isGroup) {
+      final mt = event.messageType;
+      if (mt == MessageTypes.Image) {
+        return Text(
+          '📷 图片',
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Color(0xFFC6C6C6),
+            fontSize: 14,
+            fontFamily: 'Inter',
+          ),
+        );
+      }
+      if (mt == MessageTypes.Video) {
+        return Text(
+          '🎥 视频',
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Color(0xFFC6C6C6),
+            fontSize: 14,
+            fontFamily: 'Inter',
+          ),
+        );
+      }
+    }
+
     return FutureBuilder<String>(
       future: event.calcLocalizedBodyRemoveBreakLine(L10n.of(context)!),
       builder: (context, snapshot) {

@@ -27,7 +27,15 @@ abstract class AppConfig {
   static String? _applicationWelcomeMessage;
 
   static String? get applicationWelcomeMessage => _applicationWelcomeMessage;
-  static String _defaultHomeserver = 'http://127.0.0.1:8008';
+  // Release 环境注入 https://zeon-im.com，debug 留空则回退到本机地址
+  static const _defaultHomeserverEnv = String.fromEnvironment(
+    'DEFAULT_HOMESERVER',
+    defaultValue: '',
+  );
+
+  static String _defaultHomeserver = _defaultHomeserverEnv.isNotEmpty
+      ? _defaultHomeserverEnv
+      : 'http://127.0.0.1:8008';
 
   static String get defaultHomeserver => _defaultHomeserver;
   static double bubbleSizeFactor = 1;

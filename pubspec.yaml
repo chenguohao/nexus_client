@@ -201,6 +201,7 @@ dependencies:
   flutter_portal: 1.1.4
   external_path: 2.2.0
   gal: 2.3.0
+  wallet: ^0.0.13
   auto_size_text: 3.0.0
   flutter_avif: 3.1.0
   heic_to_png_jpg: 0.0.5

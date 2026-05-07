@@ -163,37 +163,62 @@ class _DirectChatInformation extends StatelessWidget {
     this.avatarSize,
   });
 
+  /// 当 displayName 缺失或等于 Matrix ID（room member 事件没有携带 displayname
+  /// 字段时 SDK 的降级行为）时，从 Matrix 补查对方的真实 Profile。
+  Future<Profile?> _tryFetchProfile(String matrixId) async {
+    try {
+      return await client.getProfileFromUserId(matrixId, getFromRooms: true);
+    } catch (_) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Avatar(
-          name: recentChatPresentationSearch.displayName,
-          mxContent: recentChatPresentationSearch.getAvatarUriByMatrixId(
-            client: client,
-          ),
-          size: avatarSize ?? RecentItemStyle.avatarSize,
-        ),
-        const SizedBox(width: 8),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _SearchHighlightText(
-                text: recentChatPresentationSearch.displayName ?? "",
-                style: ListItemStyle.titleTextStyle(fontFamily: 'Inter'),
-                searchWord: searchKeyword,
+    final matrixId = recentChatPresentationSearch.directChatMatrixID;
+    final rawName = recentChatPresentationSearch.displayName;
+    // displayName 缺失或等于 Matrix ID，说明 room member 事件里没有 displayname，
+    // 需要通过 Profile API 补查真实昵称。
+    final needsLookup =
+        matrixId != null && (rawName == null || rawName.isEmpty || rawName == matrixId);
+
+    return FutureBuilder<Profile?>(
+      future: needsLookup ? _tryFetchProfile(matrixId) : Future.value(null),
+      builder: (context, snapshot) {
+        final resolvedName = snapshot.data?.displayName ?? rawName;
+        final resolvedAvatar =
+            snapshot.data?.avatarUrl ??
+            recentChatPresentationSearch.getAvatarUriByMatrixId(client: client);
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Avatar(
+              name: resolvedName,
+              mxContent: resolvedAvatar,
+              size: avatarSize ?? RecentItemStyle.avatarSize,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SearchHighlightText(
+                    text: resolvedName ?? matrixId ?? "",
+                    style: ListItemStyle.titleTextStyle(fontFamily: 'Inter'),
+                    searchWord: searchKeyword,
+                  ),
+                  _SearchHighlightText(
+                    text: matrixId ?? "",
+                    style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+                    searchWord: searchKeyword,
+                  ),
+                ],
               ),
-              _SearchHighlightText(
-                text: recentChatPresentationSearch.directChatMatrixID ?? "",
-                style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
-                searchWord: searchKeyword,
-              ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 }

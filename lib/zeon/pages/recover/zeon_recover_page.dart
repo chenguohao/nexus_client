@@ -3,9 +3,11 @@ import 'dart:ui' as ui;
 
 import 'package:fluffychat/domain/model/tom_server_information.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:matrix/matrix.dart';
+import 'package:web3dart/web3dart.dart';
 
 import '../../../widgets/matrix.dart';
 import '../../services/api_service.dart';
@@ -13,8 +15,11 @@ import '../../services/key_service.dart';
 import '../../services/steganography_service.dart';
 import '../../services/zeon_key_card_qr_decode.dart';
 import '../../services/zeon_matrix_client_database.dart';
-import '../../services/zeon_soft_logout.dart';
 import '../mining/zeon_mining_logic.dart' show ZeonMiningLogic;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Page
+// ══════════════════════════════════════════════════════════════════════════════
 
 class ZeonRecoverPage extends StatefulWidget {
   const ZeonRecoverPage({super.key});
@@ -23,215 +28,50 @@ class ZeonRecoverPage extends StatefulWidget {
   State<ZeonRecoverPage> createState() => _ZeonRecoverPageState();
 }
 
+enum _RecoveryMode { choosing, keyCard, mnemonic, processing }
+
 class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
   final _steg = SteganographyService();
   final _keyService = KeyService();
   final _apiService = ApiService();
   final _imagePicker = ImagePicker();
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _startRecovery());
-  }
+  _RecoveryMode _mode = _RecoveryMode.choosing;
 
-  Future<void> _startRecovery() async {
-    // Step 1: Pick image from gallery (full quality — LSB payload is fragile).
-    final file = await _imagePicker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 100,
-    );
-    if (file == null) {
-      if (mounted) context.go('/home');
-      return;
-    }
-
-    if (!mounted) return;
-
-    // Step 2: Encrypted key from LSB and/or QR (QR survives JPEG re-compression).
-    final imageBytes = await File(file.path).readAsBytes();
-
-    String? lsbEncryptedHex;
-    try {
-      final codec = await ui.instantiateImageCodec(imageBytes);
-      final frame = await codec.getNextFrame();
-      final image = frame.image;
-      final byteData =
-          await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-      if (byteData == null) throw Exception('Failed to decode image');
-
-      final rgbaBytes = byteData.buffer.asUint8List();
-      lsbEncryptedHex = _steg.extract(rgbaBytes);
-    } catch (_) {
-      lsbEncryptedHex = null;
-    }
-
-    final qrEncryptedHex = ZeonKeyCardQrDecode.tryDecodeEncryptedHex(imageBytes);
-
-    if (lsbEncryptedHex == null && qrEncryptedHex == null) {
-      if (mounted) {
-        await _showResultDialog(
-          success: false,
-          title: 'INVALID IMAGE',
-          message:
-              'Could not read a Zeon key from this image (hidden data and QR). '
-              'Use the original key card photo from your gallery, or a clear '
-              'shot where the QR is readable.\n',
-        );
-        if (mounted) context.go('/home');
-      }
-      return;
-    }
-
-    final decryptCandidates = <MapEntry<String, String>>[
-      if (lsbEncryptedHex != null) MapEntry('lsb', lsbEncryptedHex),
-      if (qrEncryptedHex != null &&
-          qrEncryptedHex.toLowerCase() != lsbEncryptedHex?.toLowerCase())
-        MapEntry('qr', qrEncryptedHex),
-    ];
-
-    Logs().i(
-      'ZeonRecover: imageSize=${imageBytes.length}B '
-      'lsb=${lsbEncryptedHex != null} qr=${qrEncryptedHex != null} '
-      'decryptCandidates=${decryptCandidates.map((c) => c.key).join(",")} '
-      'hexLens=${decryptCandidates.map((c) => c.value.length).join(",")}',
-    );
-
-    if (!mounted) return;
-
-    // Step 3: Ask for password
-    final password = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (_) => const _PasswordInputDialog(),
-    );
-    if (password == null) {
-      if (mounted) context.go('/home');
-      return;
-    }
-
-    if (!mounted) return;
-
-    // Step 4: Decrypt and login (try LSB payload first, then QR if needed).
-    try {
-      String privateKeyHex = '';
-      Object? decryptError;
-      var decryptSource = '';
-      for (final c in decryptCandidates) {
-        try {
-          privateKeyHex = ZeonMiningLogic.decryptPrivateKey(
-            c.value,
-            password,
-          );
-          decryptSource = c.key;
-          decryptError = null;
-          break;
-        } catch (e, st) {
-          Logs().w('ZeonRecover: decrypt failed source=${c.key}: $e\n$st');
-          decryptError = e;
-        }
-      }
-      if (privateKeyHex.isEmpty) {
-        throw decryptError ?? Exception('Decryption failed');
-      }
-
-      Logs().i(
-        'ZeonRecover: decrypt OK source=$decryptSource '
-        'privKeyHexLen=${privateKeyHex.length} '
-        '(password not logged)',
-      );
-
-      if (!mounted) return;
-
-      // Import key into secure storage
-      final privateKey = await _keyService.importPrivateKey(privateKeyHex);
-      final walletAddress = _keyService.address(privateKey);
-
-      // Resolve the wallet address to its 6-char UID (= Matrix localpart).
-      // The mapping lives server-side because UID generation may have used a
-      // collision-resolution salt that the client cannot reproduce locally.
-      final quickLoginUser = await _apiService.lookupUid(
-        walletAddress: walletAddress,
-      );
-
-      final matrixPassword = _keyService.matrixQuickLoginPassword(privateKey);
-
-      Logs().i(
-        'ZeonRecover: wallet=${_maskAddr(walletAddress)} '
-        'quickLoginUser=$quickLoginUser '
-        'matrixPasswordLen=${matrixPassword.length} '
-        'apiBase=${_apiService.baseUrl}',
-      );
-
-      // Login via Zeon API (password derived from pubkey; matches /submit-mining registration)
-      final loginResponse = await _apiService.quickLogin(
-        username: quickLoginUser,
-        password: matrixPassword,
-      );
-
-      Logs().i(
-        'ZeonRecover: quickLogin OK matrixUserId=${loginResponse.matrixUserId} '
-        'deviceId=${loginResponse.deviceId}',
-      );
-
-      if (!mounted) return;
-
-      // Login to Matrix client
-      final loginError = await _loginMatrixClient(
-        matrixUserId: loginResponse.matrixUserId,
-        accessToken: loginResponse.matrixAccessToken,
-        deviceId: loginResponse.deviceId,
-      );
-
-      if (!mounted) return;
-
-      if (loginError != null) {
-        Logs().w('ZeonRecover: Matrix client init failed: $loginError');
-        await _showResultDialog(
-          success: false,
-          title: 'LOGIN FAILED',
-          message: loginError,
-        );
-        if (mounted) context.go('/home');
-        return;
-      }
-
-      context.go('/rooms');
-    } catch (e, st) {
-      Logs().w('ZeonRecover: RECOVERY FAILED: $e\n$st');
-      if (mounted) {
-        await _showResultDialog(
-          success: false,
-          title: 'RECOVERY FAILED',
-          message: 'Wrong password or corrupted data.\n\n$e',
-        );
-        if (mounted) context.go('/home');
-      }
-    }
-  }
-
-  static String _maskAddr(String addr) {
-    final a = addr.startsWith('0x') ? addr : '0x$addr';
-    if (a.length <= 14) return a;
-    return '${a.substring(0, 8)}…${a.substring(a.length - 6)}';
-  }
+  // ── Shared login helper ────────────────────────────────────────────────────
 
   Future<String?> _loginMatrixClient({
     required String matrixUserId,
     required String accessToken,
     required String deviceId,
   }) async {
-    final client = Matrix.of(context).client;
-    final homeserverUri = Uri.parse(
-      _apiService.baseUrl.replaceFirst(':8080', ':8008'),
-    );
+    final matrixState = Matrix.of(context);
+    final homeserverUri = Uri.parse(ApiService.envServerUrl.isNotEmpty
+        ? ApiService.envServerUrl
+        : _apiService.baseUrl.replaceFirst(':8080', ':8008'));
     Logs().i('ZeonRecoverPage: logging in as $matrixUserId to $homeserverUri');
 
-    // Soft-logout 之后本地 Hive 仍保留前一个用户的所有数据。
-    // 同账号 → 保留（历史 E2E 消息可继续解密）。
-    // 跨账号 → 必须先清空，否则会用到错误用户的密钥。
-    await ZeonSoftLogout.ensureCleanForUser(client, matrixUserId);
+    // If the account is already loaded and logged in (e.g. user switched away
+    // but the session is still alive), just make it active — no re-init needed.
+    final existing = matrixState.getClientByUserId(matrixUserId);
+    if (existing != null && existing.isLogged()) {
+      Logs().i('ZeonRecoverPage: $matrixUserId already logged in, switching');
+      await matrixState.setActiveClient(existing);
+      return null;
+    }
+
+    // Get a per-account client candidate. getLoginClient() wires the
+    // LoginState.loggedIn event to _handleAddAnotherAccount automatically,
+    // which adds the client to widget.clients and persists its name.
+    final client = await matrixState.getLoginClient();
+
+    // Soft logout intentionally keeps the local Hive database. If this client
+    // instance was previously used by a different user, wipe it now so the
+    // recovering user does not inherit stale rooms/messages.
+    // We use MatrixState.clearClientForReinit (not ZeonSoftLogout.ensureCleanForUser)
+    // because client.clear() emits loggedOut as a side-effect which would
+    // navigate away from this page. clearClientForReinit suppresses that.
+    await matrixState.clearClientForReinit(client, matrixUserId);
 
     try {
       await ZeonMatrixClientDatabase.ensureOpenBeforeInit(client);
@@ -266,11 +106,6 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
       return 'Login succeeded but client state is not logged-in';
     }
 
-    // After Zeon login, Dendrite does not advertise a Twake TOM server in its
-    // well-known discovery, so the Dio interceptor base URL stays null and
-    // /_twake/* requests fail. The Zeon server (port 8080) implements the
-    // /_twake/* endpoints, so register it as the TOM server and persist it.
-    final matrixState = Matrix.of(context);
     await matrixState.setUpAndStoreZeonToMServices(
       ToMServerInformation(baseUrl: Uri.parse(_apiService.baseUrl)),
     );
@@ -278,6 +113,38 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
     Logs().i('ZeonRecoverPage: logged in successfully as $matrixUserId');
     return null;
   }
+
+  // ── Shared: lookup + quickLogin + navigate ─────────────────────────────────
+
+  Future<void> _finishRecovery(EthPrivateKey privateKey) async {
+    if (!mounted) return;
+    final walletAddress = _keyService.address(privateKey);
+    final quickLoginUser =
+        await _apiService.lookupUid(walletAddress: walletAddress);
+    final matrixPassword = _keyService.matrixQuickLoginPassword(privateKey);
+
+    final loginResponse = await _apiService.quickLogin(
+      username: quickLoginUser,
+      password: matrixPassword,
+    );
+
+    if (!mounted) return;
+
+    final loginError = await _loginMatrixClient(
+      matrixUserId: loginResponse.matrixUserId,
+      accessToken: loginResponse.matrixAccessToken,
+      deviceId: loginResponse.deviceId,
+    );
+
+    if (!mounted) return;
+
+    if (loginError != null) {
+      throw Exception(loginError);
+    }
+    context.go('/rooms');
+  }
+
+  // ── Result dialog ──────────────────────────────────────────────────────────
 
   Future<void> _showResultDialog({
     required bool success,
@@ -313,8 +180,9 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
                 Text(
                   title,
                   style: TextStyle(
-                    color:
-                        success ? const Color(0xFF4FFFB0) : const Color(0xFFFFB4AB),
+                    color: success
+                        ? const Color(0xFF4FFFB0)
+                        : const Color(0xFFFFB4AB),
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 3.0,
@@ -359,21 +227,591 @@ class _ZeonRecoverPageState extends State<ZeonRecoverPage> {
     );
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // KEY CARD recovery flow
+  // ══════════════════════════════════════════════════════════════════════════
+
+  Future<void> _startKeyCardRecovery() async {
+    setState(() => _mode = _RecoveryMode.processing);
+
+    final file = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 100,
+    );
+    if (file == null) {
+      if (mounted) setState(() => _mode = _RecoveryMode.choosing);
+      return;
+    }
+
+    if (!mounted) return;
+
+    final imageBytes = await File(file.path).readAsBytes();
+
+    String? lsbEncryptedHex;
+    try {
+      final codec = await ui.instantiateImageCodec(imageBytes);
+      final frame = await codec.getNextFrame();
+      final image = frame.image;
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      if (byteData == null) throw Exception('Failed to decode image');
+      lsbEncryptedHex = _steg.extract(byteData.buffer.asUint8List());
+    } catch (_) {
+      lsbEncryptedHex = null;
+    }
+
+    final qrEncryptedHex =
+        ZeonKeyCardQrDecode.tryDecodeEncryptedHex(imageBytes);
+
+    if (lsbEncryptedHex == null && qrEncryptedHex == null) {
+      if (mounted) {
+        await _showResultDialog(
+          success: false,
+          title: 'INVALID IMAGE',
+          message:
+              'Could not read a Zeon key from this image (hidden data and QR). '
+              'Use the original key card photo from your gallery, or a clear '
+              'shot where the QR is readable.\n',
+        );
+        if (mounted) setState(() => _mode = _RecoveryMode.choosing);
+      }
+      return;
+    }
+
+    final decryptCandidates = <MapEntry<String, String>>[
+      if (lsbEncryptedHex != null) MapEntry('lsb', lsbEncryptedHex),
+      if (qrEncryptedHex != null &&
+          qrEncryptedHex.toLowerCase() != lsbEncryptedHex?.toLowerCase())
+        MapEntry('qr', qrEncryptedHex),
+    ];
+
+    if (!mounted) return;
+
+    final password = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (_) => const _PasswordInputDialog(),
+    );
+    if (password == null) {
+      if (mounted) setState(() => _mode = _RecoveryMode.choosing);
+      return;
+    }
+
+    if (!mounted) return;
+
+    try {
+      String privateKeyHex = '';
+      Object? decryptError;
+      for (final c in decryptCandidates) {
+        try {
+          privateKeyHex =
+              ZeonMiningLogic.decryptPrivateKey(c.value, password);
+          decryptError = null;
+          break;
+        } catch (e, st) {
+          Logs().w('ZeonRecover: decrypt failed source=${c.key}: $e\n$st');
+          decryptError = e;
+        }
+      }
+      if (privateKeyHex.isEmpty) {
+        throw decryptError ?? Exception('Decryption failed');
+      }
+
+      final privateKey = await _keyService.importPrivateKey(privateKeyHex);
+      await _finishRecovery(privateKey);
+    } catch (e, st) {
+      Logs().w('ZeonRecover (key card): FAILED: $e\n$st');
+      if (mounted) {
+        await _showResultDialog(
+          success: false,
+          title: 'RECOVERY FAILED',
+          message: 'Wrong password or corrupted data.\n\n$e',
+        );
+        if (mounted) setState(() => _mode = _RecoveryMode.choosing);
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // MNEMONIC recovery flow
+  // ══════════════════════════════════════════════════════════════════════════
+
+  void _startMnemonicRecovery() {
+    setState(() => _mode = _RecoveryMode.mnemonic);
+  }
+
+  Future<void> _submitMnemonic(List<String> words) async {
+    setState(() => _mode = _RecoveryMode.processing);
+    try {
+      final privateKey = await _keyService.importFromMnemonic(words);
+      await _finishRecovery(privateKey);
+    } catch (e, st) {
+      Logs().w('ZeonRecover (mnemonic): FAILED: $e\n$st');
+      if (mounted) {
+        await _showResultDialog(
+          success: false,
+          title: 'RECOVERY FAILED',
+          message: 'Invalid mnemonic or account not found.\n\n$e',
+        );
+        if (mounted) setState(() => _mode = _RecoveryMode.mnemonic);
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Build
+  // ══════════════════════════════════════════════════════════════════════════
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF131314),
-      body: Center(
-        child: CircularProgressIndicator(
-          color: Colors.white,
-          strokeWidth: 1.5,
+    return Scaffold(
+      backgroundColor: const Color(0xFF131314),
+      body: SafeArea(
+        child: switch (_mode) {
+          _RecoveryMode.choosing => _ChoosingView(
+              onKeyCard: _startKeyCardRecovery,
+              onMnemonic: _startMnemonicRecovery,
+              onBack: () => context.go('/home'),
+            ),
+          _RecoveryMode.mnemonic => _MnemonicInputView(
+              onSubmit: _submitMnemonic,
+              onBack: () => setState(() => _mode = _RecoveryMode.choosing),
+            ),
+          _RecoveryMode.keyCard ||
+          _RecoveryMode.processing =>
+            const Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                strokeWidth: 1.5,
+              ),
+            ),
+        },
+      ),
+    );
+  }
+
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Choice screen
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _ChoosingView extends StatelessWidget {
+  final VoidCallback onKeyCard;
+  final VoidCallback onMnemonic;
+  final VoidCallback onBack;
+
+  const _ChoosingView({
+    required this.onKeyCard,
+    required this.onMnemonic,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        children: [
+          const SizedBox(height: 20),
+          // Top bar
+          Row(
+            children: [
+              GestureDetector(
+                onTap: onBack,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0x33FFFFFF)),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Text(
+                'RECOVER · 账户恢复',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2.5,
+                ),
+              ),
+            ],
+          ),
+          const Spacer(),
+          const Text(
+            '选择恢复方式',
+            style: TextStyle(
+              color: Color(0xFF666666),
+              fontSize: 11,
+              letterSpacing: 2.0,
+            ),
+          ),
+          const SizedBox(height: 24),
+          _RecoveryOptionCard(
+            icon: Icons.image_outlined,
+            title: '密钥卡图片',
+            subtitle: '从相册选取保存过的 Zeon 密钥卡，输入密码恢复',
+            onTap: onKeyCard,
+          ),
+          const SizedBox(height: 16),
+          _RecoveryOptionCard(
+            icon: Icons.format_list_numbered_outlined,
+            title: '助记词（24 词）',
+            subtitle: '输入 BIP39 标准助记词恢复，兼容 MetaMask 等钱包',
+            onTap: onMnemonic,
+          ),
+          const Spacer(),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecoveryOptionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _RecoveryOptionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF0E0E0F),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0x33474747)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0x33FFFFFF)),
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xFF666666),
+                      fontSize: 11,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF444444),
+              size: 20,
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Password input dialog (same style as key_security_dialog) ───────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// Mnemonic 24-word input view
+// ══════════════════════════════════════════════════════════════════════════════
+
+class _MnemonicInputView extends StatefulWidget {
+  final Future<void> Function(List<String> words) onSubmit;
+  final VoidCallback onBack;
+
+  const _MnemonicInputView({
+    required this.onSubmit,
+    required this.onBack,
+  });
+
+  @override
+  State<_MnemonicInputView> createState() => _MnemonicInputViewState();
+}
+
+class _MnemonicInputViewState extends State<_MnemonicInputView> {
+  final _controllers =
+      List.generate(24, (_) => TextEditingController());
+  final _focusNodes = List.generate(24, (_) => FocusNode());
+  String? _error;
+
+  @override
+  void dispose() {
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
+    super.dispose();
+  }
+
+  List<String> get _words =>
+      _controllers.map((c) => c.text.trim().toLowerCase()).toList();
+
+  void _onPaste(String text) {
+    final parts = text.trim().toLowerCase().split(RegExp(r'\s+'));
+    if (parts.length == 24) {
+      for (var i = 0; i < 24; i++) {
+        _controllers[i].text = parts[i];
+      }
+      setState(() => _error = null);
+    }
+  }
+
+  Future<void> _onConfirm() async {
+    final words = _words;
+    if (words.any((w) => w.isEmpty)) {
+      setState(() => _error = '请填写全部 24 个助记词');
+      return;
+    }
+    setState(() => _error = null);
+    await widget.onSubmit(words);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        // Top bar
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: widget.onBack,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: const Color(0x33FFFFFF)),
+                  ),
+                  child: const Icon(
+                    Icons.arrow_back,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Text(
+                '输入助记词',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 2.5,
+                ),
+              ),
+              const Spacer(),
+              // Paste all button
+              GestureDetector(
+                onTap: () async {
+                  final data = await Clipboard.getData('text/plain');
+                  if (data?.text != null) _onPaste(data!.text!);
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: const Color(0x33FFFFFF)),
+                  ),
+                  child: const Text(
+                    '粘贴',
+                    style: TextStyle(
+                      color: Color(0xFFCCCCCC),
+                      fontSize: 11,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 24),
+          child: Text(
+            '按顺序输入 24 个助记词，或点击「粘贴」一键导入',
+            style: TextStyle(
+              color: Color(0xFF555555),
+              fontSize: 11,
+              letterSpacing: 0.3,
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        // 24 word grid — 3 columns
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 2.2,
+              ),
+              itemCount: 24,
+              itemBuilder: (_, i) => _WordCell(
+                index: i,
+                controller: _controllers[i],
+                focusNode: _focusNodes[i],
+                nextFocusNode:
+                    i < 23 ? _focusNodes[i + 1] : null,
+                onChanged: (_) {
+                  if (_error != null) setState(() => _error = null);
+                },
+              ),
+            ),
+          ),
+        ),
+        if (_error != null)
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Text(
+              _error!,
+              style: const TextStyle(
+                color: Color(0xFFFFB4AB),
+                fontSize: 11,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: GestureDetector(
+            onTap: _onConfirm,
+            child: Container(
+              width: double.infinity,
+              height: 52,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: const Text(
+                '恢复账户',
+                style: TextStyle(
+                  color: Color(0xFF131314),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _WordCell extends StatelessWidget {
+  final int index;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final FocusNode? nextFocusNode;
+  final ValueChanged<String> onChanged;
+
+  const _WordCell({
+    required this.index,
+    required this.controller,
+    required this.focusNode,
+    required this.nextFocusNode,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF0E0E0F),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0x33474747)),
+      ),
+      child: TextField(
+        controller: controller,
+        focusNode: focusNode,
+        textInputAction:
+            nextFocusNode != null ? TextInputAction.next : TextInputAction.done,
+        autocorrect: false,
+        enableSuggestions: false,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          prefix: Text(
+            '${index + 1}.',
+            style: const TextStyle(
+              color: Color(0xFF555555),
+              fontSize: 9,
+            ),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 6, vertical: 0),
+          border: InputBorder.none,
+        ),
+        onChanged: onChanged,
+        onSubmitted: (_) {
+          if (nextFocusNode != null) {
+            FocusScope.of(context).requestFocus(nextFocusNode);
+          }
+        },
+      ),
+    );
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Password input dialog (key card recovery)
+// ══════════════════════════════════════════════════════════════════════════════
 
 class _PasswordInputDialog extends StatefulWidget {
   const _PasswordInputDialog();

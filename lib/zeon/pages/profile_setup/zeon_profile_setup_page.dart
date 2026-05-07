@@ -70,6 +70,13 @@ class _ZeonProfileSetupPageState extends State<ZeonProfileSetupPage> {
     }
   }
 
+  /// Returns the Matrix ID localpart as a fallback display name.
+  /// e.g. "@gtb3hk:zeon-im.com" → "gtb3hk"
+  String _uidFallback(String? userID) {
+    if (userID == null || userID.isEmpty) return '';
+    return userID.split(':').first.replaceFirst('@', '');
+  }
+
   Future<void> _completeSetup() async {
     if (_saving) return;
     final nickname = _nicknameCtrl.text.trim();
@@ -98,9 +105,13 @@ class _ZeonProfileSetupPageState extends State<ZeonProfileSetupPage> {
           'avatar_url': uri.toString(),
         });
       }
-      if (nickname.isNotEmpty) {
+      // If no custom nickname, fall back to the UID (Matrix localpart) so other
+      // users always see a meaningful name instead of the full @uid:domain string.
+      final effectiveName =
+          nickname.isNotEmpty ? nickname : _uidFallback(client.userID);
+      if (effectiveName.isNotEmpty) {
         await client.setProfileField(client.userID!, 'displayname', {
-          'displayname': nickname,
+          'displayname': effectiveName,
         });
       }
     } catch (e, st) {
@@ -119,6 +130,17 @@ class _ZeonProfileSetupPageState extends State<ZeonProfileSetupPage> {
 
   void _skip() {
     if (_saving) return;
+    // Set UID as default display name so contacts can see a meaningful identifier.
+    // Fire-and-forget: navigation proceeds immediately; the server update is best-effort.
+    final client = Matrix.of(context).client;
+    final fallback = _uidFallback(client.userID);
+    if (fallback.isNotEmpty) {
+      client
+          .setProfileField(client.userID!, 'displayname', {
+            'displayname': fallback,
+          })
+          .catchError((_) {});
+    }
     context.go('/rooms');
   }
 

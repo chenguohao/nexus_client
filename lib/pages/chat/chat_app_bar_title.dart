@@ -15,7 +15,6 @@ import 'package:fluffychat/pages/chat/typing_timer_wrapper.dart';
 import 'package:fluffychat/resource/image_paths.dart';
 import 'package:fluffychat/utils/common_helper.dart';
 import 'package:fluffychat/utils/room_status_extension.dart';
-import 'package:fluffychat/utils/string_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -193,106 +192,14 @@ class _ChatAppBarStatusContent extends StatelessWidget {
 
   final Stream<ConnectivityResult> connectivityResultStream;
   final Room room;
+  // presence 相关参数保留声明，避免调用方改动，但不再用于显示在线状态。
   final ValueNotifier<CachedPresence?> cachedPresenceNotifier;
   final StreamController<CachedPresence>? cachedPresenceStreamController;
 
   @override
   Widget build(BuildContext context) {
-    if (room.isDirectChat) {
-      return _DirectChatAppBarStatusContent(
-        connectivityResultStream: connectivityResultStream,
-        room: room,
-        cachedPresenceNotifier: cachedPresenceNotifier,
-        cachedPresenceStreamController: cachedPresenceStreamController!,
-      );
-    }
-
-    return _GroupChatAppBarStatusContent(
-      connectivityResultStream: connectivityResultStream,
-      room: room,
-    );
-  }
-}
-
-class _DirectChatAppBarStatusContent extends StatelessWidget {
-  const _DirectChatAppBarStatusContent({
-    required this.connectivityResultStream,
-    required this.room,
-    required this.cachedPresenceNotifier,
-    required this.cachedPresenceStreamController,
-  });
-
-  final Stream<ConnectivityResult> connectivityResultStream;
-  final Room room;
-  final ValueNotifier<CachedPresence?> cachedPresenceNotifier;
-  final StreamController<CachedPresence> cachedPresenceStreamController;
-
-  @override
-  Widget build(BuildContext context) {
-    CachedPresence? directChatPresence = room.directChatPresence;
-    return ValueListenableBuilder(
-      valueListenable: cachedPresenceNotifier,
-      builder: (context, directChatCachedPresence, child) {
-        return StreamBuilder(
-          stream: connectivityResultStream,
-          builder: (context, connectivitySnapshot) {
-            return StreamBuilder(
-              stream: cachedPresenceStreamController.stream,
-              builder: (context, cachedPresenceSnapshot) {
-                final connectivityResult = tryCast<ConnectivityResult>(
-                  connectivitySnapshot.data,
-                  fallback: ConnectivityResult.none,
-                );
-                directChatPresence = tryCast<CachedPresence>(
-                  cachedPresenceSnapshot.data,
-                  fallback: directChatCachedPresence,
-                );
-                if (connectivitySnapshot.hasData &&
-                    connectivityResult == ConnectivityResult.none) {
-                  return ChatAppBarTitleText(
-                    text: L10n.of(context)!.noConnection,
-                  );
-                }
-                if (directChatPresence == null) {
-                  return ChatAppBarTitleText(
-                    text: L10n.of(context)!.loadingStatus,
-                  );
-                }
-                return TypingTimerWrapper(
-                  room: room,
-                  l10n: L10n.of(context)!,
-                  typingWidget: _ChatAppBarTitleTyping(
-                    typingText: room.getLocalizedTypingText(L10n.of(context)!),
-                  ),
-                  notTypingWidget: ChatAppBarTitleText(
-                    text: room
-                        .getLocalizedStatus(
-                          context,
-                          presence: directChatPresence,
-                        )
-                        .capitalize(context),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-}
-
-class _GroupChatAppBarStatusContent extends StatelessWidget {
-  const _GroupChatAppBarStatusContent({
-    required this.connectivityResultStream,
-    required this.room,
-  });
-
-  final Stream<ConnectivityResult> connectivityResultStream;
-  final Room room;
-
-  @override
-  Widget build(BuildContext context) {
+    // 隐私优先：不显示在线/离线状态（对标微信设计）。
+    // 仅保留"断网"提示和"正在输入…"动效，二者不暴露用户在线状态。
     return StreamBuilder<ConnectivityResult>(
       stream: connectivityResultStream,
       builder: (context, snapshot) {
@@ -304,15 +211,14 @@ class _GroupChatAppBarStatusContent extends StatelessWidget {
         if (snapshot.hasData && connectivityResult == ConnectivityResult.none) {
           return ChatAppBarTitleText(text: L10n.of(context)!.noConnection);
         }
+
         return TypingTimerWrapper(
           room: room,
           l10n: L10n.of(context)!,
           typingWidget: _ChatAppBarTitleTyping(
             typingText: room.getLocalizedTypingText(L10n.of(context)!),
           ),
-          notTypingWidget: ChatAppBarTitleText(
-            text: room.getLocalizedStatus(context).capitalize(context),
-          ),
+          notTypingWidget: const SizedBox.shrink(),
         );
       },
     );

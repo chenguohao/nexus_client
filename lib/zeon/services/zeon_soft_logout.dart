@@ -67,9 +67,15 @@ class ZeonSoftLogout {
 
     await _invalidateServerToken(client);
 
+    // 清除内存中的 access token，使 client.isLogged() 返回 false。
+    // 这样 GoRouter 的 loggedInRedirect 守卫才能放行 /home 路由，而不会
+    // 把用户弹回 /rooms 形成重定向死循环。
+    // 注意：此操作不触碰 Hive 数据库，Megolm session / 房间历史 / 用户配置
+    // 全部保留，满足"软登出"的设计目标。
+    client.accessToken = null;
+
     // 主动推送 loggedOut 状态。MatrixState._listenLoginStateChanged 会感知
-    // 此事件并导航到 /home。区别于 client.logout()，我们没有调用 clear()，
-    // 所以 Hive 中的 Megolm session、房间历史、用户配置全部保留。
+    // 此事件并导航到 /home。
     client.onLoginStateChanged.add(LoginState.loggedOut);
 
     Logs().i('ZeonSoftLogout: done — local data preserved');
