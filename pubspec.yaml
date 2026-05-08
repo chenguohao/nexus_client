@@ -250,10 +250,34 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/icons/icon_launcher.png"
 
 flutter_native_splash:
+  # iOS — managed by this tool; safe to regenerate.
   color_ios: "#ffffff"
   image_ios: "assets/logo_ios.png"
   branding_ios: "assets/branding.png"
-  color_android: "#ffffff"
+
+  # ─── ANDROID NOTICE ───────────────────────────────────────────────────────
+  # Android splash is hand-crafted to work around the A12+ OS splash
+  # constraint (system enforces a centred, circle-clipped icon during
+  # cold-start which cannot reproduce ZeonWelcomePage's layout).
+  #
+  # Strategy:
+  #   • LaunchTheme inherits androidx.core Theme.SplashScreen
+  #   • windowSplashScreenBackground = #131314 (Zeon dark)
+  #   • windowSplashScreenAnimatedIcon = 1×1 transparent PNG → no icon
+  #   • postSplashScreenTheme = NormalTheme (also #131314)
+  #   • MainActivity.onCreate() calls installSplashScreen()
+  # Result: a clean dark splash → ZeonWelcomePage transition with no
+  # white flash and no icon-position jump.
+  #
+  # ⚠️  DO NOT re-run `dart run flutter_native_splash:create` — it will
+  # overwrite the manually-edited styles.xml / launch_background.xml /
+  # android12splash.png variants.
+  # See:
+  #   - android/app/src/main/res/values{,-night}/styles.xml
+  #   - android/app/src/main/res/drawable*/android12splash.png  (transparent)
+  #   - android/app/src/main/kotlin/.../MainActivity.kt
+  # ─────────────────────────────────────────────────────────────────────────
+  color_android: "#131314"
 
 flutter:
   generate: true

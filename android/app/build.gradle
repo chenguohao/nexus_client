@@ -104,6 +104,11 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.1'
     implementation 'androidx.multidex:multidex:2.0.1'
+    // Bridge between OS-level splash (A12+ enforces a centred, circle-clipped
+    // icon — incompatible with the welcome page layout) and Flutter's first
+    // frame. We use installSplashScreen() + an OnExitAnimationListener to
+    // render a native overlay matching ZeonWelcomePage exactly.
+    implementation 'androidx.core:core-splashscreen:1.0.1'
     androidTestUtil "androidx.test:orchestrator:1.5.1"
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
 }

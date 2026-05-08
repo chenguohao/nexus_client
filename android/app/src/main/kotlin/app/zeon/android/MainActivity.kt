@@ -1,7 +1,9 @@
 package app.zeon.android
 
 import android.content.Context
+import android.os.Bundle
 import android.view.WindowManager
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.multidex.MultiDex
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -11,6 +13,18 @@ class MainActivity : FlutterActivity() {
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
         MultiDex.install(this)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        // Install AndroidX splash screen BEFORE super.onCreate so the
+        // OS-level splash (forced on Android 12+) gets our dark Zeon
+        // background and a 1×1 transparent icon — i.e. visually a clean
+        // dark screen during the unavoidable Flutter cold-start window.
+        // After Flutter draws its first frame the activity transitions
+        // to NormalTheme (also dark #131314) and ZeonWelcomePage takes
+        // over with no white flash and no jarring icon-position jump.
+        installSplashScreen()
+        super.onCreate(savedInstanceState)
     }
 
     override fun provideFlutterEngine(context: Context): FlutterEngine? {

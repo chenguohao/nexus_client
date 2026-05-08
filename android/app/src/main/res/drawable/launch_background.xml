@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@drawable/background" android:gravity="fill"/>
-    <item android:drawable="@drawable/splash" android:gravity="center" android:height="108dp" android:width="108dp"/>
-    <item android:bottom="40dp"  android:gravity="bottom|center_horizontal" android:drawable="@drawable/branding" android:height="31dp" android:width="210dp"/>
-</layer-list>
+<!--
+    Pre-Android 12 splash drawable. Used as the activity
+    `android:windowBackground` on Android 11 and below — i.e. the
+    activity's window IS the splash, fully under our control. The full
+    1080×2400 PNG mirrors ZeonWelcomePage exactly (background + axis +
+    glow + ZEON wordmark + subtitle), so users on older devices see a
+    seamless splash → welcome transition.
+
+    On Android 12+ the OS forces its own splash mechanism on top of the
+    activity until Flutter draws its first frame; this drawable is then
+    only briefly visible during the splash-exit handoff. styles.xml's
+    LaunchTheme also points to this drawable so the brief window is
+    consistent with the welcome page's look.
+-->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@drawable/zeon_splash"
+    android:gravity="fill_horizontal|fill_vertical"
+    android:tileMode="disabled" />
