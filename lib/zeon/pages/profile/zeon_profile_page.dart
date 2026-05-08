@@ -9,6 +9,8 @@ import '../../../widgets/matrix.dart';
 import '../../../widgets/zeon/zeon_profile_header.dart';
 import '../../services/key_service.dart';
 import '../../services/zeon_soft_logout.dart';
+import '../../utils/toast.dart';
+import 'zeon_profile_edit_page.dart';
 
 /// Zeon "我的" / Profile screen.
 ///
@@ -53,14 +55,23 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
     });
   }
 
-  Future<void> _loadProfile() async {
+  Future<void> _loadProfile({bool forceRefresh = false}) async {
     try {
       final client = Matrix.of(context).client;
       final userId = client.userID;
       if (userId == null) return;
+      // After an edit we mark the cached profile as outdated so the SDK
+      // refetches from the homeserver instead of returning the stale entry
+      // (default cache TTL is 1 day).
+      if (forceRefresh) {
+        try {
+          await client.database.markUserProfileAsOutdated(userId);
+        } catch (_) {/* best-effort cache invalidation */}
+      }
       final profile = await client.getProfileFromUserId(
         userId,
         getFromRooms: false,
+        maxCacheAge: forceRefresh ? Duration.zero : const Duration(days: 1),
       );
       if (!mounted) return;
       setState(() {
@@ -86,17 +97,7 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
   void _copy(String? text, String label) {
     if (text == null || text.isEmpty) return;
     Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF1C1B1C),
-        content: Text(
-          '$label 已复制',
-          style: const TextStyle(color: Colors.white, letterSpacing: 0.5),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    Toast.success('$label 已复制');
   }
 
   String _maskedAddress(String addr) {
@@ -254,9 +255,20 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
   }
 
   void _onTapWallet() {
-    // Reveals & scrolls to the wallet section. For now we just toggle the
-    // wallet visibility so the user instantly sees their address.
     setState(() => _walletVisible = true);
+  }
+
+  void _onTapEdit() async {
+    final updated = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => const ZeonProfileEditPage(),
+      ),
+    );
+    if (updated == true && mounted) {
+      await _loadProfile(forceRefresh: true);
+      Toast.success('资料已更新');
+    }
   }
 
   // ── Build ──────────────────────────────────────────────────────────────
@@ -272,7 +284,7 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
             const IgnorePointer(child: _BackgroundGlow()),
             Column(
               children: [
-                _TopAppBar(onTapWallet: _onTapWallet),
+                _TopAppBar(onTapWallet: _onTapWallet, onTapEdit: _onTapEdit),
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const ClampingScrollPhysics(),
@@ -351,8 +363,9 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
 
 class _TopAppBar extends StatelessWidget {
   final VoidCallback onTapWallet;
+  final VoidCallback onTapEdit;
 
-  const _TopAppBar({required this.onTapWallet});
+  const _TopAppBar({required this.onTapWallet, required this.onTapEdit});
 
   @override
   Widget build(BuildContext context) {
@@ -377,8 +390,8 @@ class _TopAppBar extends StatelessWidget {
           ),
           const Spacer(),
           _CornerIconButton(
-            icon: Icons.account_balance_wallet_outlined,
-            onTap: onTapWallet,
+            icon: Icons.edit_square,
+            onTap: onTapEdit,
           ),
         ],
       ),

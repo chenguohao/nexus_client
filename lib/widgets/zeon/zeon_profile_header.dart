@@ -29,7 +29,7 @@ class ZeonProfileHeader extends StatelessWidget {
     required this.mxid,
     this.subtitle,
     this.onTapAvatar,
-    this.avatarSize = 280,
+    this.avatarSize = 210,
     this.showCopyMxid = true,
     this.padding = const EdgeInsets.fromLTRB(20, 8, 20, 0),
   });
@@ -320,10 +320,10 @@ class _ZeonUidPill extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  'UID',
+                  'ID',
                   style: TextStyle(
                     color: ZeonColors.outline,
-                    fontSize: 9,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 2.4,
                   ),

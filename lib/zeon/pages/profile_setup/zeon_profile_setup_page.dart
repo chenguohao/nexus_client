@@ -6,6 +6,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mime/mime.dart';
 
 import '../../../widgets/matrix.dart';
+import '../../widgets/zeon_image_crop_page.dart';
 
 /// Profile-setup screen ("Step 03 / Define Persona") shown right after the
 /// new-account mining flow finishes and the user is logged into Matrix.
@@ -51,18 +52,26 @@ class _ZeonProfileSetupPageState extends State<ZeonProfileSetupPage> {
     try {
       final picked = await _imagePicker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 90,
-        maxWidth: 1024,
-        maxHeight: 1024,
+        imageQuality: 95,
       );
-      if (picked == null) return;
-      final bytes = await picked.readAsBytes();
+      if (picked == null || !mounted) return;
+
+      final rawBytes = await picked.readAsBytes();
+      if (!mounted) return;
+
+      // Show Zeon crop page; user squares the image before confirming.
+      final cropped = await Navigator.of(context).push<Uint8List>(
+        MaterialPageRoute(
+          fullscreenDialog: true,
+          builder: (_) => ZeonImageCropPage(imageBytes: rawBytes),
+        ),
+      );
+      if (cropped == null || !mounted) return;
+
       setState(() {
-        _avatarBytes = bytes;
-        _avatarFilename = picked.name;
-        _avatarMime = picked.mimeType ??
-            lookupMimeType(picked.name, headerBytes: bytes) ??
-            'image/jpeg';
+        _avatarBytes = cropped;
+        _avatarFilename = '${picked.name.split('.').first}_cropped.png';
+        _avatarMime = 'image/png';
         _error = null;
       });
     } catch (e) {

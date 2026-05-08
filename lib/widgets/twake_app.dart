@@ -10,6 +10,8 @@ import 'package:fluffychat/widgets/theme_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
+import 'package:fluffychat/zeon/utils/toast.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_localized_locales/flutter_localized_locales.dart';
 import 'package:go_router/go_router.dart';
@@ -59,6 +61,7 @@ class TwakeAppState extends State<TwakeApp> {
   void initState() {
     super.initState();
     networkConnectionService.onInit();
+    Toast.configure();
     SchedulerBinding.instance.addPostFrameCallback((_) async {
       LocalizationService.currentLocale.value =
           await LocalizationService.getLocaleFromLanguage(context: context);
@@ -111,8 +114,14 @@ class TwakeAppState extends State<TwakeApp> {
               return supportedLocales.first;
             },
             routerConfig: TwakeApp.router,
-            builder: (context, child) =>
-                Matrix(clients: widget.clients, child: child),
+            builder: (context, child) {
+              final wrapped = Matrix(clients: widget.clients, child: child);
+              // EasyLoading must wrap the navigator to render toasts above
+              // every route. The original `builder` returned only `Matrix`,
+              // so we keep that as the inner widget and chain the EasyLoading
+              // overlay on top.
+              return FlutterEasyLoading(child: wrapped);
+            },
           );
         },
       ),

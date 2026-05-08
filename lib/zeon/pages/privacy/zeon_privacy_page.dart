@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import '../../services/key_service.dart';
 import '../../services/mining_service.dart';
 import '../../services/zeon_privacy_settings.dart';
+import '../../utils/toast.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Entry widget
@@ -148,22 +149,11 @@ class _ZeonPrivacyPageState extends State<ZeonPrivacyPage> {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   void _showMessage(String msg, {required bool isError}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          msg,
-          style: const TextStyle(
-            fontSize: 12,
-            letterSpacing: 0.5,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor:
-            isError ? const Color(0xFF8B0000) : const Color(0xFF1A3A1A),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+    if (isError) {
+      Toast.error(msg);
+    } else {
+      Toast.success(msg);
+    }
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -806,13 +796,7 @@ class _MnemonicDisplayDialog extends StatelessWidget {
                       onTap: () {
                         Clipboard.setData(
                             ClipboardData(text: words.join(' ')));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('助记词已复制到剪贴板'),
-                            duration: Duration(seconds: 2),
-                            backgroundColor: Color(0xFF1A3A1A),
-                          ),
-                        );
+                        Toast.success('助记词已复制到剪贴板');
                       },
                     ),
                   ),
