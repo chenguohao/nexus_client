@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class AnimatedPauseButton extends StatefulWidget {
   const AnimatedPauseButton({super.key});
@@ -28,7 +27,7 @@ class _AnimatedPauseButtonState extends State<AnimatedPauseButton>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     _opacityAnimation = Tween<double>(
-      begin: 0.5,
+      begin: 0.6,
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
@@ -49,29 +48,19 @@ class _AnimatedPauseButtonState extends State<AnimatedPauseButton>
           child: Opacity(
             opacity: _opacityAnimation.value,
             child: Container(
-              width: 32,
-              height: 32,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: LinagoraSysColors.material().surface,
-                borderRadius: BorderRadius.circular(32),
+                color: const Color(0xFF2A2A2B),
                 border: Border.all(
-                  color: LinagoraSysColors.material().onPrimary,
+                  color: const Color(0x33474747),
                   width: 1,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: LinagoraSysColors.material().primary.withOpacity(
-                      0.3 * _opacityAnimation.value,
-                    ),
-                    blurRadius: 8 * _opacityAnimation.value,
-                    spreadRadius: 2 * _opacityAnimation.value,
-                  ),
-                ],
               ),
-              child: Icon(
-                Icons.pause,
-                size: 20,
-                color: LinagoraRefColors.material().neutral[50],
+              child: const Icon(
+                Icons.send,
+                size: 18,
+                color: Color(0xFFE5E2E3),
               ),
             ),
           ),

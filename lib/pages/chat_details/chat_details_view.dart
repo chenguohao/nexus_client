@@ -8,8 +8,6 @@ import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:fluffychat/widgets/app_bars/twake_app_bar.dart';
 import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
-
 class ChatDetailsView extends StatelessWidget {
   final ChatDetailsController controller;
 
@@ -17,16 +15,21 @@ class ChatDetailsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     if (controller.room == null) {
       return Scaffold(
-        backgroundColor: LinagoraSysColors.material().onPrimary,
+        backgroundColor: const Color(0xFF131314),
         appBar: AppBar(
-          backgroundColor: LinagoraSysColors.material().onPrimary,
-          title: Text(L10n.of(context)!.oopsSomethingWentWrong),
+          backgroundColor: const Color(0xFF131314),
+          title: Text(
+            L10n.of(context)!.oopsSomethingWentWrong,
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
         body: Center(
-          child: Text(L10n.of(context)!.youAreNoLongerParticipatingInThisChat),
+          child: Text(
+            L10n.of(context)!.youAreNoLongerParticipatingInThisChat,
+            style: const TextStyle(color: Color(0xFF919191)),
+          ),
         ),
       );
     }
@@ -46,7 +49,7 @@ class ChatDetailsView extends StatelessWidget {
               return _RemoveMembersButton(controller: controller);
             },
           ),
-          backgroundColor: LinagoraSysColors.material().onPrimary,
+          backgroundColor: const Color(0xFF131314),
           appBar: TwakeAppBar(
             title: L10n.of(context)!.groupInfo,
             leading: TwakeIconButton(
@@ -54,6 +57,7 @@ class ChatDetailsView extends StatelessWidget {
               splashColor: Colors.transparent,
               hoverColor: Colors.transparent,
               highlightColor: Colors.transparent,
+              iconColor: Colors.white,
               onTap: controller.widget.closeRightColumn,
               icon: controller.widget.isInStack
                   ? Icons.arrow_back_ios
@@ -61,33 +65,28 @@ class ChatDetailsView extends StatelessWidget {
             ),
             enableLeftTitle: true,
             centerTitle: true,
-            withDivider: true,
+            withDivider: false,
             actions: [
               if (controller.room?.canEditChatDetails == true)
-                TextButton(
-                  onPressed: controller.onTapEditButton,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                  ),
-                  child: Text(
-                    L10n.of(context)!.edit,
-                    style: textTheme.labelLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                  ),
+                TwakeIconButton(
+                  paddingAll: 8,
+                  splashColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  iconColor: Colors.white,
+                  onTap: controller.onTapEditButton,
+                  icon: Icons.edit_outlined,
                 )
               else
-                InkWell(
-                  borderRadius: BorderRadius.circular(8),
+                TwakeIconButton(
+                  paddingAll: 8,
+                  splashColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  iconColor: Colors.white,
                   onTapDown: (details) =>
                       controller.onTapMoreButton(context, details),
-                  child: const Padding(
-                    padding: EdgeInsets.all(12),
-                    child: Icon(Icons.more_vert, size: 24),
-                  ),
+                  icon: Icons.more_vert,
                 ),
             ],
             context: context,
@@ -161,27 +160,29 @@ class _RemoveMembersButton extends StatelessWidget {
         await controller.onUpdateMembers();
         controller.removeUsersChangeNotifier.unselectAllUsers();
       },
-      borderRadius: ChatDetailViewStyle.borderRadiusButton,
       child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xffffd2d7),
-          borderRadius: ChatDetailViewStyle.borderRadiusButton,
+        decoration: const BoxDecoration(
+          color: Color(0xFF2A1A1A),
+          border: Border.fromBorderSide(
+            BorderSide(color: Color(0x66FFB4AB)),
+          ),
         ),
         padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 24, 12),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.person_remove_outlined,
               size: 18.0,
-              color: theme.colorScheme.onSecondaryContainer,
+              color: Color(0xFFFFB4AB),
             ),
             const SizedBox(width: 8),
             Flexible(
               child: Text(
                 L10n.of(context)!.removeMember,
                 style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSecondaryContainer,
+                  color: const Color(0xFFFFB4AB),
+                  letterSpacing: 0.5,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

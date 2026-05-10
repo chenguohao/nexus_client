@@ -13,7 +13,7 @@ class NewGroupChatInfoStyle {
   static const double backIconPaddingAll = 8;
 
   static double profileSize(BuildContext context) =>
-      responsive.isMobile(context) ? 56 : 96;
+      responsive.isMobile(context) ? 72 : 96;
 
   static const EdgeInsetsDirectional groupNameTextFieldPadding =
       EdgeInsetsDirectional.only(start: 8, end: 8);

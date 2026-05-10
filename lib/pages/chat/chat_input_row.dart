@@ -154,7 +154,8 @@ class ChatInputRow extends StatelessWidget {
                             isKeyboardVisible: isKeyboardVisible,
                           ),
                           child: SocialMediaRecorder(
-                            radius: BorderRadius.circular(24),
+                            maxRecordTimeInSecond: 300,
+                            radius: BorderRadius.zero,
                             pauseBottomPositioned:
                                 102 + (isKeyboardVisible ? bottomInset : 16),
                             pauseRightPositioned: 16,
@@ -233,6 +234,8 @@ class ChatInputRow extends StatelessWidget {
                                 );
                               }
                             },
+                            recordIconBackGroundColor: const Color(0xFF2A2A2B),
+                            recordIconWhenLockBackGroundColor: const Color(0xFF2A2A2B),
                             encode: AudioEncoderType.AAC,
                             fullRecordPackageHeight: 50,
                             initRecordPackageWidth: 50,
@@ -265,12 +268,9 @@ class ChatInputRow extends StatelessWidget {
                                 MediaQuery.of(context).size.width - 16,
                             counterPadding: const EdgeInsets.only(left: 16),
                             micCounterWidget: Container(
-                              width: 12,
-                              height: 12,
-                              decoration: const BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.redAccent,
-                              ),
+                              width: 8,
+                              height: 8,
+                              color: Colors.redAccent,
                             ),
                             pauseSplashColor: Colors.white.withOpacity(0.5),
                             pauseHighlightColor: Colors.white.withOpacity(0.2),
@@ -425,7 +425,7 @@ class ChatInputRow extends StatelessWidget {
       maxLines: 8,
       autofocus: !PlatformInfos.isMobile,
       keyboardType: TextInputType.multiline,
-      textInputAction: null,
+      textInputAction: TextInputAction.send,
       onSubmitted: (_) => controller.onInputBarSubmitted(),
       suggestionsController: controller.suggestionsController,
       typeAheadFocusNode: controller.inputFocus,

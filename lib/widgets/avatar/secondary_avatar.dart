@@ -40,10 +40,7 @@ class SecondaryAvatar extends StatelessWidget {
       ),
       alignment: Alignment.topCenter,
       child: ClipRRect(
-        borderRadius: Tween<BorderRadius>(
-          begin: BorderRadius.circular(size / 2),
-          end: BorderRadius.zero,
-        ).transform(animationController.value),
+        borderRadius: BorderRadius.zero,
         child: MxcImage(
           key: Key(mxContent.toString()),
           uri: mxContent,
@@ -60,12 +57,7 @@ class SecondaryAvatar extends StatelessWidget {
             width: size,
             height: size,
             fontSize: fontSize,
-            borderRadius: BorderRadius.circular(
-              Tween<double>(
-                begin: size / 2,
-                end: 0,
-              ).transform(animationController.value),
-            ),
+            borderRadius: BorderRadius.zero,
           ),
           keepAlive: keepAlive,
         ),

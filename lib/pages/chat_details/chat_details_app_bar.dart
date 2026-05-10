@@ -4,8 +4,6 @@ import 'package:fluffychat/pages/chat_details/chat_details_group_description_vie
 import 'package:fluffychat/pages/chat_details/chat_details_header_stack.dart';
 import 'package:fluffychat/pages/chat_details/chat_details_page_view/chat_details_page_enum.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 class ChatDetailsAppBar extends StatefulWidget {
@@ -36,8 +34,6 @@ class ChatDetailsAppBar extends StatefulWidget {
 
 class _ChatDetailsAppBarState extends State<ChatDetailsAppBar>
     with SingleTickerProviderStateMixin {
-  late final LinagoraSysColors sysColor;
-  late final LinagoraRefColors refColor;
   late final AnimationController animationController;
 
   static const int _animationDuration = 100;
@@ -50,8 +46,6 @@ class _ChatDetailsAppBarState extends State<ChatDetailsAppBar>
   @override
   void initState() {
     super.initState();
-    sysColor = LinagoraSysColors.material();
-    refColor = LinagoraRefColors.material();
     animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: _animationDuration),
@@ -102,10 +96,10 @@ class _ChatDetailsAppBarState extends State<ChatDetailsAppBar>
                   descriptionHeight;
 
               return SliverAppBar(
-                backgroundColor: sysColor.onPrimary,
+                backgroundColor: const Color(0xFF131314),
                 toolbarHeight: toolbarHeight,
                 title: ColoredBox(
-                  color: sysColor.surfaceVariant,
+                  color: const Color(0xFF131314),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -138,16 +132,22 @@ class _ChatDetailsAppBarState extends State<ChatDetailsAppBar>
                 bottom: TabBar(
                   physics: const NeverScrollableScrollPhysics(),
                   indicatorSize: TabBarIndicatorSize.tab,
-                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  indicatorColor: Colors.white,
                   indicatorPadding: const EdgeInsets.symmetric(
                     horizontal: 12.0,
                   ),
-                  indicatorWeight: 3.0,
-                  labelStyle: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
+                  indicatorWeight: 2.0,
+                  labelStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
                   ),
-                  unselectedLabelStyle: Theme.of(context).textTheme.titleSmall
-                      ?.copyWith(color: refColor.tertiary[30]),
+                  unselectedLabelStyle: const TextStyle(
+                    color: Color(0xFF636363),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w400,
+                  ),
                   tabs: widget.tabList.map((page) {
                     return Tab(
                       child: Text(

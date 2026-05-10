@@ -160,6 +160,7 @@ class DraftChatController extends State<DraftChat>
   @override
   Future<void> sendMedia(
     ImagePickerGridController imagePickerController, {
+    required BuildContext context,
     String? caption,
     Room? room,
     Event? inReplyTo,
@@ -169,6 +170,7 @@ class DraftChatController extends State<DraftChat>
       onRoomCreatedSuccess: (newRoom) {
         super.sendMedia(
           imagePickerController,
+          context: context,
           room: newRoom,
           caption: caption,
           inReplyTo: inReplyTo,
@@ -528,8 +530,8 @@ class DraftChatController extends State<DraftChat>
       captionController: _captionsController,
       onPickerTypeTap: (action) =>
           onPickerTypeClick(type: action, context: context),
-      onSendTap: () => sendMedia(imagePickerController),
-      onCameraPicked: (_) => sendMedia(imagePickerController),
+      onSendTap: () => sendMedia(imagePickerController, context: context),
+      onCameraPicked: (_) => sendMedia(imagePickerController, context: context),
       typeAheadKey: _draftChatMediaPickerTypeAheadKey,
     );
   }

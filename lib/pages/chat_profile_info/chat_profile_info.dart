@@ -21,6 +21,7 @@ import 'package:fluffychat/presentation/mixins/handle_video_download_mixin.dart'
 import 'package:fluffychat/presentation/mixins/leave_chat_mixin.dart';
 import 'package:fluffychat/presentation/mixins/play_video_action_mixin.dart';
 import 'package:fluffychat/presentation/model/contact/presentation_contact.dart';
+import 'package:fluffychat/presentation/model/contact/presentation_contact_constant.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/room_status_extension.dart';
 import 'package:fluffychat/utils/string_extension.dart';
@@ -282,7 +283,37 @@ class ChatProfileInfoController extends State<ChatProfileInfo>
   }
 
   void handleOnMessage() {
-    widget.onBack?.call();
+    final matrixId =
+        presentationContact?.matrixId ?? room?.directChatMatrixID;
+    if (matrixId == null) {
+      widget.onBack?.call();
+      return;
+    }
+
+    final client = Matrix.of(context).client;
+    final existedRoomId = client.getDirectChatFromUserId(matrixId);
+
+    // 先关闭个人资料页
+    Navigator.pop(context);
+
+    if (existedRoomId != null) {
+      context.go('/rooms/$existedRoomId');
+      return;
+    }
+
+    // 没有现成会话，进入草稿聊天页创建新会话
+    Router.neglect(
+      context,
+      () => context.go(
+        '/rooms/draftChat',
+        extra: {
+          PresentationContactConstant.receiverId: matrixId,
+          PresentationContactConstant.displayName:
+              presentationContact?.displayName ?? '',
+          PresentationContactConstant.status: '',
+        },
+      ),
+    );
   }
 
   void handleOnSearch() {

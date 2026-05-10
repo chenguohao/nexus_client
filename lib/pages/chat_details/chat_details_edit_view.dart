@@ -18,7 +18,6 @@ import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_manager_image_provider/photo_manager_image_provider.dart';
@@ -32,19 +31,25 @@ class ChatDetailsEditView extends StatelessWidget {
   Widget build(BuildContext context) {
     if (controller.room == null) {
       return Scaffold(
-        backgroundColor: LinagoraSysColors.material().onPrimary,
+        backgroundColor: const Color(0xFF131314),
         appBar: AppBar(
-          backgroundColor: LinagoraSysColors.material().onPrimary,
-          title: Text(L10n.of(context)!.oopsSomethingWentWrong),
+          backgroundColor: const Color(0xFF131314),
+          title: Text(
+            L10n.of(context)!.oopsSomethingWentWrong,
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
         body: Center(
-          child: Text(L10n.of(context)!.youAreNoLongerParticipatingInThisChat),
+          child: Text(
+            L10n.of(context)!.youAreNoLongerParticipatingInThisChat,
+            style: const TextStyle(color: Color(0xFF919191)),
+          ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: LinagoraSysColors.material().onPrimary,
+      backgroundColor: const Color(0xFF131314),
       resizeToAvoidBottomInset: false,
       appBar: TwakeAppBar(
         title: L10n.of(context)!.edit,
@@ -53,12 +58,13 @@ class ChatDetailsEditView extends StatelessWidget {
           splashColor: Colors.transparent,
           hoverColor: Colors.transparent,
           highlightColor: Colors.transparent,
+          iconColor: Colors.white,
           onTap: controller.onBack,
           icon: Icons.arrow_back_ios,
         ),
         enableLeftTitle: true,
         centerTitle: true,
-        withDivider: true,
+        withDivider: false,
         actions: [
           ValueListenableBuilder(
             valueListenable: controller.isValidGroupNameNotifier,
@@ -78,7 +84,7 @@ class ChatDetailsEditView extends StatelessWidget {
                     hoverColor: Colors.transparent,
                     splashColor: Colors.transparent,
                     onPressed: () => controller.handleSaveAction(context),
-                    icon: const Icon(Icons.done),
+                    icon: const Icon(Icons.done, color: Colors.white),
                   ),
                 ),
               );
@@ -115,8 +121,8 @@ class ChatDetailsEditView extends StatelessWidget {
                     ),
                     if (controller.room?.canChangeRoomAvatar == true)
                       Positioned(
-                        bottom: 0,
-                        right: 0,
+                        bottom: 14,
+                        right: 14,
                         child: ValueListenableBuilder(
                           valueListenable: controller.isEditedGroupInfoNotifier,
                           builder: (context, _, __) {
@@ -126,17 +132,8 @@ class ChatDetailsEditView extends StatelessWidget {
                                 padding: const WidgetStatePropertyAll(
                                   EdgeInsets.zero,
                                 ),
-                                shape: WidgetStatePropertyAll(
-                                  RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      PopupMenuWidgetStyle.menuBorderRadius,
-                                    ),
-                                  ),
-                                ),
-                                backgroundColor: WidgetStatePropertyAll(
-                                  PopupMenuWidgetStyle.defaultMenuColor(
-                                    context,
-                                  ),
+                                backgroundColor: const WidgetStatePropertyAll(
+                                  Color(0xFF2A2A2B),
                                 ),
                               ),
                               alignmentOffset:
@@ -149,45 +146,18 @@ class ChatDetailsEditView extends StatelessWidget {
                                     MenuController menuController,
                                     Widget? child,
                                   ) {
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onPrimary,
-                                      ),
-                                      padding: ChatDetailEditViewStyle
-                                          .editIconPadding,
-                                      child: ElevatedButton(
-                                        onPressed: () => {
-                                          menuController.isOpen
-                                              ? menuController.close()
-                                              : menuController.open(),
-                                        },
-                                        style: ButtonStyle(
-                                          shape: WidgetStateProperty.all(
-                                            const CircleBorder(),
-                                          ),
-                                          padding: WidgetStateProperty.all(
-                                            ChatDetailEditViewStyle
-                                                .editIconMaterialPadding,
-                                          ),
-                                          iconColor: WidgetStateProperty.all(
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.onPrimary,
-                                          ),
-                                          backgroundColor:
-                                              WidgetStateProperty.all(
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                              ),
-                                        ),
+                                    return GestureDetector(
+                                      onTap: () => menuController.isOpen
+                                          ? menuController.close()
+                                          : menuController.open(),
+                                      child: Container(
+                                        width: 22,
+                                        height: 22,
+                                        color: Colors.white,
                                         child: const Icon(
                                           Icons.edit_outlined,
-                                          size: ChatDetailEditViewStyle
-                                              .editIconSize,
+                                          size: 14,
+                                          color: Color(0xFF131314),
                                         ),
                                       ),
                                     );
@@ -217,59 +187,66 @@ class ChatDetailsEditView extends StatelessWidget {
                   ValueListenableBuilder(
                     valueListenable: controller.isRoomEnabledEncryptionNotifier,
                     builder: (context, isRoomEnabledEncryption, child) {
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
-                        leading: SvgPicture.asset(
-                          ImagePaths.icShieldLockFill,
-                          width: 24,
-                          height: 24,
-                          colorFilter: ColorFilter.mode(
-                            Theme.of(context).colorScheme.onSurfaceVariant,
-                            BlendMode.srcIn,
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF1C1B1C),
+                          border: Border.fromBorderSide(
+                            BorderSide(color: Color(0x33474747)),
                           ),
                         ),
-                        title: Text(
-                          L10n.of(context)!.encryption,
-                          style: Theme.of(context).textTheme.bodyLarge
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurface,
-                              ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
                         ),
-                        subtitle: Text(
-                          L10n.of(context)!.yourDataIsEncryptedForSecurity,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: LinagoraSysColors.material().tertiary,
+                        child: Row(
+                          children: [
+                            SvgPicture.asset(
+                              ImagePaths.icShieldLockFill,
+                              width: 18,
+                              height: 18,
+                              colorFilter: const ColorFilter.mode(
+                                Color(0xFFB0B0B0),
+                                BlendMode.srcIn,
                               ),
-                        ),
-                        trailing: SizedBox(
-                          width: 38,
-                          height: 24,
-                          child: FittedBox(
-                            fit: BoxFit.fill,
-                            child: Switch(
-                              activeTrackColor:
-                                  controller.room?.canEnableEncryption !=
-                                          true ||
-                                      controller.room?.encrypted == true
-                                  ? LinagoraStateLayer(
-                                      LinagoraSysColors.material().onSurface,
-                                    ).opacityLayer3
-                                  : Theme.of(context).colorScheme.primary,
-                              value: isRoomEnabledEncryption,
-                              onChanged:
-                                  controller.room?.encrypted == false &&
-                                      controller.room?.canEnableEncryption ==
-                                          true
-                                  ? (value) {
-                                      if (!value) return;
-                                      controller.enableEncryption(context);
-                                    }
-                                  : null,
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'END-TO-END ENCRYPTED',
+                                    style: TextStyle(
+                                      color: Color(0xFFE5E2E3),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 1.8,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    L10n.of(context)!
+                                        .yourDataIsEncryptedForSecurity,
+                                    style: const TextStyle(
+                                      color: Color(0xFF919191),
+                                      fontSize: 11,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF4CAF50),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -284,31 +261,17 @@ class ChatDetailsEditView extends StatelessWidget {
                 builder: (context, snapshot) {
                   return Column(
                     children: [
-                      Container(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        alignment: Alignment.centerLeft,
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          L10n.of(context)!.administration,
-                          style:
-                              ChatDetailEditViewStyle.textChatDetailsEditCategoryStyle(
-                                context,
-                              ),
-                        ),
+                      _ZeonSectionHeader(
+                        L10n.of(context)!.administration,
                       ),
                       ChatDetailsEditOption(
                         title: L10n.of(context)!.assignRoles,
                         counterText:
                             '${controller.room?.getAssignRolesMember().length}',
-                        subtitleColor:
-                            LinagoraRefColors.material().tertiary[30],
+                        subtitleColor: const Color(0xFF636363),
                         leading: Icons.admin_panel_settings_outlined,
-                        titleColor: Theme.of(context).colorScheme.onSurface,
-                        leadingIconColor: Theme.of(
-                          context,
-                        ).colorScheme.onSurface,
+                        titleColor: const Color(0xFFE5E2E3),
+                        leadingIconColor: const Color(0xFFB0B0B0),
                         onTap: controller.openAssignRolesPage,
                       ),
                       if (controller.room?.getExceptionsMember().isNotEmpty ==
@@ -317,13 +280,10 @@ class ChatDetailsEditView extends StatelessWidget {
                           title: L10n.of(context)!.exceptions,
                           counterText:
                               '${controller.room?.getExceptionsMember().length}',
-                          subtitleColor:
-                              LinagoraRefColors.material().tertiary[30],
+                          subtitleColor: const Color(0xFF636363),
                           leading: Icons.people_outlined,
-                          titleColor: Theme.of(context).colorScheme.onSurface,
-                          leadingIconColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface,
+                          titleColor: const Color(0xFFE5E2E3),
+                          leadingIconColor: const Color(0xFFB0B0B0),
                           onTap: controller.openExceptionsPage,
                         ),
                       if (controller.room?.getBannedMembers().isNotEmpty ==
@@ -332,13 +292,10 @@ class ChatDetailsEditView extends StatelessWidget {
                           title: L10n.of(context)!.removedUsers,
                           counterText:
                               '${controller.room?.getBannedMembers().length}',
-                          subtitleColor:
-                              LinagoraRefColors.material().tertiary[30],
+                          subtitleColor: const Color(0xFF636363),
                           leading: Icons.block,
-                          titleColor: Theme.of(context).colorScheme.onSurface,
-                          leadingIconColor: Theme.of(
-                            context,
-                          ).colorScheme.onSurface,
+                          titleColor: const Color(0xFFE5E2E3),
+                          leadingIconColor: const Color(0xFFB0B0B0),
                           onTap: controller.openRemovedPage,
                         ),
                     ],
@@ -346,24 +303,14 @@ class ChatDetailsEditView extends StatelessWidget {
                 },
               ),
             if (!controller.isSupportChat) ...[
-              Container(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.all(8.0),
-                child: Text(
-                  L10n.of(context)!.dangerZone,
-                  style:
-                      ChatDetailEditViewStyle.textChatDetailsEditCategoryStyle(
-                        context,
-                      ),
-                ),
-              ),
+              _ZeonSectionHeader(L10n.of(context)!.dangerZone),
               ChatDetailsEditOption(
                 title: L10n.of(context)!.commandHint_leave,
                 subtitle: L10n.of(context)!.leaveGroupSubtitle,
                 leading: Icons.logout_outlined,
-                titleColor: Theme.of(context).colorScheme.error,
-                leadingIconColor: Theme.of(context).colorScheme.error,
+                titleColor: const Color(0xFFFFB4AB),
+                leadingIconColor: const Color(0xFFFFB4AB),
+                subtitleColor: const Color(0xFF636363),
                 onTap: () => controller.leaveChat(context, controller.room),
               ),
             ],
@@ -403,10 +350,12 @@ class _AvatarBuilder extends StatelessWidget {
               if (success.assetEntity == null) {
                 return child!;
               }
-              return ClipOval(
+              return ClipRRect(
+                borderRadius: BorderRadius.zero,
                 child: SizedBox.fromSize(
-                  size: const Size.fromRadius(
-                    ChatDetailEditViewStyle.avatarRadiusForMobile,
+                  size: Size(
+                    ChatDetailEditViewStyle.thumbnailSizeWidth.toDouble(),
+                    ChatDetailEditViewStyle.thumbnailSizeHeight.toDouble(),
                   ),
                   child: AssetEntityImage(
                     success.assetEntity!,
@@ -449,10 +398,12 @@ class _AvatarBuilder extends StatelessWidget {
               if (success.matrixFile == null) {
                 return child!;
               }
-              return ClipOval(
+              return ClipRRect(
+                borderRadius: BorderRadius.zero,
                 child: SizedBox.fromSize(
-                  size: const Size.fromRadius(
-                    ChatDetailEditViewStyle.avatarRadiusForWeb,
+                  size: Size(
+                    ChatDetailEditViewStyle.avatarRadiusForWeb * 2,
+                    ChatDetailEditViewStyle.avatarRadiusForWeb * 2,
                   ),
                   child: StreamImageViewer(
                     matrixFile: success.matrixFile!,
@@ -485,6 +436,26 @@ class _AvatarBuilder extends StatelessWidget {
   }
 }
 
+class _ZeonSectionHeader extends StatelessWidget {
+  final String label;
+  const _ZeonSectionHeader(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: const Color(0xFF0E0E0F),
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Text(
+        label.toUpperCase(),
+        style: ChatDetailEditViewStyle.textChatDetailsEditCategoryStyle(
+          context,
+        ),
+      ),
+    );
+  }
+}
+
 class _GroupNameField extends StatelessWidget {
   const _GroupNameField({required this.controller});
 
@@ -504,11 +475,26 @@ class _GroupNameField extends StatelessWidget {
           onTapOutside: (_) {
             controller.groupNameFocusNode.unfocus();
           },
+          cursorColor: Colors.white,
           decoration: InputDecoration(
-            border: OutlineInputBorder(
+            filled: true,
+            fillColor: const Color(0xFF1C1B1C),
+            enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.shadow,
+                color: const Color(0xFF474747).withValues(alpha: 0.5),
               ),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF919191)),
+            ),
+            errorBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFFFFB4AB)),
+            ),
+            focusedErrorBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFFFFB4AB)),
+            ),
+            border: const OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF474747)),
             ),
             labelText: L10n.of(context)!.groupName,
             labelStyle: ChatDetailEditViewStyle.textFieldLabelStyle(context),
@@ -518,6 +504,7 @@ class _GroupNameField extends StatelessWidget {
             errorText: controller.getErrorMessage(
               controller.groupNameTextEditingController.text,
             ),
+            errorStyle: const TextStyle(color: Color(0xFFFFB4AB)),
             suffixIcon: ValueListenableBuilder<bool>(
               valueListenable: controller.groupNameEmptyNotifier,
               builder: (context, isGroupNameEmpty, child) {
@@ -530,10 +517,10 @@ class _GroupNameField extends StatelessWidget {
                 return IconButton(
                   onPressed: () =>
                       controller.groupNameTextEditingController.clear(),
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.cancel_outlined,
                     size: ChatDetailEditViewStyle.clearIconSize,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: Color(0xFF636363),
                   ),
                 );
               },
@@ -565,11 +552,20 @@ class _DescriptionField extends StatelessWidget {
           onTapOutside: (_) {
             controller.descriptionFocusNode.unfocus();
           },
+          cursorColor: Colors.white,
           decoration: InputDecoration(
-            border: OutlineInputBorder(
+            filled: true,
+            fillColor: const Color(0xFF1C1B1C),
+            enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.shadow,
+                color: const Color(0xFF474747).withValues(alpha: 0.5),
               ),
+            ),
+            focusedBorder: const OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF919191)),
+            ),
+            border: const OutlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF474747)),
             ),
             labelText: L10n.of(context)!.description,
             labelStyle: ChatDetailEditViewStyle.textFieldLabelStyle(context),
@@ -590,10 +586,10 @@ class _DescriptionField extends StatelessWidget {
                 return IconButton(
                   onPressed: () =>
                       controller.descriptionTextEditingController.clear(),
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.cancel_outlined,
                     size: ChatDetailEditViewStyle.clearIconSize,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    color: Color(0xFF636363),
                   ),
                 );
               },
@@ -606,8 +602,10 @@ class _DescriptionField extends StatelessWidget {
           padding: const EdgeInsets.only(left: 16),
           child: Text(
             L10n.of(context)!.descriptionHelper,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            style: const TextStyle(
+              color: Color(0xFF636363),
+              fontSize: 11,
+              letterSpacing: 0.3,
             ),
           ),
         ),

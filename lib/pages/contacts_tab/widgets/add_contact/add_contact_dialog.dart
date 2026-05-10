@@ -76,9 +76,6 @@ class AddContactDialog extends StatefulWidget {
 }
 
 class AddContactDialogController extends State<AddContactDialog> {
-  /// 备注昵称最大长度（防止 displayName 撑爆 UI）
-  static const int nicknameMaxLength = 32;
-
   /// 当前已登录账户所在的服务器域名（如 `zeon.chat`）。
   /// 加好友时把它当作默认 server，用户只需要输入 localpart。
   /// 未登录时为 null，此时退化为完整 mxid 输入。
@@ -86,24 +83,29 @@ class AddContactDialogController extends State<AddContactDialog> {
 
   String? get defaultServerName => _defaultServerName;
 
-  late final ValueNotifier<String> nickname;
   late final ValueNotifier<String> userName;
 
   final usernameErrorMessage = ValueNotifier<String?>(null);
 
   late final validateUsernameDebouncer = Debouncer<String?>(
-    const Duration(milliseconds: 1200),
+    const Duration(milliseconds: 800),
     initialValue: null,
     onChanged: (value) {
       if (value == null || value.isEmpty) {
         usernameErrorMessage.value = null;
         return;
       }
-      if (resolvedMxid.isValidMatrixId) {
-        usernameErrorMessage.value = null;
-      } else {
+      final mxid = resolvedMxid;
+      if (!mxid.isValidMatrixId) {
         usernameErrorMessage.value = L10n.of(context)!.invalidUsername;
+        return;
       }
+      final localpartError = validateLocalpart(_localpart(mxid));
+      if (localpartError != null) {
+        usernameErrorMessage.value = localpartError;
+        return;
+      }
+      usernameErrorMessage.value = null;
     },
   );
 
@@ -117,6 +119,26 @@ class AddContactDialogController extends State<AddContactDialog> {
     final server = _defaultServerName;
     if (server == null || server.isEmpty) return input;
     return '@$input:$server';
+  }
+
+  /// 从 mxid 中提取 localpart（@ 和 : 之间的部分）。
+  /// 例：`@alice123:zeon-im.com` → `alice123`
+  static String _localpart(String mxid) {
+    if (!mxid.startsWith('@')) return mxid;
+    final colon = mxid.indexOf(':');
+    return colon > 1 ? mxid.substring(1, colon) : mxid.substring(1);
+  }
+
+  /// Zeon ID localpart 规则：至少 6 位，只含字母或数字。
+  static final _localpartPattern = RegExp(r'^[a-zA-Z0-9]{6,}$');
+
+  /// 校验 localpart 是否符合规则。
+  static String? validateLocalpart(String localpart) {
+    if (localpart.isEmpty) return null;
+    if (!_localpartPattern.hasMatch(localpart)) {
+      return 'ID must be at least 6 letters or numbers.';
+    }
+    return null;
   }
 
   static String? _extractServerName(String? mxid) {
@@ -142,11 +164,12 @@ class AddContactDialogController extends State<AddContactDialog> {
     validateUsernameDebouncer.value = value;
   }
 
-  void onNicknameChanged(String value) => nickname.value = value;
-
-  /// 当前表单是否可提交：昵称非空 + mxid 合法（拼上默认 server 后）
-  bool get canSubmit =>
-      nickname.value.trim().isNotEmpty && resolvedMxid.isValidMatrixId;
+  /// 当前表单是否可提交：mxid 合法 + localpart 至少6位字母/数字
+  bool get canSubmit {
+    final mxid = resolvedMxid;
+    if (!mxid.isValidMatrixId) return false;
+    return validateLocalpart(_localpart(mxid)) == null;
+  }
 
   Future<void> onSave() async {
     if (!canSubmit) return;
@@ -157,12 +180,12 @@ class AddContactDialogController extends State<AddContactDialog> {
     );
 
     if (existedContact == null) {
-      // 预检：确认这个 mxid 在服务器上是真实存在的。
+      // 预检：确认这个 mxid 在服务器上是真实存在的，同时获取对方昵称。
       // 失败时把错误塞进 [usernameErrorMessage]，对话框会在 ZEON ID 输入框
       // 下方直接显红字（snackbar 在 modal bottom sheet 里会被 sheet 自身遮住，
       // 用户看不到）。
-      final exists = await _verifyUserExists(mxid);
-      if (!exists) return;
+      final fetchedDisplayName = await _fetchUserDisplayName(mxid);
+      if (fetchedDisplayName == null) return;
 
       final result =
           await TwakeDialog.showFutureLoadingDialogFullScreen<
@@ -174,7 +197,7 @@ class AddContactDialogController extends State<AddContactDialog> {
                   addressBooks: [
                     AddressBook(
                       mxid: mxid,
-                      displayName: nickname.value.trim(),
+                      displayName: fetchedDisplayName,
                     ),
                   ],
                 )
@@ -215,38 +238,49 @@ class AddContactDialogController extends State<AddContactDialog> {
     chatWithUser(mxid, contact: existedContact);
   }
 
-  /// 调用 `client.getUserProfile()` 探测目标 mxid 是否真实存在。
-  /// - 存在 → 返回 true
-  /// - 服务器明确 404 (`M_NOT_FOUND`) → 返回 false 并把错误塞进
+  /// 调用 `client.getUserProfile()` 探测目标 mxid 是否真实存在，同时获取对方的 displayName。
+  /// - 存在 → 返回对方的 displayName（可能为 null，退化用 localpart）
+  /// - 服务器明确 404 (`M_NOT_FOUND`) → 返回 null 并把错误塞进
   ///   [usernameErrorMessage]，UI 会在输入框下方直接显红字
-  /// - 其它异常（限流、网络）→ 返回 false 并显示通用错误
+  /// - 其它异常（限流、网络）→ 返回 null 并显示通用错误
   ///
   /// 不在这里弹 snackbar，因为 modal bottom sheet 自身会盖住屏幕底部，
   /// 用户看不到 snackbar；行内错误才是该对话框唯一可靠的反馈通道。
-  Future<bool> _verifyUserExists(String mxid) async {
+  Future<String?> _fetchUserDisplayName(String mxid) async {
     final client = Matrix.of(context).client;
-    final result =
-        await TwakeDialog.showFutureLoadingDialogFullScreen<String?>(
-          future: () async {
-            try {
-              await client.getUserProfile(mxid);
-              return null; // 存在
-            } on MatrixException catch (e) {
-              if (e.error == MatrixError.M_NOT_FOUND) {
-                return 'This user does not exist.';
-              }
-              return 'Unable to verify user: ${e.errorMessage}';
-            } catch (_) {
-              return 'Unable to verify user. Please try again.';
-            }
-          },
-        );
-    final errorMessage = result.result;
-    if (errorMessage != null) {
-      usernameErrorMessage.value = errorMessage;
-      return false;
+    final result = await TwakeDialog.showFutureLoadingDialogFullScreen<
+      ({String? displayName, String? error})
+    >(
+      future: () async {
+        try {
+          final profile = await client.getUserProfile(mxid);
+          return (displayName: profile.displayname, error: null);
+        } on MatrixException catch (e) {
+          if (e.error == MatrixError.M_NOT_FOUND) {
+            return (displayName: null, error: 'This user does not exist.');
+          }
+          return (
+            displayName: null,
+            error: 'Unable to verify user: ${e.errorMessage}',
+          );
+        } catch (_) {
+          return (
+            displayName: null,
+            error: 'Unable to verify user. Please try again.',
+          );
+        }
+      },
+    );
+    final data = result.result;
+    if (data == null || data.error != null) {
+      usernameErrorMessage.value = data?.error ?? 'Unable to verify user.';
+      return null;
     }
-    return true;
+    // 如果对方没有设置 displayName，退化为用 localpart（@ 和 : 之间的部分）
+    final localpart = mxid.contains(':')
+        ? mxid.substring(1, mxid.indexOf(':'))
+        : mxid.replaceFirst('@', '');
+    return data.displayName?.isNotEmpty == true ? data.displayName! : localpart;
   }
 
   void chatWithUser(String matrixId, {PresentationContact? contact}) {
@@ -281,7 +315,6 @@ class AddContactDialogController extends State<AddContactDialog> {
   @override
   void initState() {
     super.initState();
-    nickname = ValueNotifier(widget.displayName ?? '');
     // 如果外部传入的是完整 mxid（@user:server），保留原样让它走"完整模式"。
     // 如果传入的就是 localpart，原样塞进去也能正常拼装。
     userName = ValueNotifier(widget.matrixId ?? '');
@@ -297,7 +330,6 @@ class AddContactDialogController extends State<AddContactDialog> {
 
   @override
   void dispose() {
-    nickname.dispose();
     userName.dispose();
     usernameErrorMessage.dispose();
     validateUsernameDebouncer.cancel();

@@ -4,22 +4,19 @@ import 'package:async/async.dart';
 import 'package:fluffychat/pages/chat/events/audio_message/audio_play_extension.dart';
 import 'package:fluffychat/pages/chat/events/audio_message/audio_player_widget.dart';
 import 'package:fluffychat/pages/chat/events/message/display_name_widget.dart';
-import 'package:fluffychat/resource/image_paths.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/utils/string_extension.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:opus_caf_converter_dart/opus_caf_converter_dart.dart';
 import 'package:path_provider/path_provider.dart';
 
-class ChatAudioPlayerWidget extends StatelessWidget {
+class ChatAudioPlayerWidget extends StatefulWidget {
   final MatrixState? matrix;
   final bool enableBorder;
 
@@ -30,7 +27,17 @@ class ChatAudioPlayerWidget extends StatelessWidget {
   });
 
   @override
+  State<ChatAudioPlayerWidget> createState() => _ChatAudioPlayerWidgetState();
+}
+
+class _ChatAudioPlayerWidgetState extends State<ChatAudioPlayerWidget> {
+  // Track the last committed progress to prevent backward jumps caused by
+  // just_audio emitting position=0 during its internal loading/buffering states.
+  double _lastProgress = 0.0;
+
+  @override
   Widget build(BuildContext context) {
+    final matrix = widget.matrix;
     final defaultAudioStatus = ValueNotifier<AudioPlayerStatus>(
       AudioPlayerStatus.notDownloaded,
     );
@@ -38,6 +45,10 @@ class ChatAudioPlayerWidget extends StatelessWidget {
     return ValueListenableBuilder(
       valueListenable: matrix?.currentAudioStatus ?? defaultAudioStatus,
       builder: (context, status, _) {
+        // Reset progress tracking whenever a new track starts downloading.
+        if (status == AudioPlayerStatus.downloading) {
+          _lastProgress = 0.0;
+        }
         return ValueListenableBuilder(
           valueListenable: matrix?.voiceMessageEvent ?? defaultEvent,
           builder: (context, hasEvent, _) {
@@ -58,22 +69,31 @@ class ChatAudioPlayerWidget extends StatelessWidget {
                 final maxPosition =
                     audioPlayer?.duration?.inMilliseconds.toDouble() ?? 1.0;
                 final currentPosition = status == AudioPlayerStatus.downloading
-                    ? 0
+                    ? 0.0
                     : audioPlayer?.position.inMilliseconds.toDouble() ?? 0.0;
-                final progress = maxPosition > 0
+                final rawProgress = maxPosition > 0
                     ? (currentPosition / maxPosition).clamp(0.0, 1.0)
                     : 0.0;
+
+                // Only allow progress to move forward while the player is
+                // active. Backward movement is only allowed when the track
+                // has ended (isAtEndPosition) or the player is idle, so that
+                // replaying from the beginning works correctly.
+                final bool isAtEnd = audioPlayer?.isAtEndPosition ?? false;
+                final bool isIdle =
+                    audioPlayer?.processingState == ProcessingState.idle;
+                if (rawProgress > _lastProgress || isAtEnd || isIdle) {
+                  _lastProgress = rawProgress;
+                }
+                final progress = _lastProgress;
+
                 return Container(
-                  constraints: const BoxConstraints(maxHeight: 40),
+                  constraints: const BoxConstraints(maxHeight: 42),
                   decoration: BoxDecoration(
-                    color: LinagoraSysColors.material().onPrimary,
-                    border: enableBorder
-                        ? Border(
-                            top: BorderSide(
-                              color: LinagoraStateLayer(
-                                LinagoraSysColors.material().surfaceTint,
-                              ).opacityLayer3,
-                            ),
+                    color: const Color(0xFF1C1B1C),
+                    border: widget.enableBorder
+                        ? const Border(
+                            top: BorderSide(color: Color(0x33474747)),
                           )
                         : null,
                   ),
@@ -81,22 +101,21 @@ class ChatAudioPlayerWidget extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        height: 37,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        height: 40,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: Row(
                           children: [
                             TwakeIconButton(
                               size: 20,
                               onTap: () async =>
                                   _handlePlayOrPauseAudioPlayer(context),
-                              iconColor: LinagoraSysColors.material().primary,
-                              icon:
-                                  audioPlayer?.playing == true &&
+                              iconColor: const Color(0xFFE5E2E3),
+                              icon: audioPlayer?.playing == true &&
                                       audioPlayer?.isAtEndPosition == false
                                   ? Icons.pause_outlined
                                   : Icons.play_arrow,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: _DisplaySenderNameWhenPlayingAudio(
                                 event: hasEvent,
@@ -109,20 +128,35 @@ class ChatAudioPlayerWidget extends StatelessWidget {
                               children: [
                                 InkWell(
                                   onTap: () => _toggleSpeed(audioPlayer),
-                                  child: Center(
-                                    child: SvgPicture.asset(
-                                      _displayAudioSpeed(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: const Color(0xFF474747),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _displaySpeedLabel(
                                         audioPlayer?.speed ?? 1.0,
+                                      ),
+                                      style: const TextStyle(
+                                        color: Color(0xFF919191),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Inter',
+                                        letterSpacing: 0.5,
                                       ),
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 TwakeIconButton(
                                   onTap: () async => _handleCloseAudioPlayer(),
                                   icon: Icons.close,
-                                  iconColor:
-                                      LinagoraRefColors.material().tertiary[30],
+                                  iconColor: const Color(0xFF919191),
                                 ),
                               ],
                             ),
@@ -131,12 +165,10 @@ class ChatAudioPlayerWidget extends StatelessWidget {
                       ),
                       LinearProgressIndicator(
                         value: progress,
-                        minHeight: 2,
-                        backgroundColor: LinagoraStateLayer(
-                          LinagoraSysColors.material().surfaceTint,
-                        ).opacityLayer3,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          LinagoraSysColors.material().primary,
+                        minHeight: 1,
+                        backgroundColor: const Color(0x1F474747),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFFE5E2E3),
                         ),
                       ),
                     ],
@@ -151,6 +183,7 @@ class ChatAudioPlayerWidget extends StatelessWidget {
   }
 
   Future<void> _handleCloseAudioPlayer() async {
+    final matrix = widget.matrix;
     matrix?.voiceMessageEvent.value = null;
     matrix?.cancelAudioPlayerAutoDispose();
     await matrix?.audioPlayer.stop();
@@ -168,6 +201,7 @@ class ChatAudioPlayerWidget extends StatelessWidget {
   }
 
   Future<void> _handlePlayAudioAgain(BuildContext context) async {
+    final matrix = widget.matrix;
     File? file;
     MatrixFile? matrixFile;
     await matrix?.audioPlayer.stop();
@@ -216,12 +250,14 @@ class ChatAudioPlayerWidget extends StatelessWidget {
       return;
     }
 
-    matrix!.audioPlayer = AudioPlayer();
+    // Reset progress tracking for the new playback session.
+    _lastProgress = 0.0;
+    matrix.audioPlayer = AudioPlayer();
 
     if (file != null) {
-      await matrix?.audioPlayer.setFilePath(file.path);
+      await matrix.audioPlayer.setFilePath(file.path);
     } else if (matrixFile != null) {
-      await matrix?.audioPlayer.setAudioSource(
+      await matrix.audioPlayer.setAudioSource(
         MatrixFileAudioSource(matrixFile),
       );
     } else {
@@ -232,9 +268,9 @@ class ChatAudioPlayerWidget extends StatelessWidget {
     }
 
     // Set up auto-dispose listener managed globally in MatrixState
-    matrix?.setupAudioPlayerAutoDispose();
+    matrix.setupAudioPlayerAutoDispose();
 
-    matrix?.audioPlayer.play().onError((e, s) {
+    matrix.audioPlayer.play().onError((e, s) {
       Logs().e('Could not play audio file', e, s);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -248,7 +284,7 @@ class ChatAudioPlayerWidget extends StatelessWidget {
   }
 
   Future<void> _handlePlayOrPauseAudioPlayer(BuildContext context) async {
-    final audioPlayer = matrix?.audioPlayer;
+    final audioPlayer = widget.matrix?.audioPlayer;
     if (audioPlayer == null) return;
     if (audioPlayer.isAtEndPosition) {
       await _handlePlayAudioAgain(context);
@@ -262,18 +298,16 @@ class ChatAudioPlayerWidget extends StatelessWidget {
     }
   }
 
-  String _displayAudioSpeed(double speed) {
+  String _displaySpeedLabel(double speed) {
     switch (speed) {
       case 0.5:
-        return ImagePaths.icAudioSpeed0_5x;
-      case 1.0:
-        return ImagePaths.icAudioSpeed1x;
+        return '0.5×';
       case 1.5:
-        return ImagePaths.icAudioSpeed1_5x;
+        return '1.5×';
       case 2.0:
-        return ImagePaths.icAudioSpeed2x;
+        return '2×';
       default:
-        return ImagePaths.icAudioSpeed1x;
+        return '1×';
     }
   }
 
@@ -319,12 +353,14 @@ class _DisplaySenderNameWhenPlayingAudio extends StatelessWidget {
             event.senderFromMemoryOrFallback.calcDisplayname();
         return Text(
           "${displayName.shortenDisplayName(maxCharacters: DisplayNameWidget.maxCharactersDisplayNameBubble)}  $duration",
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          style: const TextStyle(
             fontFamily: 'Inter',
-            color: LinagoraRefColors.material().neutral[50],
+            fontSize: 13,
+            color: Color(0xFFE5E2E3),
+            letterSpacing: 0.2,
           ),
           maxLines: 1,
-          overflow: TextOverflow.clip,
+          overflow: TextOverflow.ellipsis,
         );
       },
     );

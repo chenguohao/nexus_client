@@ -1,7 +1,5 @@
 import 'package:fluffychat/pages/chat_details/chat_details_view_style.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 
 class ChatDetailsGroupInformationView extends StatefulWidget {
   const ChatDetailsGroupInformationView({
@@ -28,16 +26,7 @@ class ChatDetailsGroupInformationView extends StatefulWidget {
 
 class _ChatDetailsGroupInformationViewState
     extends State<ChatDetailsGroupInformationView> {
-  late final LinagoraRefColors refColors;
-  late final LinagoraSysColors sysColors;
   bool isTextSelected = false;
-
-  @override
-  void initState() {
-    super.initState();
-    refColors = LinagoraRefColors.material();
-    sysColors = LinagoraSysColors.material();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,10 +71,7 @@ class _ChatDetailsGroupInformationViewState
                 child: Text(
                   widget.displayName ?? '',
                   style: textTheme.titleLarge?.copyWith(
-                    color: ColorTween(
-                      begin: sysColors.onSurface,
-                      end: sysColors.onPrimary,
-                    ).transform(widget.animationController.value),
+                    color: const Color(0xFFE5E2E3),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -101,10 +87,7 @@ class _ChatDetailsGroupInformationViewState
                   child: Text(
                     widget.subTitle!,
                     style: textTheme.bodyMedium?.copyWith(
-                      color: ColorTween(
-                        begin: refColors.tertiary[30],
-                        end: sysColors.onPrimary,
-                      ).transform(widget.animationController.value),
+                      color: const Color(0xFF919191),
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

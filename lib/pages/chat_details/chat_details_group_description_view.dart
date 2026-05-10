@@ -1,7 +1,5 @@
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 
 class ChatDetailsGroupDescriptionView extends StatefulWidget {
   const ChatDetailsGroupDescriptionView({
@@ -21,8 +19,6 @@ class ChatDetailsGroupDescriptionView extends StatefulWidget {
 class _ChatDetailsGroupDescriptionViewState
     extends State<ChatDetailsGroupDescriptionView> {
   final key = GlobalKey();
-  late final LinagoraSysColors sysColors;
-  late final LinagoraRefColors refColors;
   String description = '';
 
   void calculateHeight() {
@@ -36,8 +32,6 @@ class _ChatDetailsGroupDescriptionViewState
   @override
   void initState() {
     super.initState();
-    sysColors = LinagoraSysColors.material();
-    refColors = LinagoraRefColors.material();
     description = widget.topic.trim();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       calculateHeight();
@@ -72,27 +66,35 @@ class _ChatDetailsGroupDescriptionViewState
     return Container(
       key: key,
       width: double.infinity,
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: sysColors.onPrimary,
-        borderRadius: BorderRadius.circular(8),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.all(14),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1B1C),
+        border: Border.fromBorderSide(
+          BorderSide(color: Color(0x33474747)),
+        ),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            l10n.description,
-            style: textTheme.labelMedium?.copyWith(
-              color: refColors.neutral[40],
+          const Text(
+            'DESCRIPTION',
+            style: TextStyle(
+              color: Color(0xFF919191),
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.8,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 6),
           Text(
             displayText,
-            style: textTheme.labelMedium?.copyWith(
-              color: refColors.tertiary[20],
+            style: textTheme.bodySmall?.copyWith(
+              color: description.isEmpty
+                  ? const Color(0xFF636363)
+                  : const Color(0xFFE5E2E3),
+              letterSpacing: 0.2,
             ),
           ),
         ],

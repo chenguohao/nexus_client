@@ -98,6 +98,8 @@ class _MxcImageState extends State<MxcImage>
   ImageData? _imageDataNoCache;
   bool isLoadDone = false;
   String? filePath;
+  // True when both load attempts failed (e.g. server returned 404 / expired).
+  bool _mediaExpired = false;
 
   ImageData? get _imageData {
     final cacheKey = widget.cacheKey;
@@ -168,6 +170,7 @@ class _MxcImageState extends State<MxcImage>
       final response = await http.get(httpUri);
       if (response.statusCode != 200) {
         if (response.statusCode == 404) {
+          _mediaExpired = true;
           return (imageData: null, filePath: null);
         }
         throw Exception();
@@ -227,11 +230,18 @@ class _MxcImageState extends State<MxcImage>
       isLoadDone = true;
       _imageData = loadResult.imageData;
       filePath = loadResult.filePath;
-      setState(() {});
+      // If we got null data after a successful call (e.g. 404 set _mediaExpired),
+      // make sure we rebuild to show the expired state.
+      if (mounted) setState(() {});
     } catch (e) {
       if (mounted && !isLoadDone) {
+        // First failure: retry once.
         isLoadDone = true;
         _tryLoad(context);
+      } else if (mounted) {
+        // Second failure: give up and mark as expired.
+        _mediaExpired = true;
+        setState(() {});
       }
     }
   }
@@ -317,10 +327,35 @@ class _MxcImageState extends State<MxcImage>
     }
   }
 
+  Widget _expiredPlaceholder() => Container(
+        color: const Color(0xFF1C1B1C),
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.schedule_outlined,
+                color: Color(0xFF636363),
+                size: 24,
+              ),
+              SizedBox(height: 4),
+              Text(
+                '已过期',
+                style: TextStyle(
+                  color: Color(0xFF636363),
+                  fontSize: 10,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
   Widget _buildImageWidget(BuildContext context) {
     final needResize = widget.event != null && !widget.noResize;
     if (_imageData == null && filePath == null) {
-      return placeholder(context);
+      return _mediaExpired ? _expiredPlaceholder() : placeholder(context);
     }
     return ClipRRect(
       key: Key('${_imageData.hashCode}'),

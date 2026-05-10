@@ -46,25 +46,29 @@ class ChatDetailEditViewStyle {
 
   static TextStyle? textFieldLabelStyle(BuildContext context) =>
       Theme.of(context).textTheme.labelSmall?.copyWith(
-        fontSize: 16,
+        fontSize: 12,
         letterSpacing: 0.4,
-        color: Theme.of(context).colorScheme.onSurface,
+        color: const Color(0xFF919191),
       );
 
   static TextStyle? textFieldHintStyle(BuildContext context) =>
       Theme.of(context).textTheme.bodyMedium?.copyWith(
         letterSpacing: -0.15,
-        color: Theme.of(context).colorScheme.outline,
+        color: const Color(0xFF636363),
       );
 
-  static TextStyle? textFieldStyle(BuildContext context) => Theme.of(
-    context,
-  ).textTheme.bodyMedium?.copyWith(letterSpacing: -0.15, color: Colors.black);
+  static TextStyle? textFieldStyle(BuildContext context) =>
+      Theme.of(context).textTheme.bodyMedium?.copyWith(
+        letterSpacing: -0.15,
+        color: const Color(0xFFE5E2E3),
+      );
 
-  static TextStyle? textChatDetailsEditCategoryStyle(BuildContext context) =>
-      Theme.of(context).textTheme.titleSmall?.copyWith(
-        color: Theme.of(context).colorScheme.tertiary,
-        fontSize: 14.0,
+  static TextStyle textChatDetailsEditCategoryStyle(BuildContext context) =>
+      const TextStyle(
+        color: Color(0xFF919191),
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 2.0,
       );
 
   static const double clearIconSize = 20.0;

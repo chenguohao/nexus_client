@@ -28,8 +28,6 @@ class AddContactDialogView extends StatelessWidget {
               const SizedBox(height: 24),
               const _Title(),
               const SizedBox(height: 32),
-              _NicknameField(controller: controller),
-              const SizedBox(height: 28),
               _MatrixIdField(controller: controller),
               const SizedBox(height: 40),
               _Actions(controller: controller),
@@ -259,25 +257,6 @@ class _SovereignFieldState extends State<_SovereignField> {
   }
 }
 
-class _NicknameField extends StatelessWidget {
-  const _NicknameField({required this.controller});
-
-  final AddContactDialogController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return _SovereignField(
-      label: 'NICKNAME',
-      value: controller.nickname,
-      onChanged: controller.onNicknameChanged,
-      maxLength: AddContactDialogController.nicknameMaxLength,
-      textInputAction: TextInputAction.next,
-      autoFocus: true,
-      helperText: 'A private label only visible to you.',
-    );
-  }
-}
-
 class _MatrixIdField extends StatelessWidget {
   const _MatrixIdField({required this.controller});
 
@@ -303,6 +282,7 @@ class _MatrixIdField extends StatelessWidget {
           errorMessage: controller.usernameErrorMessage.value,
           prefixText: useFullMxid ? null : '@',
           textInputAction: TextInputAction.done,
+          autoFocus: true,
           onSubmitted: (_) => controller.onSave(),
         );
       },
@@ -331,10 +311,7 @@ class _Actions extends StatelessWidget {
           Expanded(
             flex: 2,
             child: AnimatedBuilder(
-              animation: Listenable.merge([
-                controller.userName,
-                controller.nickname,
-              ]),
+              animation: controller.userName,
               builder: (context, _) {
                 final mxid = controller.resolvedMxid;
                 final existedContact = controller.availableContacts

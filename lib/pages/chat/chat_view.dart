@@ -159,20 +159,11 @@ class ChatView extends StatelessWidget with MessageContentMixin {
                               color: Colors.white,
                             ),
                           ),
-                          if (controller.hasActionAppBarMenu)
-                            Builder(
-                              builder: (context) => TwakeIconButton(
-                                icon: Icons.more_vert,
-                                iconColor: Colors.white,
-                                tooltip: L10n.of(context)!.more,
-                                onTapDown: (tapDownDetails) =>
-                                    controller.handleAppbarMenuAction(
-                                      context,
-                                      tapDownDetails,
-                                    ),
-                                preferBelow: false,
-                              ),
-                            ),
+                          TwakeIconButton(
+                            icon: Icons.more_vert,
+                            iconColor: Colors.white,
+                            onTap: controller.onPushDetails,
+                          ),
                         ],
                       ),
                     ),

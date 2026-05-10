@@ -186,45 +186,71 @@ class AudioPlayerState extends State<AudioPlayerWidget>
     return convertedFile;
   }
 
+  bool _audioMetaLoaded = false;
+
   @override
   void initState() {
     super.initState();
     matrix = Matrix.of(context);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final durationInt = widget.event.content
-          .tryGetMap<String, dynamic>('org.matrix.msc1767.audio')
-          ?.tryGet<int>('duration');
-      if (durationInt != null) {
-        _durationNotifier.value = Duration(milliseconds: durationInt);
-      }
-      final waveForm =
-          calculateWaveForm(
-            eventWaveForm: widget.event.content
-                .tryGetMap<String, dynamic>('org.matrix.msc1767.audio')
-                ?.tryGetList<int>('waveform'),
-            waveCount: calculateWaveCountAuto(
-              minWaves: AudioPlayerStyle.minWaveCount,
-              maxWaves: AudioPlayerStyle.maxWaveCount(context),
-              durationInSeconds: _durationNotifier.value.inSeconds,
-            ),
-          ) ??
-          [];
+  }
 
-      final waveFromHeight = calculateWaveHeight(
-        waveform: waveForm,
-        minHeight: AudioPlayerStyle.minWaveHeight,
-        maxHeight: AudioPlayerStyle.maxWaveHeight,
-      );
+  /// Called after initState and before the first build() — MediaQuery is safe here.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_audioMetaLoaded) {
+      _audioMetaLoaded = true;
+      _loadAudioMeta();
+    }
+  }
 
-      if (_calculatedWaveform.isEmpty) {
-        _calculatedWaveform.addAll(waveFromHeight);
-        matrix.currentAudioStatus.value = AudioPlayerStatus.downloaded;
-      }
+  @override
+  void didUpdateWidget(AudioPlayerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-read when the event is replaced (sending → sent) or content changes.
+    // Flutter calls build() right after didUpdateWidget, so no setState needed.
+    if (oldWidget.event.eventId != widget.event.eventId ||
+        oldWidget.event.content != widget.event.content) {
+      _loadAudioMeta();
+    }
+  }
 
-      if (matrix.voiceMessageEvent.value?.eventId == widget.event.eventId) {
-        ScaffoldMessenger.of(matrix.context).clearMaterialBanners();
-      }
-    });
+  /// Reads duration and waveform from event content synchronously.
+  /// Called from didChangeDependencies (before first build) and didUpdateWidget.
+  void _loadAudioMeta() {
+    final audioContent = widget.event.content
+        .tryGetMap<String, dynamic>('org.matrix.msc1767.audio');
+
+    final durationInt = audioContent?.tryGet<int>('duration');
+    if (durationInt != null) {
+      _durationNotifier.value = Duration(milliseconds: durationInt);
+    }
+
+    final waveForm =
+        calculateWaveForm(
+          eventWaveForm: audioContent?.tryGetList<int>('waveform'),
+          waveCount: calculateWaveCountAuto(
+            minWaves: AudioPlayerStyle.minWaveCount,
+            maxWaves: AudioPlayerStyle.maxWaveCount(context),
+            durationInSeconds: _durationNotifier.value.inSeconds,
+          ),
+        ) ??
+        [];
+
+    final waveFromHeight = calculateWaveHeight(
+      waveform: waveForm,
+      minHeight: AudioPlayerStyle.minWaveHeight,
+      maxHeight: AudioPlayerStyle.maxWaveHeight,
+    );
+
+    if (_calculatedWaveform.isEmpty && waveFromHeight.isNotEmpty) {
+      _calculatedWaveform.addAll(waveFromHeight);
+    }
+
+    if (mounted &&
+        matrix.voiceMessageEvent.value?.eventId == widget.event.eventId) {
+      ScaffoldMessenger.of(matrix.context).clearMaterialBanners();
+    }
   }
 
   @override
@@ -425,17 +451,19 @@ class AudioPlayerState extends State<AudioPlayerWidget>
                     fontFamily: 'Inter',
                   ),
                 ),
-                const SizedBox(width: 4),
-                SeenByRow(
-                  timelineOverlayMessage: widget.event.timelineOverlayMessage,
-                  participants: widget.timeline.room.getParticipants(),
-                  getSeenByUsers: widget.event.room.getSeenByUsers(
-                    widget.timeline,
-                    eventId: widget.event.eventId,
+                if (widget.event.isOwnMessage) ...[
+                  const SizedBox(width: 4),
+                  SeenByRow(
+                    timelineOverlayMessage: widget.event.timelineOverlayMessage,
+                    participants: widget.timeline.room.getParticipants(),
+                    getSeenByUsers: widget.event.room.getSeenByUsers(
+                      widget.timeline,
+                      eventId: widget.event.eventId,
+                    ),
+                    eventStatus: widget.event.status,
+                    event: widget.event,
                   ),
-                  eventStatus: widget.event.status,
-                  event: widget.event,
-                ),
+                ],
               ],
             ),
           ),

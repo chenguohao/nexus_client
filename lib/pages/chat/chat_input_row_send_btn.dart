@@ -98,9 +98,9 @@ class ChatInputRowSendBtn extends StatelessWidget {
               height: ChatInputRowStyle.sendIconBtnSize,
               child: Material(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.zero,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.zero,
                   onTap: onTap,
                   child: const Center(
                     child: Icon(

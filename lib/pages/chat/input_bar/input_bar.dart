@@ -450,13 +450,9 @@ class _InputBarState extends State<InputBar> with PasteImageMixin {
               await Future.delayed(InputBar.debounceDurationTap);
               FocusScope.of(context).requestFocus(focusNode);
             },
-            onSubmitted: PlatformInfos.isMobile
-                ? (text) {
-                    if (widget.onSubmitted != null) {
-                      widget.onSubmitted!(text);
-                    }
-                  }
-                : null,
+            onSubmitted: (text) {
+              widget.onSubmitted?.call(text);
+            },
             textCapitalization: TextCapitalization.sentences,
           ),
           suggestionsCallback: (text) {

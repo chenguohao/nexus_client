@@ -10,9 +10,7 @@ class ChatInputRowStyle {
   static const EdgeInsets chatInputRowPaddingMobile = EdgeInsets.only(
     left: 8.0,
   );
-  static const BorderRadius chatInputRowBorderRadius = BorderRadius.all(
-    Radius.circular(25),
-  );
+  static const BorderRadius chatInputRowBorderRadius = BorderRadius.zero;
   static const double chatInputRowPaddingBtnWeb = 10.0;
   static const EdgeInsets chatInputRowMoreBtnMarginMobile = EdgeInsets.only(
     right: 4.0,

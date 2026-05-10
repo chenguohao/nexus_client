@@ -1,11 +1,7 @@
 import 'package:fluffychat/pages/chat/group_chat_empty_view_style.dart';
 import 'package:fluffychat/pages/chat/others_group_chat_empty_view.dart';
-import 'package:fluffychat/resource/image_paths.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
-import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class GroupChatEmptyView extends StatelessWidget {
@@ -24,54 +20,79 @@ class GroupChatEmptyView extends StatelessWidget {
         : OthersGroupChatEmptyView(firstEvent: firstEvent);
   }
 
-  Container _buildOwnGroupChatEmptyView(BuildContext context) {
+  Widget _buildOwnGroupChatEmptyView(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.only(top: 16, right: 24, left: 24, bottom: 24),
       constraints: BoxConstraints(
         maxWidth: GroupChatEmptyViewStyle.maxWidth(context),
         minWidth: GroupChatEmptyViewStyle.minWidth,
       ),
-      decoration: BoxDecoration(
-        color: LinagoraSysColors.material().onPrimary.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF1C1B1C),
+        border: Border.fromBorderSide(
+          BorderSide(color: Color(0x33474747)),
+        ),
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SvgPicture.asset(
-            ImagePaths.mascotEmptyGroup,
-            width: GroupChatEmptyViewStyle.iconSize(context),
-            height: GroupChatEmptyViewStyle.iconSize(context),
-          ),
-          const SizedBox(height: 26.0),
-          Text(
-            L10n.of(context)!.youCreatedGroupChat,
-            style: GroupChatEmptyViewStyle.titleStyle(context),
-            textAlign: TextAlign.center,
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          // Header row
+          Row(
             children: [
-              const SizedBox(height: 8),
-              _ruleChannel(context, L10n.of(context)!.upTo100000Members),
-              const SizedBox(height: 8),
-              _ruleChannel(context, L10n.of(context)!.persistentChatHistory),
+              const Icon(
+                Icons.shield_outlined,
+                color: Color(0xFFE5E2E3),
+                size: 18,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'GROUP CREATED',
+                style: GroupChatEmptyViewStyle.titleStyle(context),
+              ),
+              const Spacer(),
+              Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4CAF50),
+                  shape: BoxShape.circle,
+                ),
+              ),
             ],
           ),
+          const SizedBox(height: 20),
+          Container(height: 1, color: const Color(0x1F474747)),
+          const SizedBox(height: 20),
+          // Feature rows
+          _featureRow(context, 'Up to 10,000 members'),
+          const SizedBox(height: 12),
+          _featureRow(context, 'End-to-end encryption enabled'),
         ],
       ),
     );
   }
 
-  Widget _ruleChannel(BuildContext context, String rule) {
-    return Padding(
-      padding: GroupChatEmptyViewStyle.rulePadding(context),
-      child: Text(
-        rule,
-        style: GroupChatEmptyViewStyle.ruleStyle(context),
-        textAlign: TextAlign.start,
-      ),
+  Widget _featureRow(BuildContext context, String label) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Icon(
+            Icons.check,
+            size: 14,
+            color: Color(0xFF4CAF50),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            label,
+            style: GroupChatEmptyViewStyle.ruleStyle(context),
+          ),
+        ),
+      ],
     );
   }
 }

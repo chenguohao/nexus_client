@@ -3,7 +3,6 @@ import 'package:fluffychat/presentation/model/chat/chat_details/chat_details_mes
 import 'package:fluffychat/presentation/model/chat/chat_details/chat_details_mute_action.dart';
 import 'package:fluffychat/presentation/model/chat/chat_details/chat_details_search_action.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 class ChatDetailsGroupActionsView extends StatelessWidget {
@@ -24,13 +23,10 @@ class ChatDetailsGroupActionsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sysColor = LinagoraSysColors.material();
     final textTheme = Theme.of(context).textTheme;
 
-    // When there is no mute notifier (e.g. DMs) build the action list
-    // directly; otherwise listen to the notifier so the mute icon updates.
     if (muteNotifier == null) {
-      return _buildActions(context, sysColor, textTheme, [
+      return _buildActions(context, textTheme, [
         ChatDetailsMessageAction(onMessage: onMessage),
         ChatDetailsSearchAction(onSearch: onSearch),
       ]);
@@ -48,14 +44,13 @@ class ChatDetailsGroupActionsView extends StatelessWidget {
           ChatDetailsSearchAction(onSearch: onSearch),
         ];
 
-        return _buildActions(context, sysColor, textTheme, actions);
+        return _buildActions(context, textTheme, actions);
       },
     );
   }
 
   Widget _buildActions(
     BuildContext context,
-    LinagoraSysColors sysColor,
     TextTheme textTheme,
     List<ChatDetailsGroupAction> actions,
   ) {
@@ -75,37 +70,31 @@ class ChatDetailsGroupActionsView extends StatelessWidget {
             child: Padding(
               padding: padding,
               child: Material(
-                borderRadius: BorderRadius.circular(8),
-                color: sysColor.onPrimary.withValues(
-                  alpha: 1 - animationController.value * 0.8,
-                ),
+                color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(8),
                   onTap: actions[index].onTap,
                   onTapDown: (details) =>
                       actions[index].onTapDown?.call(context, details),
                   child: Container(
                     alignment: Alignment.center,
-                    padding: const EdgeInsetsDirectional.fromSTEB(9, 3, 9, 6),
+                    padding: const EdgeInsetsDirectional.fromSTEB(9, 10, 9, 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1C1B1C),
+                      border: Border.all(color: const Color(0x33474747)),
+                    ),
                     child: Column(
                       children: [
-                        const SizedBox(height: 4),
                         Icon(
                           actions[index].icon,
-                          size: 24,
-                          color: ColorTween(
-                            begin: sysColor.primary,
-                            end: sysColor.onPrimary,
-                          ).transform(animationController.value),
+                          size: 22,
+                          color: const Color(0xFFE5E2E3),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         Text(
                           actions[index].getTitle(context),
                           style: textTheme.labelSmall?.copyWith(
-                            color: ColorTween(
-                              begin: sysColor.onSurface,
-                              end: sysColor.onPrimary,
-                            ).transform(animationController.value),
+                            color: const Color(0xFF919191),
+                            letterSpacing: 0.3,
                           ),
                         ),
                       ],

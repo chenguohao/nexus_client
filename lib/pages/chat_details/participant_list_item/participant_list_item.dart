@@ -82,13 +82,22 @@ class _ParticipantListItemState extends State<ParticipantListItem>
             hidden: [DefaultPowerLevelMember.member],
           ),
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: LinagoraRefColors.material().tertiary[30],
+            color: const Color(0xFF919191),
           ),
         ),
       ),
     );
 
-    Widget child = TwakeInkWell(
+    Widget child = Theme(
+      data: Theme.of(context).copyWith(
+        listTileTheme: const ListTileThemeData(
+          tileColor: Colors.transparent,
+        ),
+        colorScheme: Theme.of(context).colorScheme.copyWith(
+          surface: const Color(0xFF131314),
+        ),
+      ),
+      child: TwakeInkWell(
       onTap: () async => await _onItemTap(context),
       onLongPress: () => _handleLongPress(context),
       onHover: (hover) {
@@ -133,11 +142,10 @@ class _ParticipantListItemState extends State<ParticipantListItem>
                                   widget.member.calcDisplayname(),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
-                                  style: LinagoraTextStyle.material()
-                                      .bodyMedium2
-                                      .copyWith(
-                                        color: LinagoraSysColors.material()
-                                            .onSurface,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        color: const Color(0xFFE5E2E3),
+                                        fontWeight: FontWeight.w500,
                                       ),
                                 ),
                               ),
@@ -147,10 +155,9 @@ class _ParticipantListItemState extends State<ParticipantListItem>
                           const SizedBox(height: 4.0),
                           Text(
                             widget.member.id,
-                            style: Theme.of(context).textTheme.bodyMedium
+                            style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
-                                  color:
-                                      LinagoraRefColors.material().tertiary[30],
+                                  color: const Color(0xFF636363),
                                 ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
@@ -183,11 +190,10 @@ class _ParticipantListItemState extends State<ParticipantListItem>
                               ),
                               width: 32,
                               height: 32,
-                              child: Icon(
+                              child: const Icon(
                                 Icons.delete_outlined,
                                 size: 18,
-                                color:
-                                    LinagoraRefColors.material().tertiary[30],
+                                color: Color(0xFF919191),
                               ),
                             ),
                           ),
@@ -201,7 +207,7 @@ class _ParticipantListItemState extends State<ParticipantListItem>
           ],
         ),
       ),
-    );
+    )); // closes Theme + TwakeInkWell
 
     if (widget.isMembersSelecting) return child;
 
@@ -221,7 +227,7 @@ class _ParticipantListItemState extends State<ParticipantListItem>
       child = Hero(
         tag: 'participant_context_menu_${widget.member.id}',
         child: ColoredBox(
-          color: LinagoraSysColors.material().onPrimary,
+          color: const Color(0xFF131314),
           child: child,
         ),
       );

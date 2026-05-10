@@ -194,6 +194,8 @@ class ChatController extends State<Chat>
 
   StreamSubscription? onUpdateEventStreamSubcription;
 
+  StreamSubscription? _receiptUpdateSubscription;
+
   StreamSubscription? ignoredUsersStreamSub;
 
   @override
@@ -2197,7 +2199,11 @@ class ChatController extends State<Chat>
   void onInputBarSubmitted() async {
     await Future.delayed(const Duration(milliseconds: 100));
     await send();
-    FocusScope.of(context).requestFocus(inputFocus);
+    if (PlatformInfos.isMobile) {
+      FocusScope.of(context).unfocus();
+    } else {
+      FocusScope.of(context).requestFocus(inputFocus);
+    }
   }
 
   void unpinEvent(String eventId) async {
@@ -2423,6 +2429,7 @@ class ChatController extends State<Chat>
       onSendTap: () async {
         await sendMedia(
           imagePickerController,
+          context: context,
           room: room,
           caption: _captionsController.text,
           inReplyTo: replyEventNotifier.value,
@@ -2435,6 +2442,7 @@ class ChatController extends State<Chat>
       onCameraPicked: (_) async {
         await sendMedia(
           imagePickerController,
+          context: context,
           room: room,
           inReplyTo: replyEventNotifier.value,
         );
@@ -3133,6 +3141,12 @@ class ChatController extends State<Chat>
         }
       }
     });
+
+    // Receipts arrive via sync but don't trigger timeline.onUpdate.
+    // Re-render after each sync so read-checkmarks update immediately.
+    _receiptUpdateSubscription = client.onSync.stream.listen(
+      (_) => updateView(),
+    );
   }
 
   bool isPinnedEventDeleted(EventUpdate eventUpdate) {
@@ -3216,7 +3230,7 @@ class ChatController extends State<Chat>
   }
 
   List<ChatAppBarActions> _getListActionAppbarMenuNormal() {
-    return [if (!isSupportChat) ChatAppBarActions.leaveGroup];
+    return [];
   }
 
   List<ContextMenuAction> _mapAppbarMenuActionToContextMenuAction(
@@ -3773,6 +3787,7 @@ class ChatController extends State<Chat>
     showEmojiPickerNotifier.dispose();
     pinnedMessageScrollController.dispose();
     onUpdateEventStreamSubcription?.cancel();
+    _receiptUpdateSubscription?.cancel();
     keyboardVisibilitySubscription?.cancel();
     replyEventNotifier.dispose();
     cachedPresenceStreamController.close();

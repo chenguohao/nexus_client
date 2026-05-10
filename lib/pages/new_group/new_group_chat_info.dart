@@ -52,7 +52,7 @@ class NewGroupChatInfo extends StatefulWidget {
 
 class NewGroupChatInfoController extends State<NewGroupChatInfo>
     with CommonMediaPickerMixin, SingleImagePickerMixin, PickAvatarMixin {
-  final enableEncryptionNotifier = ValueNotifier(false);
+  final enableEncryptionNotifier = ValueNotifier(true);
   final haveGroupNameNotifier = ValueNotifier(false);
   final createRoomStateNotifier = ValueNotifier<Either<Failure, Success>>(
     Right(CreateNewGroupInitial()),
