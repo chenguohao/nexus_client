@@ -1,6 +1,7 @@
 import 'package:fluffychat/pages/chat/events/images_builder/image_placeholder.dart';
 import 'package:fluffychat/presentation/decorators/chat_list/subtitle_image_preview_style.dart';
 import 'package:fluffychat/presentation/decorators/chat_list/subtitle_text_style_decorator/subtitle_text_style_view.dart';
+import 'package:fluffychat/utils/matrix_sdk_extensions/download_file_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/event_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
@@ -45,37 +46,8 @@ mixin ChatListItemMixin {
 
     if (event == null) return const SizedBox.shrink();
 
-    // For direct-chat image/video messages, show a short text label instead
-    // of a filename or raw body that would not make sense out of context.
-    if (!isGroup) {
-      final mt = event.messageType;
-      if (mt == MessageTypes.Image) {
-        return Text(
-          '📷 图片',
-          softWrap: false,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFFC6C6C6),
-            fontSize: 14,
-            fontFamily: 'Inter',
-          ),
-        );
-      }
-      if (mt == MessageTypes.Video) {
-        return Text(
-          '🎥 视频',
-          softWrap: false,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: Color(0xFFC6C6C6),
-            fontSize: 14,
-            fontFamily: 'Inter',
-          ),
-        );
-      }
-    }
+    // Image/video messages are handled upstream by chatListItemMediaPreviewSubTitle
+    // for all chat types (DMs and groups alike), so no special handling needed here.
 
     return FutureBuilder<String>(
       future: event.calcLocalizedBodyRemoveBreakLine(L10n.of(context)!),
@@ -204,7 +176,13 @@ mixin ChatListItemMixin {
   Widget chatListItemMediaPreviewSubTitle(BuildContext context, Event? event) {
     return Row(
       children: [
-        if (event == null || event.status != EventStatus.synced)
+        // Show thumbnail once the upload is complete (sent/synced).
+        // Forwarded images already have the mxc URL at creation time, so
+        // `sent` status is sufficient. `sending` is excluded because the
+        // upload is still in progress and the URL may not be set yet.
+        if (event == null ||
+            event.status == EventStatus.error ||
+            event.status.intValue < EventStatus.sent.intValue)
           const SizedBox.shrink()
         else
           SizedBox(
@@ -215,8 +193,19 @@ mixin ChatListItemMixin {
                 SubtitleImagePreviewStyle.borderRadius,
               ),
               child: MxcImage(
-                key: ValueKey(event.eventId),
-                cacheKey: event.eventId,
+                // Use mxc URL as both key and cacheKey so that forwarded
+                // images (which share the same URL as the original) reuse
+                // the in-memory cache and don't trigger a redundant download.
+                key: ValueKey(
+                  event
+                      .getAttachmentOrThumbnailMxcUrl(getThumbnail: true)
+                      ?.toString() ??
+                  event.eventId,
+                ),
+                cacheKey: event
+                    .getAttachmentOrThumbnailMxcUrl(getThumbnail: true)
+                    ?.toString() ??
+                    event.eventId,
                 event: event,
                 placeholder: (context) => ImagePlaceholder(
                   event: event,
@@ -232,9 +221,7 @@ mixin ChatListItemMixin {
         Padding(
           padding: SubtitleImagePreviewStyle.labelPadding,
           child: Text(
-            event?.messageType == MessageTypes.Image
-                ? L10n.of(context)!.photo
-                : L10n.of(context)!.video,
+            event?.messageType == MessageTypes.Image ? '图片' : '视频',
             style: const TextStyle(
               color: Color(0xFFC6C6C6),
               fontSize: 14,

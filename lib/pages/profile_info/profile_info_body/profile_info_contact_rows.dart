@@ -3,12 +3,9 @@ import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/domain/app_state/user_info/get_user_info_state.dart';
 import 'package:fluffychat/pages/profile_info/copiable_profile_row/icon_copiable_profile_row.dart';
-import 'package:fluffychat/pages/profile_info/copiable_profile_row/svg_copiable_profile_row.dart';
-import 'package:fluffychat/resource/image_paths.dart';
 import 'package:flutter/material.dart';
 
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class ProfileInfoContactRows extends StatelessWidget {
@@ -23,53 +20,48 @@ class ProfileInfoContactRows extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: LinagoraRefColors.material().neutral[90] ?? Colors.black,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        color: LinagoraSysColors.material().onPrimary,
-      ),
-      child: ValueListenableBuilder(
-        valueListenable: userInfoNotifier,
-        builder: (context, userInfo, child) {
-          final userInfoModel = userInfo
-              .getSuccessOrNull<GetUserInfoSuccess>()
-              ?.userInfo;
-          final isLoading = userInfo is GettingUserInfo;
+    return ValueListenableBuilder(
+      valueListenable: userInfoNotifier,
+      builder: (context, userInfo, child) {
+        final userInfoModel =
+            userInfo.getSuccessOrNull<GetUserInfoSuccess>()?.userInfo;
+        final isLoading = userInfo is GettingUserInfo;
 
-          return AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
+        final hasPhone = userInfoModel?.phones?.firstOrNull != null;
+        final hasEmail = userInfoModel?.emails?.firstOrNull != null;
+
+        // 没有额外信息时隐藏整块
+        if (!isLoading && !hasPhone && !hasEmail) {
+          return const SizedBox.shrink();
+        }
+
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0x1F474747)),
+              borderRadius: BorderRadius.circular(4),
+              color: const Color(0xFF1C1B1C),
+            ),
             child: SizedBox(
               width: double.infinity,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SvgCopiableProfileRow(
-                    leadingIconPath: ImagePaths.icMatrixid,
-                    caption: L10n.of(context)!.matrixId,
-                    copiableText: user.id,
-                    enableDividerTop:
-                        userInfoModel != null &&
-                        (userInfoModel.phones?.firstOrNull != null ||
-                            userInfoModel.emails?.firstOrNull != null),
-                  ),
                   if (isLoading)
                     _LoadingPlaceholder()
                   else ...[
-                    if (userInfoModel?.phones?.firstOrNull != null)
+                    if (hasPhone)
                       IconCopiableProfileRow(
                         icon: Icons.call,
                         caption: L10n.of(context)!.phone,
                         copiableText: userInfoModel!.phones!.firstOrNull ?? '',
-                        enableDividerTop:
-                            userInfoModel.emails?.firstOrNull != null,
+                        enableDividerTop: hasEmail,
                       ),
-                    if (userInfoModel?.emails?.firstOrNull != null)
+                    if (hasEmail)
                       IconCopiableProfileRow(
                         icon: Icons.alternate_email,
                         caption: L10n.of(context)!.email,
@@ -79,9 +71,9 @@ class ProfileInfoContactRows extends StatelessWidget {
                 ],
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
@@ -133,10 +125,10 @@ class _ShimmerRowState extends State<_ShimmerRow>
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [
-                Colors.grey.shade300,
-                Colors.grey.shade100,
-                Colors.grey.shade300,
+              colors: const [
+                Color(0xFF2A2A2B),
+                Color(0xFF1C1B1C),
+                Color(0xFF2A2A2B),
               ],
               stops: [
                 _controller.value - 0.3,

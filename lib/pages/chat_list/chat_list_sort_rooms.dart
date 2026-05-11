@@ -58,8 +58,23 @@ class _ChatListSortRoomsState extends State<ChatListSortRooms> {
     for (final room in widget.rooms) {
       if (_lastEventByRoomId[room.id] != null) continue;
 
-      final event = await room.lastEventAvailableInPreview();
-      _lastEventByRoomId[room.id] = event;
+      // Query the database for the last preview event.
+      final dbEvent = await room.lastEventAvailableInPreview();
+
+      // The database query may lag behind in-memory state: newly sent
+      // local-echo events (sending / sent) are not yet persisted when this
+      // runs.  Prefer room.lastEvent if it is more recent so that the chat
+      // list always reflects the most recently sent message immediately.
+      final memEvent = room.lastEvent;
+      Event? chosen = dbEvent;
+      if (memEvent != null) {
+        if (dbEvent == null ||
+            memEvent.originServerTs.isAfter(dbEvent.originServerTs)) {
+          chosen = memEvent;
+        }
+      }
+
+      _lastEventByRoomId[room.id] = chosen;
     }
     widget.sortingRoomsNotifier.value = false;
     return List.from(widget.rooms)
@@ -77,7 +92,11 @@ class _ChatListSortRoomsState extends State<ChatListSortRooms> {
         (room) => MapEntry(
           room.id,
           room.onUpdate.stream.listen((roomId) {
-            _lastEventByRoomId[roomId] = null;
+            if (mounted) {
+              setState(() {
+                _lastEventByRoomId[roomId] = null;
+              });
+            }
           }),
         ),
       ),
@@ -108,7 +127,11 @@ class _ChatListSortRoomsState extends State<ChatListSortRooms> {
           _roomSubscriptions.putIfAbsent(
             room.id,
             () => room.onUpdate.stream.listen((roomId) {
-              _lastEventByRoomId[roomId] = null;
+              if (mounted) {
+                setState(() {
+                  _lastEventByRoomId[roomId] = null;
+                });
+              }
             }),
           ),
         ),

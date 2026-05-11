@@ -7,7 +7,6 @@ import 'package:fluffychat/widgets/app_bars/searchable_app_bar_style.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class SearchableAppBar extends StatelessWidget {
   final ValueNotifier<bool> searchModeNotifier;
@@ -20,6 +19,8 @@ class SearchableAppBar extends StatelessWidget {
   final Function() closeSearchBar;
   final double? toolbarHeight;
   final bool isFullScreen;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
 
   const SearchableAppBar({
     super.key,
@@ -33,23 +34,29 @@ class SearchableAppBar extends StatelessWidget {
     this.toolbarHeight,
     this.isFullScreen = true,
     this.displayBackButton = true,
+    this.backgroundColor,
+    this.foregroundColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final effectiveBg = backgroundColor ?? const Color(0xFF131314);
+    final effectiveFg = foregroundColor;
+
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: toolbarHeight,
       bottom: PreferredSize(
         preferredSize: const Size(double.infinity, 4),
         child: Container(
-          color: LinagoraStateLayer(
-            LinagoraSysColors.material().surfaceTint,
-          ).opacityLayer1,
+          color: const Color(0x1F474747),
           height: 1,
         ),
       ),
-      backgroundColor: LinagoraSysColors.material().onPrimary,
+      backgroundColor: effectiveBg,
+      iconTheme: effectiveFg != null
+          ? IconThemeData(color: effectiveFg)
+          : null,
       title: Align(
         alignment: Alignment.centerLeft,
         child: Column(
@@ -89,7 +96,7 @@ class SearchableAppBar extends StatelessWidget {
                       if (searchModeNotifier) {
                         return Padding(
                           padding: const EdgeInsetsDirectional.only(top: 10.0),
-                          child: _textFieldBuilder(context),
+                          child: _textFieldBuilder(context, effectiveFg),
                         );
                       }
                       return GestureDetector(
@@ -97,7 +104,8 @@ class SearchableAppBar extends StatelessWidget {
                         child: Text(
                           title,
                           textAlign: TextAlign.center,
-                          style: TwakeAppBarStyle.titleTextStyle(context),
+                          style: TwakeAppBarStyle.titleTextStyle(context)
+                              ?.copyWith(color: effectiveFg),
                         ),
                       );
                     },
@@ -157,16 +165,11 @@ class SearchableAppBar extends StatelessWidget {
               ],
             ),
             if (!isFullScreen)
-              Divider(
-                height: 1,
-                color: LinagoraStateLayer(
-                  LinagoraSysColors.material().surfaceTint,
-                ).opacityLayer3,
-              ),
+              const Divider(height: 1, color: Color(0x1F474747)),
             if (!isFullScreen)
               Padding(
                 padding: SearchableAppBarStyle.textFieldWebPadding,
-                child: _textFieldBuilder(context),
+                child: _textFieldBuilder(context, effectiveFg),
               ),
           ],
         ),
@@ -174,7 +177,7 @@ class SearchableAppBar extends StatelessWidget {
     );
   }
 
-  Widget _textFieldBuilder(BuildContext context) {
+  Widget _textFieldBuilder(BuildContext context, [Color? fgColor]) {
     return TextField(
       onTapOutside: (event) {
         dismissKeyboard(context);
@@ -207,8 +210,8 @@ class SearchableAppBar extends StatelessWidget {
               )
             : null,
         suffixIcon: const SizedBox.shrink(),
-        hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-          color: LinagoraRefColors.material().neutral[60],
+        hintStyle: TextStyle(
+          color: fgColor?.withOpacity(0.4) ?? const Color(0xFF636363),
         ),
       ),
     );

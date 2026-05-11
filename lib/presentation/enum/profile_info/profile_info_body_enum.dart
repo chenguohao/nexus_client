@@ -1,7 +1,5 @@
-import 'package:fluffychat/pages/profile_info/profile_info_body/profile_info_body_view_style.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 enum ProfileInfoActions {
   sendMessage,
@@ -25,20 +23,23 @@ enum ProfileInfoActions {
   TextStyle textStyle(BuildContext context) {
     switch (this) {
       case ProfileInfoActions.sendMessage:
-        return Theme.of(context).textTheme.labelLarge!.copyWith(
-          color: LinagoraSysColors.material().onPrimary,
+        return const TextStyle(
+          color: Color(0xFFE5E2E3),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         );
       case ProfileInfoActions.removeFromGroup:
-        return Theme.of(context).textTheme.labelLarge!.copyWith(
-          color: LinagoraSysColors.material().error,
+        return const TextStyle(
+          color: Color(0xFFCF6679),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         );
       case ProfileInfoActions.downgradeToReadOnly:
-        return Theme.of(context).textTheme.labelLarge!.copyWith(
-          color: LinagoraSysColors.material().primary,
-        );
       case ProfileInfoActions.transferOwnership:
-        return Theme.of(context).textTheme.labelLarge!.copyWith(
-          color: LinagoraSysColors.material().primary,
+        return const TextStyle(
+          color: Color(0xFF919191),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         );
     }
   }
@@ -47,8 +48,9 @@ enum ProfileInfoActions {
     switch (this) {
       case ProfileInfoActions.sendMessage:
         return BoxDecoration(
-          color: LinagoraSysColors.material().primary,
-          borderRadius: BorderRadius.circular(100),
+          color: const Color(0xFF2A2A2B),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0x33474747)),
         );
       case ProfileInfoActions.removeFromGroup:
       case ProfileInfoActions.downgradeToReadOnly:
@@ -73,11 +75,9 @@ enum ProfileInfoActions {
     switch (this) {
       case ProfileInfoActions.removeFromGroup:
       case ProfileInfoActions.transferOwnership:
-        return Divider(
-          thickness: ProfileInfoBodyViewStyle.bigDividerThickness,
-          color: LinagoraStateLayer(
-            LinagoraSysColors.material().surfaceTint,
-          ).opacityLayer3,
+        return const Divider(
+          thickness: 1,
+          color: Color(0x1F474747),
         );
       case ProfileInfoActions.sendMessage:
       case ProfileInfoActions.downgradeToReadOnly:
@@ -88,18 +88,24 @@ enum ProfileInfoActions {
   Icon? icon() {
     switch (this) {
       case ProfileInfoActions.sendMessage:
-        return Icon(
-          Icons.chat_bubble,
-          size: 15,
-          color: LinagoraSysColors.material().onPrimary,
+        return const Icon(
+          Icons.chat_bubble_outline,
+          size: 18,
+          color: Color(0xFFE5E2E3),
         );
       case ProfileInfoActions.removeFromGroup:
-        return Icon(
+        return const Icon(
           Icons.delete_outline_outlined,
-          color: LinagoraSysColors.material().error,
+          size: 18,
+          color: Color(0xFFCF6679),
+        );
+      case ProfileInfoActions.transferOwnership:
+        return const Icon(
+          Icons.swap_horiz_rounded,
+          size: 18,
+          color: Color(0xFF919191),
         );
       case ProfileInfoActions.downgradeToReadOnly:
-      case ProfileInfoActions.transferOwnership:
         return null;
     }
   }

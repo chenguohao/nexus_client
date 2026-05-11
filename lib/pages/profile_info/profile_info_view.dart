@@ -22,19 +22,22 @@ class ProfileInfoView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF131314),
       appBar: TwakeAppBar(
         title: L10n.of(context)?.profileInfo ?? "",
+        backgroundColor: const Color(0xFF131314),
         leading: TwakeIconButton(
           paddingAll: 8,
           splashColor: Colors.transparent,
           hoverColor: Colors.transparent,
           highlightColor: Colors.transparent,
+          iconColor: Colors.white,
           onTap: () => Navigator.of(context).pop(),
           icon: Icons.arrow_back_ios,
         ),
         enableLeftTitle: true,
         centerTitle: true,
-        withDivider: true,
+        withDivider: false,
         context: context,
       ),
       body: ProfileInfoBody(

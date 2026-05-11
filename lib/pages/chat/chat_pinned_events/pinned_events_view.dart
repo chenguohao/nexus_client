@@ -178,7 +178,7 @@ class _PinnedEventsIndicator extends StatelessWidget {
     return AutoScrollTag(
       key: ValueKey(currentEvent.eventId),
       index: index,
-      highlightColor: Theme.of(context).highlightColor,
+      highlightColor: const Color(0x33E5E2E3),
       controller: scrollController,
       child: Container(
         width: PinnedEventsStyle.maxWidthIndicator,

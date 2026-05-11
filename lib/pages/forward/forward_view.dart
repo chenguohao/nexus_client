@@ -7,15 +7,10 @@ import 'package:fluffychat/pages/forward/recent_chat_list.dart';
 import 'package:fluffychat/pages/forward/recent_chat_title.dart';
 import 'package:fluffychat/pages/forward/forward_view_style.dart';
 import 'package:fluffychat/widgets/app_bars/searchable_app_bar.dart';
-import 'package:fluffychat/widgets/twake_components/twake_fab.dart';
 import 'package:fluffychat/widgets/twake_components/twake_text_button.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:fluffychat/resource/image_paths.dart';
-import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_state_layer.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 class ForwardView extends StatelessWidget {
@@ -26,6 +21,7 @@ class ForwardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF131314),
       appBar: PreferredSize(
         preferredSize: controller.isFullScreen
             ? ForwardViewStyle.preferredSize(context)
@@ -44,6 +40,8 @@ class ForwardView extends StatelessWidget {
               closeSearchBar: controller.closeSearchBar,
               isFullScreen: controller.isFullScreen,
               displayBackButton: forwardMessageState == null,
+              backgroundColor: const Color(0xFF131314),
+              foregroundColor: const Color(0xFFE5E2E3),
             );
           },
         ),
@@ -127,13 +125,27 @@ class _WebActionsButton extends StatelessWidget {
               } else {
                 return forwardMessageState.fold((failure) => child!, (success) {
                   if (success is ForwardMessageLoading) {
-                    return const SizedBox(
+                    return SizedBox(
                       height: ForwardViewStyle.bottomBarHeight,
                       child: Align(
                         alignment: Alignment.centerRight,
-                        child: TwakeFloatingActionButton(
-                          customIcon: SizedBox(
-                            child: CupertinoActivityIndicator(),
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF2A2A2B),
+                            border: Border.fromBorderSide(
+                              BorderSide(color: Color(0x33474747)),
+                            ),
+                          ),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CupertinoActivityIndicator(
+                                color: Color(0xFFE5E2E3),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -153,12 +165,10 @@ class _WebActionsButton extends StatelessWidget {
                   borderHover: ForwardViewStyle.webActionsButtonBorder,
                   margin: ForwardViewStyle.webActionsButtonMargin,
                   buttonDecoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(
-                      ForwardViewStyle.webActionsButtonBorder,
-                    ),
+                    border: Border.all(color: const Color(0x33474747)),
                   ),
                   styleMessage: Theme.of(context).textTheme.labelLarge
-                      ?.copyWith(color: LinagoraSysColors.material().primary),
+                      ?.copyWith(color: const Color(0xFF919191)),
                 ),
                 const SizedBox(width: 8.0),
                 TwakeTextButton(
@@ -168,20 +178,15 @@ class _WebActionsButton extends StatelessWidget {
                   borderHover: ForwardViewStyle.webActionsButtonBorder,
                   buttonDecoration: BoxDecoration(
                     color: selectedChat.isNotEmpty
-                        ? LinagoraSysColors.material().primary
-                        : LinagoraStateLayer(
-                            LinagoraSysColors.material().onSurface,
-                          ).opacityLayer2,
-                    borderRadius: BorderRadius.circular(
-                      ForwardViewStyle.webActionsButtonBorder,
-                    ),
+                        ? const Color(0xFF2A2A2B)
+                        : const Color(0xFF1C1B1C),
+                    border: Border.all(color: const Color(0x33474747)),
                   ),
                   styleMessage: Theme.of(context).textTheme.labelLarge
                       ?.copyWith(
                         color: selectedChat.isNotEmpty
-                            ? LinagoraSysColors.material().onPrimary
-                            : LinagoraSysColors.material().inverseSurface
-                                  .withOpacity(0.6),
+                            ? const Color(0xFFE5E2E3)
+                            : const Color(0xFF636363),
                       ),
                 ),
               ],
@@ -225,12 +230,31 @@ class _ForwardButton extends StatelessWidget {
           } else {
             return forwardMessageState.fold((failure) => child!, (success) {
               if (success is ForwardMessageLoading) {
-                return const SizedBox(
+                return SizedBox(
                   height: ForwardViewStyle.bottomBarHeight,
                   child: Align(
                     alignment: Alignment.centerRight,
-                    child: TwakeFloatingActionButton(
-                      customIcon: SizedBox(child: CupertinoActivityIndicator()),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 16, bottom: 8),
+                      child: Container(
+                        width: 48,
+                        height: 48,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF2A2A2B),
+                          border: Border.fromBorderSide(
+                            BorderSide(color: Color(0x33474747)),
+                          ),
+                        ),
+                        child: const Center(
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CupertinoActivityIndicator(
+                              color: Color(0xFFE5E2E3),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 );
@@ -244,12 +268,26 @@ class _ForwardButton extends StatelessWidget {
           height: ForwardViewStyle.bottomBarHeight,
           child: Align(
             alignment: Alignment.centerRight,
-            child: TwakeIconButton(
-              paddingAll: 0,
-              onTap: forwardAction,
-              tooltip: L10n.of(context)!.send,
-              imagePath: ImagePaths.icSend,
-              imageSize: ForwardViewStyle.iconSendSize,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16, bottom: 8),
+              child: InkWell(
+                onTap: forwardAction,
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2A2A2B),
+                    border: Border.fromBorderSide(
+                      BorderSide(color: Color(0x33474747)),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.send,
+                    color: Color(0xFFE5E2E3),
+                    size: 22,
+                  ),
+                ),
+              ),
             ),
           ),
         ),

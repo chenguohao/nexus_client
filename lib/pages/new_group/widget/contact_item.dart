@@ -6,7 +6,6 @@ import 'package:fluffychat/pages/new_private_chat/widget/expansion_contact_list_
 import 'package:fluffychat/presentation/model/contact/presentation_contact.dart';
 import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 
 class ContactItem extends StatelessWidget {
@@ -70,8 +69,27 @@ class ContactItem extends StatelessWidget {
                 ValueListenableBuilder<bool>(
                   valueListenable: contactNotifier,
                   builder: (context, isCurrentSelected, child) {
+                    final isChecked = disabled || contactNotifier.value;
                     return Checkbox(
-                      value: disabled || contactNotifier.value,
+                      value: isChecked,
+                      // disabled（已在群里）：灰底灰勾，明显勾选但不可操作
+                      // 正常选中：白底黑勾
+                      fillColor: WidgetStateProperty.resolveWith((states) {
+                        if (disabled) return const Color(0xFF474747);
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return Colors.transparent;
+                      }),
+                      checkColor: disabled
+                          ? const Color(0xFFAAAAAA)
+                          : const Color(0xFF131314),
+                      side: BorderSide(
+                        color: disabled
+                            ? const Color(0xFF474747)
+                            : const Color(0xFF636363),
+                        width: 2,
+                      ),
                       onChanged: disabled
                           ? null
                           : (newValue) {
@@ -96,13 +114,9 @@ class ContactItem extends StatelessWidget {
           ),
         ),
         if (disableBannedUser && !room.canSelectToInvite(contact.matrixId))
-          Positioned.fill(
+          const Positioned.fill(
             child: IgnorePointer(
-              child: ColoredBox(
-                color: LinagoraSysColors.material().onPrimary.withValues(
-                  alpha: 0.5,
-                ),
-              ),
+              child: ColoredBox(color: Color(0x44131314)),
             ),
           ),
       ],

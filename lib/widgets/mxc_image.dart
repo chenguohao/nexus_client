@@ -290,6 +290,24 @@ class _MxcImageState extends State<MxcImage>
   }
 
   @override
+  void didUpdateWidget(covariant MxcImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Retry loading when the event changes (e.g. local echo → confirmed event)
+    // or when the URI/cacheKey changes. This ensures forwarded images reload
+    // when the sending event is replaced by the server-confirmed event.
+    if (oldWidget.event?.eventId != widget.event?.eventId ||
+        oldWidget.uri != widget.uri ||
+        oldWidget.cacheKey != widget.cacheKey) {
+      isLoadDone = false;
+      _mediaExpired = false;
+      _imageDataNoCache = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _tryLoad(context);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _imageDataNoCache = null;
     super.dispose();

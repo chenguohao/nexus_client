@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class RecentChatListStyle {
-  static BorderRadius borderRadiusItem = BorderRadius.circular(16);
+  static BorderRadius borderRadiusItem = BorderRadius.zero;
 
   static const paddingVerticalBetweenItem = EdgeInsetsDirectional.only(
     top: 8.0,

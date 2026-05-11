@@ -9,7 +9,6 @@ import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:fluffychat/widgets/twake_components/twake_text_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
 class AssignRolesRolePickerView extends StatelessWidget {
@@ -25,23 +24,22 @@ class AssignRolesRolePickerView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: isDialog
-          ? Colors.transparent
-          : LinagoraSysColors.material().onPrimary,
+      backgroundColor: const Color(0xFF131314),
       resizeToAvoidBottomInset: false,
       appBar: TwakeAppBar(
         title: L10n.of(context)!.assignRoles,
         centerTitle: true,
-        withDivider: true,
+        withDivider: false,
         context: context,
         enableLeftTitle: true,
         isDialog: isDialog,
-        backgroundColor: isDialog ? Colors.transparent : null,
+        backgroundColor: const Color(0xFF131314),
         leading: TwakeIconButton(
           paddingAll: 8,
           splashColor: Colors.transparent,
           hoverColor: Colors.transparent,
           highlightColor: Colors.transparent,
+          iconColor: Colors.white,
           onTap: () => Navigator.of(context).pop(),
           icon: Icons.arrow_back_ios,
         ),
@@ -52,6 +50,7 @@ class AssignRolesRolePickerView extends StatelessWidget {
                   splashColor: Colors.transparent,
                   hoverColor: Colors.transparent,
                   highlightColor: Colors.transparent,
+                  iconColor: Colors.white,
                   onTap: () =>
                       Navigator.of(context).popUntil((route) => route.isFirst),
                   icon: Icons.close,
@@ -69,10 +68,9 @@ class AssignRolesRolePickerView extends StatelessWidget {
                 child: Column(
                   children: [
                     selectedUsersList(context),
+                    // "Select role" section header
                     Container(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest,
+                      color: const Color(0xFF1C1B1C),
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16.0,
@@ -83,8 +81,12 @@ class AssignRolesRolePickerView extends StatelessWidget {
                           : null,
                       child: Text(
                         L10n.of(context)!.selectRole,
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                          color: LinagoraRefColors.material().neutral[40],
+                        style: const TextStyle(
+                          color: Color(0xFF919191),
+                          fontSize: 12,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
@@ -111,12 +113,11 @@ class AssignRolesRolePickerView extends StatelessWidget {
                 ),
               ),
             ),
+            // Bottom action buttons
             ValueListenableBuilder(
               valueListenable: controller.roleSelectedNotifier,
               builder: (context, roleSelected, child) {
-                if (roleSelected == null) {
-                  return const SizedBox.shrink();
-                }
+                if (roleSelected == null) return const SizedBox.shrink();
                 return Container(
                   padding: EdgeInsets.only(
                     bottom: 24,
@@ -124,42 +125,48 @@ class AssignRolesRolePickerView extends StatelessWidget {
                     right: isDialog ? 36 : 16,
                     top: isDialog ? 36 : 16,
                   ),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: Color(0x1F474747)),
+                    ),
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(right: 32),
+                        padding: const EdgeInsets.only(right: 12),
                         child: TwakeTextButton(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                          },
+                          onTap: () => Navigator.of(context).pop(),
                           message: L10n.of(context)!.cancel,
-                          borderHover: 100,
+                          borderHover: 0,
                           buttonDecoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(100),
                             border: Border.all(
-                              color: Theme.of(context).colorScheme.primary,
+                              color: const Color(0x33474747),
                             ),
                           ),
-                          styleMessage: Theme.of(context).textTheme.labelLarge
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                          styleMessage: const TextStyle(
+                            color: Color(0xFF919191),
+                            fontSize: 14,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       TwakeTextButton(
                         message: L10n.of(context)!.done,
-                        onTap: () {
-                          controller.onTapToDoneButton();
-                        },
-                        styleMessage: Theme.of(context).textTheme.labelLarge
-                            ?.copyWith(
-                              color: Theme.of(context).colorScheme.onPrimary,
-                            ),
-                        borderHover: 100,
+                        onTap: controller.onTapToDoneButton,
+                        borderHover: 0,
                         buttonDecoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary,
-                          borderRadius: BorderRadius.circular(100),
+                          color: const Color(0xFF2A2A2B),
+                          border: Border.all(
+                            color: const Color(0x33474747),
+                          ),
+                        ),
+                        styleMessage: const TextStyle(
+                          color: Color(0xFFE5E2E3),
+                          fontSize: 14,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -178,30 +185,24 @@ class AssignRolesRolePickerView extends StatelessWidget {
     required int index,
     DefaultPowerLevelMember? isSelected,
   }) {
+    final role = controller.widget.rolePickerType.assignRoles[index];
+    final checked = isSelected == role;
+
     return ExpandableWidget(
       dividerPadding: isDialog
           ? const EdgeInsets.symmetric(horizontal: 16)
           : null,
-      isExpanded:
-          isSelected == controller.widget.rolePickerType.assignRoles[index],
+      isExpanded: checked,
       parentWidget: Row(
         children: [
+          // Role icon in dark square
           Container(
             width: AssignRolesRolePickerStyle.assignRoleIconSize,
             height: AssignRolesRolePickerStyle.assignRoleIconSize,
-            decoration: BoxDecoration(
-              color: controller.colorBackgroundForRoles(
-                controller.widget.rolePickerType.assignRoles[index],
-              ),
-              borderRadius: BorderRadius.circular(
-                AssignRolesRolePickerStyle.assignRoleIconSize / 2,
-              ),
+            decoration: const BoxDecoration(
+              color: Color(0xFF2A2A2B),
             ),
-            child: Center(
-              child: controller.iconForRoles(
-                controller.widget.rolePickerType.assignRoles[index],
-              ),
-            ),
+            child: Center(child: controller.iconForRoles(role)),
           ),
           const SizedBox(width: 8.0),
           Expanded(
@@ -209,62 +210,73 @@ class AssignRolesRolePickerView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  controller.widget.rolePickerType.assignRoles[index]
-                      .displayName(context),
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: LinagoraSysColors.material().onSurface,
+                  role.displayName(context),
+                  style: const TextStyle(
+                    color: Color(0xFFE5E2E3),
+                    fontSize: 15,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
                 Text(
-                  controller.subtitleForRoles(
-                    controller.widget.rolePickerType.assignRoles[index],
-                  ),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: LinagoraRefColors.material().tertiary[20],
+                  controller.subtitleForRoles(role),
+                  style: const TextStyle(
+                    color: Color(0xFF636363),
+                    fontSize: 12,
+                    fontFamily: 'Inter',
                   ),
                 ),
               ],
             ),
           ),
+          // Radio indicator
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             switchOutCurve: Curves.easeInOut,
             transitionBuilder: (child, animation) =>
                 ScaleTransition(scale: animation, child: child),
             child: SizedBox(
+              key: ValueKey(checked),
               width: 24,
               height: 24,
               child: SvgPicture.asset(
-                isSelected ==
-                        controller.widget.rolePickerType.assignRoles[index]
+                checked
                     ? ImagePaths.icRadioChecked
                     : ImagePaths.icRadioUnchecked,
+                colorFilter: ColorFilter.mode(
+                  checked
+                      ? const Color(0xFFE5E2E3)
+                      : const Color(0xFF636363),
+                  BlendMode.srcIn,
+                ),
               ),
             ),
           ),
         ],
       ),
-      childWidget: controller.permissionsWidgetForRoles(
-        controller.widget.rolePickerType.assignRoles[index],
-      ),
-      onTap: () {
-        controller.onSelectedRole(
-          controller.widget.rolePickerType.assignRoles[index],
-        );
-      },
+      childWidget: controller.permissionsWidgetForRoles(role),
+      onTap: () => controller.onSelectedRole(role),
     );
   }
 
   Widget selectedUsersList(BuildContext context) {
     final users = controller.widget.assignedUsers;
 
-    if (users.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (users.isEmpty) return const SizedBox.shrink();
+
     if (users.length == 1) {
-      return TwakeListItem(
-        padding: const EdgeInsets.all(8),
-        margin: EdgeInsets.symmetric(horizontal: isDialog ? 16 : 0),
+      return Container(
+        padding: const EdgeInsets.all(12),
+        margin: EdgeInsets.only(
+          left: isDialog ? 16 : 0,
+          right: isDialog ? 16 : 0,
+          bottom: 4,
+        ),
+        decoration: const BoxDecoration(
+          border: Border(
+            bottom: BorderSide(color: Color(0x1F474747)),
+          ),
+        ),
         child: Row(
           children: [
             Avatar(
@@ -276,25 +288,23 @@ class AssignRolesRolePickerView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          users.first.calcDisplayname(),
-                          style: LinagoraTextStyle.material().bodyMedium2
-                              .copyWith(
-                                color: LinagoraSysColors.material().onSurface,
-                              ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
+                  Text(
+                    users.first.calcDisplayname(),
+                    style: const TextStyle(
+                      color: Color(0xFFE5E2E3),
+                      fontSize: 14,
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   Text(
                     users.first.id,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: LinagoraRefColors.material().tertiary[30],
+                    style: const TextStyle(
+                      color: Color(0xFF636363),
+                      fontSize: 12,
+                      fontFamily: 'Inter',
                     ),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -306,6 +316,8 @@ class AssignRolesRolePickerView extends StatelessWidget {
         ),
       );
     }
+
+    // Multiple users: chip list
     return AnimatedSize(
       curve: Curves.easeIn,
       alignment: Alignment.bottomCenter,
@@ -323,9 +335,8 @@ class AssignRolesRolePickerView extends StatelessWidget {
             children: users.map((member) {
               return Container(
                 decoration: BoxDecoration(
-                  color: LinagoraStateLayer(
-                    LinagoraSysColors.material().surfaceTint,
-                  ).opacityLayer3,
+                  color: const Color(0xFF2A2A2B),
+                  border: Border.all(color: const Color(0x33474747)),
                   borderRadius: BorderRadius.circular(
                     AssignRolesRolePickerStyle.avatarChipSize,
                   ),
@@ -345,10 +356,12 @@ class AssignRolesRolePickerView extends StatelessWidget {
                         padding: AssignRolesRolePickerStyle.textChipPadding,
                         child: Text(
                           member.calcDisplayname(),
-                          style: Theme.of(context).textTheme.titleSmall
-                              ?.copyWith(
-                                color: LinagoraSysColors.material().onSurface,
-                              ),
+                          style: const TextStyle(
+                            color: Color(0xFFE5E2E3),
+                            fontSize: 13,
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.w500,
+                          ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),

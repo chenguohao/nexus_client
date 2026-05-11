@@ -4,7 +4,6 @@ import 'package:fluffychat/pages/chat_details/participant_list_item/chat_partici
 import 'package:fluffychat/widgets/avatar/avatar.dart';
 import 'package:fluffychat/widgets/mixins/twake_context_menu_mixin.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 /// Mobile context menu overlay with floating participant item using Hero animation.
@@ -65,7 +64,7 @@ class _MobileContextMenuOverlayState extends State<MobileContextMenuOverlay>
             opacity: widget.animation,
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-              child: Container(color: Colors.black.withOpacity(0.3)),
+              child: Container(color: Colors.black.withOpacity(0.5)),
             ),
           ),
           // Floating participant item with Hero animation
@@ -75,14 +74,18 @@ class _MobileContextMenuOverlayState extends State<MobileContextMenuOverlay>
             child: Hero(
               tag: 'participant_context_menu_${widget.member.id}',
               child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(8),
+                elevation: 0,
+                color: const Color(0xFF2A2A2B),
+                surfaceTintColor: Colors.transparent,
+                borderRadius: BorderRadius.zero,
                 child: Container(
                   width: widget.itemSize.width,
                   height: widget.itemSize.height,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF2A2A2B),
+                    border: Border.fromBorderSide(
+                      BorderSide(color: Color(0x33474747)),
+                    ),
                   ),
                   child: _buildFloatingItem(context),
                 ),
@@ -113,15 +116,20 @@ class _MobileContextMenuOverlayState extends State<MobileContextMenuOverlay>
                   widget.member.calcDisplayname(),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
-                  style: LinagoraTextStyle.material().bodyMedium2.copyWith(
-                    color: LinagoraSysColors.material().onSurface,
+                  style: const TextStyle(
+                    color: Color(0xFFE5E2E3),
+                    fontSize: 14,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 4.0),
                 Text(
                   widget.member.id,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: LinagoraRefColors.material().tertiary[30],
+                  style: const TextStyle(
+                    color: Color(0xFF636363),
+                    fontSize: 12,
+                    fontFamily: 'Inter',
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,

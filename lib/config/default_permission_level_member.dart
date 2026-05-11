@@ -2,7 +2,6 @@ import 'package:fluffychat/resource/image_paths.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 enum DefaultPermissionLevelMember {
   sendMessages,
@@ -149,15 +148,15 @@ enum DefaultPermissionLevelMember {
             Icon(
               permission.icon(),
               size: 24,
-              color: LinagoraSysColors.material().onSurface,
+              color: const Color(0xFF919191),
             ),
           if (permission.imagePath() != null)
             SvgPicture.asset(
               permission.imagePath()!,
               width: 24,
               height: 24,
-              colorFilter: ColorFilter.mode(
-                LinagoraSysColors.material().onSurface,
+              colorFilter: const ColorFilter.mode(
+                Color(0xFF919191),
                 BlendMode.srcIn,
               ),
             ),
@@ -165,19 +164,21 @@ enum DefaultPermissionLevelMember {
           Expanded(
             child: Text(
               permission.title(context),
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: LinagoraSysColors.material().onSurface,
+              style: const TextStyle(
+                color: Color(0xFFE5E2E3),
+                fontSize: 14,
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w400,
               ),
             ),
           ),
+          // Read-only "checked" indicator – styled as a subtle Zeon toggle
           Container(
             width: 38,
             height: 24,
             padding: const EdgeInsets.symmetric(horizontal: 4),
             decoration: BoxDecoration(
-              color: LinagoraStateLayer(
-                LinagoraSysColors.material().onSurface,
-              ).opacityLayer2,
+              color: const Color(0xFF474747),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Align(
@@ -185,16 +186,14 @@ enum DefaultPermissionLevelMember {
               child: Container(
                 width: 18,
                 height: 18,
-                decoration: BoxDecoration(
-                  color: LinagoraSysColors.material().surface,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFE5E2E3),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.check,
-                  size: 16,
-                  color: LinagoraSysColors.material().onSurface.withOpacity(
-                    0.4,
-                  ),
+                  size: 12,
+                  color: Color(0xFF131314),
                 ),
               ),
             ),

@@ -3,7 +3,6 @@ import 'package:fluffychat/pages/forward/recent_chat_list_style.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/widgets/avatar/avatar.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
 import 'package:matrix/matrix.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
@@ -38,37 +37,64 @@ class RecentChatList extends StatelessWidget {
           itemCount: rooms.length,
           itemBuilder: (BuildContext context, int index) {
             final room = rooms[index];
+            final isSelected = selectedChat == room.id;
             return Material(
-              borderRadius: RecentChatListStyle.borderRadiusItem,
-              color: LinagoraRefColors.material().primary[100],
+              color: Colors.transparent,
               child: InkWell(
-                borderRadius: RecentChatListStyle.borderRadiusItem,
                 onTap: () => onSelectedChat(room.id),
-                child: Padding(
-                  padding: RecentChatListStyle.paddingVerticalBetweenItem,
-                  child: Row(
-                    children: [
-                      Radio<String>(
-                        groupValue: room.id,
-                        value: selectedChat,
-                        onChanged: (value) => onSelectedChat(room.id),
+                splashColor: const Color(0x1AE5E2E3),
+                highlightColor: const Color(0x0DE5E2E3),
+                child: Column(
+                  children: [
+                    Padding(
+                      padding: RecentChatListStyle.paddingVerticalBetweenItem,
+                      child: Row(
+                        children: [
+                          Radio<String>(
+                            groupValue: room.id,
+                            value: selectedChat,
+                            onChanged: (value) => onSelectedChat(room.id),
+                            activeColor: const Color(0xFFE5E2E3),
+                            fillColor: WidgetStateProperty.resolveWith(
+                              (states) => states.contains(WidgetState.selected)
+                                  ? const Color(0xFFE5E2E3)
+                                  : const Color(0xFF636363),
+                            ),
+                          ),
+                          Avatar(
+                            mxContent: room.avatar,
+                            name: room.getLocalizedDisplayname(
+                              MatrixLocals(L10n.of(context)!),
+                            ),
+                            onTap: null,
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding:
+                                  RecentChatListStyle.paddingHorizontalBetweenItem,
+                              child: Theme(
+                                data: Theme.of(context).copyWith(
+                                  textTheme: Theme.of(context)
+                                      .textTheme
+                                      .apply(
+                                        bodyColor: const Color(0xFFE5E2E3),
+                                        displayColor: const Color(0xFF919191),
+                                      ),
+                                ),
+                                child: ChatListItemTitle(room: room),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Avatar(
-                        mxContent: room.avatar,
-                        name: room.getLocalizedDisplayname(
-                          MatrixLocals(L10n.of(context)!),
-                        ),
-                        onTap: null,
+                    ),
+                    if (index < rooms.length - 1)
+                      const Divider(
+                        height: 1,
+                        color: Color(0x1F474747),
+                        indent: 72,
                       ),
-                      Expanded(
-                        child: Padding(
-                          padding:
-                              RecentChatListStyle.paddingHorizontalBetweenItem,
-                          child: ChatListItemTitle(room: room),
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             );

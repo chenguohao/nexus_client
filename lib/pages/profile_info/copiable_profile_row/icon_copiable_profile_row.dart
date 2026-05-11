@@ -1,8 +1,5 @@
 import 'package:fluffychat/pages/profile_info/copiable_profile_row/copiable_profile_row.dart';
-import 'package:fluffychat/pages/chat_profile_info/chat_profile_info_style.dart';
 import 'package:flutter/material.dart';
-
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 
 class IconCopiableProfileRow extends CopiableProfileRow {
   IconCopiableProfileRow({
@@ -14,8 +11,8 @@ class IconCopiableProfileRow extends CopiableProfileRow {
   }) : super(
          leadingIcon: Icon(
            icon,
-           size: ChatProfileInfoStyle.iconSize,
-           color: LinagoraSysColors.material().tertiary,
+           size: 20,
+           color: const Color(0xFF636363),
          ),
        );
 }

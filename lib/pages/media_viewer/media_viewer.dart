@@ -247,7 +247,10 @@ class MediaViewerController extends State<MediaViewer> {
 
   @override
   Widget build(BuildContext context) {
-    return MediaViewerView(controller: this);
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: MediaViewerView(controller: this),
+    );
   }
 }
 

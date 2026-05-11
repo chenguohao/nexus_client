@@ -122,6 +122,7 @@ class NewGroupChatInfoController extends State<NewGroupChatInfo>
         enableEncryption: enableEncryptionNotifier.value,
         urlAvatar: urlAvatar,
         powerLevelContentOverride: {
+          'users_default': powerLevelManager.getUserPowerLevel(),
           'events': powerLevelManager.getDefaultPowerLevelEventForMember(),
           'invite': powerLevelManager.getAdminPowerLevel(),
           'kick': powerLevelManager.getAdminPowerLevel(),

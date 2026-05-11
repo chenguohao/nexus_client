@@ -167,24 +167,23 @@ class ChatListItemSubtitle extends StatelessWidget with ChatListItemMixin {
       room: room,
       l10n: L10n.of(context)!,
       typingWidget: typingTextWidget(typingText, context),
-      notTypingWidget: isGroup
-          // Groups keep the thumbnail preview for image/video messages.
-          ? (isMediaEvent
-              ? chatListItemMediaPreviewSubTitle(context, lastEvent)
-              : chatListItemSubtitleForGroup(
+      // Image / video events: always show thumbnail preview regardless of
+      // whether it is a DM or a group, so the list looks consistent.
+      notTypingWidget: isMediaEvent
+          ? chatListItemMediaPreviewSubTitle(context, lastEvent)
+          : (isGroup
+              ? chatListItemSubtitleForGroup(
                   context: context,
                   room: room,
                   event: lastEvent,
-                ))
-          // Direct chats always show text so that invite/media labels are
-          // visible and the "chat request" context is clear.
-          : textContentWidget(
-              room,
-              lastEvent,
-              context,
-              isGroup,
-              room.isUnreadOrInvited,
-            ),
+                )
+              : textContentWidget(
+                  room,
+                  lastEvent,
+                  context,
+                  isGroup,
+                  room.isUnreadOrInvited,
+                )),
     );
   }
 }

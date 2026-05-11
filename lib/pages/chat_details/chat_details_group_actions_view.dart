@@ -1,7 +1,3 @@
-import 'package:fluffychat/presentation/model/chat/chat_details/chat_details_group_action.dart';
-import 'package:fluffychat/presentation/model/chat/chat_details/chat_details_message_action.dart';
-import 'package:fluffychat/presentation/model/chat/chat_details/chat_details_mute_action.dart';
-import 'package:fluffychat/presentation/model/chat/chat_details/chat_details_search_action.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
@@ -15,6 +11,7 @@ class ChatDetailsGroupActionsView extends StatelessWidget {
     required this.animationController,
   });
 
+  // Keep the same constructor signature so callers don't need to change.
   final VoidCallback onMessage;
   final VoidCallback onSearch;
   final VoidCallback? onToggleNotification;
@@ -23,89 +20,57 @@ class ChatDetailsGroupActionsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
+    if (muteNotifier == null) return const SizedBox.shrink();
 
-    if (muteNotifier == null) {
-      return _buildActions(context, textTheme, [
-        ChatDetailsMessageAction(onMessage: onMessage),
-        ChatDetailsSearchAction(onSearch: onSearch),
-      ]);
-    }
-
-    return ValueListenableBuilder(
+    return ValueListenableBuilder<PushRuleState>(
       valueListenable: muteNotifier!,
-      builder: (context, value, child) {
-        final actions = [
-          ChatDetailsMessageAction(onMessage: onMessage),
-          ChatDetailsMuteAction(
-            onMute: onToggleNotification ?? () {},
-            isMute: value != PushRuleState.notify,
+      builder: (context, value, _) {
+        final isMuted = value != PushRuleState.notify;
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: const BoxDecoration(
+            color: Color(0xFF1C1B1C),
+            border: Border.fromBorderSide(
+              BorderSide(color: Color(0x33474747)),
+            ),
           ),
-          ChatDetailsSearchAction(onSearch: onSearch),
-        ];
-
-        return _buildActions(context, textTheme, actions);
-      },
-    );
-  }
-
-  Widget _buildActions(
-    BuildContext context,
-    TextTheme textTheme,
-    List<ChatDetailsGroupAction> actions,
-  ) {
-    return Padding(
-      padding: EdgeInsetsDirectional.fromSTEB(
-        12,
-        8,
-        12,
-        Tween<double>(begin: 0, end: 16).transform(animationController.value),
-      ),
-      child: Row(
-        children: List.generate(actions.length, (index) {
-          final padding = EdgeInsetsDirectional.only(
-            start: index == 0 ? 0 : 12,
-          );
-          return Expanded(
-            child: Padding(
-              padding: padding,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: actions[index].onTap,
-                  onTapDown: (details) =>
-                      actions[index].onTapDown?.call(context, details),
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsetsDirectional.fromSTEB(9, 10, 9, 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1C1B1C),
-                      border: Border.all(color: const Color(0x33474747)),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          actions[index].icon,
-                          size: 22,
-                          color: const Color(0xFFE5E2E3),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          actions[index].getTitle(context),
-                          style: textTheme.labelSmall?.copyWith(
-                            color: const Color(0xFF919191),
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ],
-                    ),
+          child: Row(
+            children: [
+              Icon(
+                isMuted
+                    ? Icons.notifications_off_outlined
+                    : Icons.notifications_outlined,
+                color: isMuted
+                    ? const Color(0xFF636363)
+                    : const Color(0xFFE5E2E3),
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  '免打扰',
+                  style: TextStyle(
+                    color: Color(0xFFE5E2E3),
+                    fontSize: 14,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w400,
                   ),
                 ),
               ),
-            ),
-          );
-        }),
-      ),
+              Switch(
+                value: isMuted,
+                onChanged: (_) => onToggleNotification?.call(),
+                activeColor: const Color(0xFFE5E2E3),
+                activeTrackColor: const Color(0xFF474747),
+                inactiveThumbColor: const Color(0xFF636363),
+                inactiveTrackColor: const Color(0xFF2A2A2B),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

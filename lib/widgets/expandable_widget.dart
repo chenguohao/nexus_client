@@ -1,6 +1,5 @@
 import 'package:fluffychat/utils/extension/value_notifier_extension.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class ExpandableWidget extends StatefulWidget {
   final Widget parentWidget;
@@ -52,7 +51,9 @@ class _ExpandableWidgetState extends State<ExpandableWidget> {
       builder: (context, isExpanded, child) {
         return Column(
           children: [
-            TwakeInkWell(
+            InkWell(
+              splashColor: const Color(0x1AE5E2E3),
+              highlightColor: const Color(0x0DE5E2E3),
               onTap: () {
                 widget.onTap?.call();
                 if (!widget.enableExpand) return;
@@ -72,10 +73,8 @@ class _ExpandableWidgetState extends State<ExpandableWidget> {
             if (isExpanded) child!,
             Padding(
               padding: widget.dividerPadding ?? EdgeInsets.zero,
-              child: Divider(
-                color: LinagoraStateLayer(
-                  LinagoraSysColors.material().surfaceTint,
-                ).opacityLayer3,
+              child: const Divider(
+                color: Color(0x1F474747),
                 height: 1,
                 thickness: 1,
               ),

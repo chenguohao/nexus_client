@@ -17,7 +17,6 @@ import 'package:fluffychat/widgets/twake_components/twake_fab.dart';
 import 'package:fluffychat/widgets/twake_components/twake_text_button.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class ContactsSelectionView extends StatelessWidget {
@@ -35,7 +34,7 @@ class ContactsSelectionView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final child = Scaffold(
-      backgroundColor: LinagoraSysColors.material().onPrimary,
+      backgroundColor: const Color(0xFF131314),
       appBar: PreferredSize(
         preferredSize: controller.isFullScreen
             ? ContactsSelectionViewStyle.preferredSize(context)
@@ -50,6 +49,8 @@ class ContactsSelectionView extends StatelessWidget {
           openSearchBar: controller.openSearchBar,
           closeSearchBar: controller.closeSearchBar,
           isFullScreen: controller.isFullScreen,
+          backgroundColor: const Color(0xFF131314),
+          foregroundColor: Colors.white,
         ),
       ),
       body: Column(
@@ -84,14 +85,20 @@ class ContactsSelectionView extends StatelessWidget {
                   .selectedContactsMapNotifier
                   .haveSelectedContactsNotifier,
               builder: (context, haveSelectedContacts, child) {
-                if (!haveSelectedContacts) {
-                  return const SizedBox.shrink();
-                }
+                if (!haveSelectedContacts) return const SizedBox.shrink();
                 return child!;
               },
-              child: TwakeFloatingActionButton(
-                icon: Icons.arrow_forward,
-                onTap: () => controller.trySubmit(context),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: Theme.of(context).colorScheme.copyWith(
+                    primaryContainer: const Color(0xFF2A2A2B),
+                    onPrimaryContainer: const Color(0xFFE5E2E3),
+                  ),
+                ),
+                child: TwakeFloatingActionButton(
+                  icon: Icons.arrow_forward,
+                  onTap: () => controller.trySubmit(context),
+                ),
               ),
             )
           : null,
@@ -257,15 +264,16 @@ class ContactsSelectionView extends StatelessWidget {
           TwakeTextButton(
             onTap: () => Navigator.of(context).pop(),
             message: L10n.of(context)!.cancel,
-            borderHover: ContactsSelectionViewStyle.webActionsButtonBorder,
+            borderHover: 0,
             margin: ContactsSelectionViewStyle.webActionsButtonMargin,
             buttonDecoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(
-                ContactsSelectionViewStyle.webActionsButtonBorder,
-              ),
+              color: const Color(0xFF2A2A2B),
+              border: Border.all(color: const Color(0x33474747)),
             ),
-            styleMessage: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: LinagoraSysColors.material().primary,
+            styleMessage: const TextStyle(
+              color: Color(0xFF919191),
+              fontSize: 14,
+              fontFamily: 'Inter',
             ),
           ),
           const SizedBox(width: 8.0),
@@ -279,23 +287,23 @@ class ContactsSelectionView extends StatelessWidget {
                     haveSelectedContacts ? controller.trySubmit(context) : null,
                 message: L10n.of(context)!.add,
                 margin: ContactsSelectionViewStyle.webActionsButtonMargin,
-                borderHover: ContactsSelectionViewStyle.webActionsButtonBorder,
+                borderHover: 0,
                 buttonDecoration: BoxDecoration(
                   color: haveSelectedContacts
-                      ? LinagoraSysColors.material().primary
-                      : LinagoraStateLayer(
-                          LinagoraSysColors.material().onSurface,
-                        ).opacityLayer2,
-                  borderRadius: BorderRadius.circular(
-                    ContactsSelectionViewStyle.webActionsButtonBorder,
+                      ? const Color(0xFF2A2A2B)
+                      : const Color(0xFF1A1A1A),
+                  border: Border.all(
+                    color: haveSelectedContacts
+                        ? const Color(0x55E5E2E3)
+                        : const Color(0x22474747),
                   ),
                 ),
-                styleMessage: Theme.of(context).textTheme.labelLarge?.copyWith(
+                styleMessage: TextStyle(
                   color: haveSelectedContacts
-                      ? LinagoraSysColors.material().onPrimary
-                      : LinagoraSysColors.material().inverseSurface.withOpacity(
-                          0.6,
-                        ),
+                      ? const Color(0xFFE5E2E3)
+                      : const Color(0xFF444444),
+                  fontSize: 14,
+                  fontFamily: 'Inter',
                 ),
               );
             },

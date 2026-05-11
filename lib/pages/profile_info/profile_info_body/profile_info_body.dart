@@ -11,7 +11,6 @@ import 'package:fluffychat/domain/model/room/room_extension.dart';
 import 'package:fluffychat/domain/usecase/room/set_permission_level_interactor.dart';
 import 'package:fluffychat/domain/usecase/user_info/get_user_info_interactor.dart';
 import 'package:fluffychat/pages/profile_info/profile_info_body/profile_info_body_view.dart';
-import 'package:fluffychat/pages/profile_info/profile_info_body/profile_info_body_view_style.dart';
 import 'package:fluffychat/presentation/enum/profile_info/profile_info_body_enum.dart';
 import 'package:fluffychat/presentation/model/contact/presentation_contact_constant.dart';
 import 'package:fluffychat/presentation/model/search/presentation_search.dart';
@@ -24,7 +23,6 @@ import 'package:fluffychat/utils/user_extension.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
@@ -173,60 +171,56 @@ class ProfileInfoBodyController extends State<ProfileInfoBody>
   }
 
   Widget buildProfileInfoActions(BuildContext context) {
-    return Column(
-      children: [
-        Divider(
-          thickness: ProfileInfoBodyViewStyle.bigDividerThickness,
-          color: LinagoraStateLayer(
-            LinagoraSysColors.material().surfaceTint,
-          ).opacityLayer3,
-        ),
-        Column(
-          children: profileInfoActions().map((action) {
-            return Column(
-              children: [
-                if (action.divider(context) != null) action.divider(context)!,
-                InkWell(
-                  highlightColor: Colors.transparent,
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  onTap: () => handleActions(action),
-                  child: Padding(
-                    padding: action.padding(context),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 10,
-                            horizontal: 60,
-                          ),
-                          height: ProfileInfoBodyViewStyle.actionHeight,
-                          decoration: action.decoration(context),
-                          child: Row(
-                            children: [
-                              if (action.icon() != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: action.icon()!,
-                                ),
-                              Text(
-                                action.label(context),
-                                style: action.textStyle(context),
-                              ),
-                            ],
-                          ),
-                        ),
+    final actions = profileInfoActions();
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0x1F474747)),
+        borderRadius: BorderRadius.circular(4),
+        color: const Color(0xFF1C1B1C),
+      ),
+      child: Column(
+        children: List.generate(actions.length, (i) {
+          final action = actions[i];
+          final isLast = i == actions.length - 1;
+          return Column(
+            children: [
+              InkWell(
+                highlightColor: const Color(0x0DE5E2E3),
+                splashColor: const Color(0x1AE5E2E3),
+                focusColor: Colors.transparent,
+                hoverColor: Colors.transparent,
+                onTap: () => handleActions(action),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      if (action.icon() != null) ...[
+                        action.icon()!,
+                        const SizedBox(width: 12),
                       ],
-                    ),
+                      Text(
+                        action.label(context),
+                        style: action.textStyle(context),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            );
-          }).toList(),
-        ),
-      ],
+              ),
+              if (!isLast)
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  indent: 16,
+                  color: Color(0x1F474747),
+                ),
+            ],
+          );
+        }),
+      ),
     );
   }
 

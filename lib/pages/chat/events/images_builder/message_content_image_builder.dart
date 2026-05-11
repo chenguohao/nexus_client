@@ -4,6 +4,7 @@ import 'package:fluffychat/pages/chat/events/message_content_style.dart';
 import 'package:fluffychat/pages/chat/events/images_builder/sending_image_info_widget.dart';
 import 'package:fluffychat/presentation/model/file/display_image_info.dart';
 import 'package:fluffychat/utils/manager/upload_manager/upload_manager.dart';
+import 'package:fluffychat/utils/matrix_sdk_extensions/download_file_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/event_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_file_extension.dart';
 import 'package:flutter/material.dart';
@@ -110,6 +111,11 @@ class _MessageImageBuilderState extends State<MessageImageBuilder> {
           onTapPreview: widget.onTapPreview,
           animated: true,
           thumbnailOnly: true,
+          // Use mxc URL as cache key so forwarded images share the same
+          // in-memory cache as the original, avoiding redundant downloads.
+          thumbnailCacheKey: widget.event
+              .getAttachmentOrThumbnailMxcUrl(getThumbnail: true)
+              ?.toString(),
         );
       },
     );

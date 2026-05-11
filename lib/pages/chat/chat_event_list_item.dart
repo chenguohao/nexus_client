@@ -33,7 +33,7 @@ class ChatEventListItem extends StatelessWidget {
       key: ValueKey(event.eventId),
       index: index,
       controller: controller.scrollController,
-      highlightColor: Theme.of(context).highlightColor,
+      highlightColor: const Color(0x33E5E2E3),
       child: Message(
         key: GlobalObjectKey(event.eventId),
         event,

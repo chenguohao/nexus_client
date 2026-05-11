@@ -8,7 +8,7 @@ class ContextMenuItemImageViewerStyle {
   static const double dividerHeight = 1;
 
   static Color dividerColor(BuildContext context) =>
-      Theme.of(context).colorScheme.surfaceTint.withOpacity(0.16);
+      const Color(0x1F474747);
 
   static SizedBox get paddingBetweenItems => const SizedBox(width: 12);
 }

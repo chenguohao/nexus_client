@@ -20,6 +20,7 @@ import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 import 'package:linagora_design_flutter/linagora_design_flutter.dart';
+import 'package:fluffychat/widgets/matrix.dart';
 import 'package:matrix/matrix.dart';
 
 class ParticipantListItem extends StatefulWidget {
@@ -55,8 +56,41 @@ class _ParticipantListItemState extends State<ParticipantListItem>
   );
   final GlobalKey _participantItemKey = GlobalKey();
 
+  Profile? _profile;
+
   bool get canChangePermissions =>
       widget.member.room.canUpdateRoleInRoom(widget.member);
+
+  String get _displayName =>
+      _profile?.displayName?.isNotEmpty == true
+          ? _profile!.displayName!
+          : widget.member.calcDisplayname();
+
+  Uri? get _avatarUrl => _profile?.avatarUrl ?? widget.member.avatarUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  @override
+  void didUpdateWidget(ParticipantListItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.member.id != widget.member.id) {
+      _loadProfile();
+    }
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await Matrix.of(context).client.getProfileFromUserId(
+        widget.member.id,
+        getFromRooms: false,
+      );
+      if (mounted) setState(() => _profile = profile);
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -96,6 +130,8 @@ class _ParticipantListItemState extends State<ParticipantListItem>
         colorScheme: Theme.of(context).colorScheme.copyWith(
           surface: const Color(0xFF131314),
         ),
+        splashColor: const Color(0x1AE5E2E3),
+        highlightColor: const Color(0x0DE5E2E3),
       ),
       child: TwakeInkWell(
       onTap: () async => await _onItemTap(context),
@@ -118,10 +154,7 @@ class _ParticipantListItemState extends State<ParticipantListItem>
             ),
             Opacity(
               opacity: widget.member.membership == Membership.join ? 1 : 0.5,
-              child: Avatar(
-                mxContent: widget.member.avatarUrl,
-                name: widget.member.calcDisplayname(),
-              ),
+              child: Avatar(mxContent: _avatarUrl, name: _displayName),
             ),
             const SizedBox(width: 8.0),
             Expanded(
@@ -139,7 +172,7 @@ class _ParticipantListItemState extends State<ParticipantListItem>
                             children: <Widget>[
                               Flexible(
                                 child: Text(
-                                  widget.member.calcDisplayname(),
+                                  _displayName,
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: Theme.of(context).textTheme.bodyMedium
@@ -302,19 +335,19 @@ class _ParticipantListItemState extends State<ParticipantListItem>
     required VoidCallback onTap,
     bool isDestructive = false,
   }) {
-    final textTheme = Theme.of(context).textTheme;
-    final refColor = LinagoraRefColors.material();
-    final sysColor = LinagoraSysColors.material();
+    const normalColor = Color(0xFFE5E2E3);
+    const destructiveColor = Color(0xFFCF6679);
 
     return ChatParticipantContextMenuItem(
       name: name,
       icon: icon,
-      styleName: textTheme.bodyLarge?.copyWith(
-        fontSize: 17,
-        height: 24 / 17,
-        color: isDestructive ? sysColor.error : refColor.neutral[30],
-      ),
-      colorIcon: isDestructive ? sysColor.error : refColor.neutral[30],
+      styleName: const TextStyle(
+        fontSize: 15,
+        fontFamily: 'Inter',
+        fontWeight: FontWeight.w400,
+        color: normalColor,
+      ).copyWith(color: isDestructive ? destructiveColor : normalColor),
+      colorIcon: isDestructive ? destructiveColor : normalColor,
       onTap: onTap,
     );
   }
@@ -491,16 +524,14 @@ class _ParticipantSelectionToggleButton extends StatelessWidget {
       return const SizedBox();
     }
 
+    final selected = selectionMode == SelectionModeEnum.selected;
     return Padding(
       padding: const EdgeInsetsDirectional.only(end: 8.0),
       child: Checkbox(
-        value: selectionMode == SelectionModeEnum.selected,
-        side: BorderSide(
-          color: selectionMode == SelectionModeEnum.selected
-              ? Theme.of(context).colorScheme.primary
-              : LinagoraRefColors.material().tertiary[30]!,
-          width: 2,
-        ),
+        value: selected,
+        activeColor: Colors.white,
+        checkColor: const Color(0xFF131314),
+        side: const BorderSide(color: Color(0xFF636363), width: 2),
         onChanged: (_) => onTap(),
       ),
     );

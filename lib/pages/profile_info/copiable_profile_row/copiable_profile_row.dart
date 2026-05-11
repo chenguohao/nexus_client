@@ -1,11 +1,9 @@
-import 'package:fluffychat/pages/chat_profile_info/chat_profile_info_style.dart';
 import 'package:fluffychat/pages/profile_info/copiable_profile_row/copiable_profile_row_style.dart';
 import 'package:fluffychat/utils/clipboard.dart';
 import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:flutter/material.dart';
 
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 
 class CopiableProfileRow extends StatelessWidget {
   static const snackBarDuration = Duration(milliseconds: 500);
@@ -67,26 +65,26 @@ class CopiableProfileRow extends StatelessWidget {
                           children: [
                             Text(
                               caption,
-                              style: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(
-                                    color: LinagoraRefColors.material()
-                                        .neutral[40],
-                                  ),
+                              style: const TextStyle(
+                                color: Color(0xFF636363),
+                                fontSize: 12,
+                                fontFamily: 'Inter',
+                              ),
                             ),
                             Text(
                               copiableText,
-                              style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(
-                                    color:
-                                        LinagoraSysColors.material().onSurface,
-                                  ),
+                              style: const TextStyle(
+                                color: Color(0xFFE5E2E3),
+                                fontSize: 15,
+                                fontFamily: 'Inter',
+                              ),
                             ),
                           ],
                         ),
                       ),
                       InkWell(
                         borderRadius: BorderRadius.circular(38),
-                        splashColor: LinagoraHoverStyle.material().hoverColor,
+                        splashColor: const Color(0x1AE5E2E3),
                         onTap: () {
                           TwakeClipboard.instance.copyText(copiableText);
                           TwakeSnackBar.show(
@@ -95,15 +93,15 @@ class CopiableProfileRow extends StatelessWidget {
                             L10n.of(context)!.copiedToClipboard,
                           );
                         },
-                        child: Padding(
-                          padding: const EdgeInsetsGeometry.all(12),
+                        child: const Padding(
+                          padding: EdgeInsetsGeometry.all(12),
                           child: SizedBox(
                             width: 24,
                             height: 24,
                             child: Icon(
                               Icons.content_copy,
-                              size: ChatProfileInfoStyle.copyIconSize,
-                              color: LinagoraSysColors.material().tertiary,
+                              size: 18,
+                              color: Color(0xFF636363),
                             ),
                           ),
                         ),
@@ -111,13 +109,9 @@ class CopiableProfileRow extends StatelessWidget {
                     ],
                   ),
                   if (enableDividerTop)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8, right: 16),
-                      child: Divider(
-                        height: 1,
-                        color: LinagoraSysColors.material().surfaceTint
-                            .withOpacity(CopiableProfileRowStyle.borderOpacity),
-                      ),
+                    const Padding(
+                      padding: EdgeInsets.only(top: 8, right: 16),
+                      child: Divider(height: 1, color: Color(0x1F474747)),
                     ),
                 ],
               ),

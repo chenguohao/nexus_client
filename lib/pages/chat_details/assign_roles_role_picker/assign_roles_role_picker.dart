@@ -15,7 +15,6 @@ import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 import 'package:matrix/matrix.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
@@ -49,18 +48,7 @@ class AssignRolesEditorController extends State<AssignRolesRolePicker> {
       .get<SetPermissionLevelInteractor>();
 
   Color colorBackgroundForRoles(DefaultPowerLevelMember role) {
-    switch (role) {
-      case DefaultPowerLevelMember.guest:
-        return const Color(0xFFF8BBD0);
-      case DefaultPowerLevelMember.member:
-        return const Color(0xFFB39DDB);
-      case DefaultPowerLevelMember.moderator:
-        return const Color(0xFFFFCA28);
-      case DefaultPowerLevelMember.admin:
-        return const Color(0xFF00C853);
-      default:
-        return LinagoraSysColors.material().onPrimary;
-    }
+    return const Color(0xFF2A2A2B);
   }
 
   String subtitleForRoles(DefaultPowerLevelMember role) {
@@ -79,38 +67,27 @@ class AssignRolesEditorController extends State<AssignRolesRolePicker> {
   }
 
   Widget iconForRoles(DefaultPowerLevelMember role) {
+    const iconColor = Color(0xFF919191);
+    const iconSize = AssignRolesRolePickerStyle.roleIconSize;
     switch (role) {
       case DefaultPowerLevelMember.guest:
         return SvgPicture.asset(
           ImagePaths.icGhost,
-          width: AssignRolesRolePickerStyle.roleIconSize,
-          height: AssignRolesRolePickerStyle.roleIconSize,
-          colorFilter: ColorFilter.mode(
-            LinagoraSysColors.material().onPrimary,
-            BlendMode.srcIn,
-          ),
+          width: iconSize,
+          height: iconSize,
+          colorFilter: const ColorFilter.mode(iconColor, BlendMode.srcIn),
         );
       case DefaultPowerLevelMember.member:
-        return Icon(
+        return const Icon(
           Icons.person_outline,
-          size: AssignRolesRolePickerStyle.roleIconSize,
-          color: LinagoraSysColors.material().onPrimary,
-        );
-      case DefaultPowerLevelMember.moderator:
-        return SvgPicture.asset(
-          ImagePaths.icShieldLockFill,
-          width: AssignRolesRolePickerStyle.roleIconSize,
-          height: AssignRolesRolePickerStyle.roleIconSize,
-          colorFilter: ColorFilter.mode(
-            LinagoraSysColors.material().onPrimary,
-            BlendMode.srcIn,
-          ),
+          size: iconSize,
+          color: iconColor,
         );
       case DefaultPowerLevelMember.admin:
-        return Icon(
+        return const Icon(
           Icons.star_outline,
-          size: AssignRolesRolePickerStyle.roleIconSize,
-          color: LinagoraSysColors.material().onPrimary,
+          size: iconSize,
+          color: iconColor,
         );
       default:
         return const SizedBox.shrink();
@@ -230,7 +207,7 @@ class AssignRolesEditorController extends State<AssignRolesRolePicker> {
 
   void _handleGetDefaultPowerLevelSelected() {
     if (widget.rolePickerType == RolePickerTypeEnum.addAdminOrModerator) {
-      roleSelectedNotifier.value = DefaultPowerLevelMember.moderator;
+      roleSelectedNotifier.value = DefaultPowerLevelMember.admin;
     } else {
       roleSelectedNotifier.value =
           DefaultPowerLevelMember.getDefaultPowerLevelByUsersDefault(
@@ -254,9 +231,9 @@ class AssignRolesEditorController extends State<AssignRolesRolePicker> {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: LinagoraSysColors.material().onPrimary,
+      color: const Color(0xFF131314),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(Radius.circular(16.0)),
+        borderRadius: BorderRadius.zero,
       ),
       child: AssignRolesRolePickerView(
         controller: this,
