@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:matrix/matrix.dart';
-import 'package:mime/mime.dart';
+
+import '../../../config/app_config.dart';
 
 import '../../../widgets/matrix.dart';
 import '../../widgets/zeon_image_crop_page.dart';
@@ -67,6 +68,14 @@ class _ZeonProfileSetupPageState extends State<ZeonProfileSetupPage> {
         ),
       );
       if (cropped == null || !mounted) return;
+
+      if (cropped.length > AppConfig.defaultMaxUploadAvtarSizeInBytes) {
+        if (!mounted) return;
+        setState(() {
+          _error = '头像图片不能超过 ${(AppConfig.defaultMaxUploadAvtarSizeInBytes / (1024 * 1024)).round()}MB，请选择更小的图。';
+        });
+        return;
+      }
 
       setState(() {
         _avatarBytes = cropped;

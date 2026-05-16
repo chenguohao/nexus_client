@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -13,6 +14,51 @@ import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/di/global/network_di.dart';
 import 'package:fluffychat/domain/model/file_info/file_info.dart';
 import 'package:matrix/matrix.dart';
+
+/// Dio usually invokes [onSendProgress] only once (at completion) when POST
+/// [data] is a [Stream]. Count bytes as chunks leave this stream instead.
+Stream<List<int>> _wrapStreamWithCountedSendProgress({
+  required Stream<List<int>> stream,
+  required int totalBytes,
+  ProgressCallback? onSendProgress,
+}) {
+  if (onSendProgress == null || totalBytes <= 0) return stream;
+
+  var sent = 0;
+  var lastEmitted = -1;
+  const emitStepBytes = 64 * 1024;
+
+  void emit(int clampedSent) {
+    if (clampedSent == lastEmitted) return;
+    lastEmitted = clampedSent;
+    onSendProgress(clampedSent, totalBytes);
+  }
+
+  return stream.transform(
+    StreamTransformer<List<int>, List<int>>.fromHandlers(
+      handleData: (chunk, sink) {
+        sent += chunk.length;
+        final clamped = sent > totalBytes ? totalBytes : sent;
+        final complete = clamped >= totalBytes;
+        final crossedStep = lastEmitted < 0 ||
+            complete ||
+            (clamped - lastEmitted) >= emitStepBytes;
+        if (crossedStep) {
+          emit(clamped);
+        }
+        sink.add(chunk);
+      },
+      handleError: (error, stackTrace, sink) =>
+          sink.addError(error, stackTrace),
+      handleDone: (sink) {
+        if (lastEmitted < totalBytes) {
+          emit(totalBytes);
+        }
+        sink.close();
+      },
+    ),
+  );
+}
 
 class MediaAPI {
   final DioClient _client = getIt.get<DioClient>(
@@ -50,6 +96,11 @@ class MediaAPI {
     } else {
       throw ArgumentError('FileInfo must have either bytes or filePath');
     }
+    readStream = _wrapStreamWithCountedSendProgress(
+      stream: readStream,
+      totalBytes: fileInfo.fileSize,
+      onSendProgress: onSendProgress,
+    );
     final response = await _client
         .postToGetBody(
           HomeserverEndpoint.uploadMediaServicePath
@@ -57,7 +108,6 @@ class MediaAPI {
           data: readStream,
           queryParameters: {'fileName': fileInfo.fileName},
           cancelToken: cancelToken,
-          onSendProgress: onSendProgress,
           options: Options(headers: dioHeaders),
         )
         .onError((error, stackTrace) {
@@ -79,13 +129,17 @@ class MediaAPI {
     final dioHeaders = _client.getHeaders();
     dioHeaders[HttpHeaders.contentLengthHeader] = file.bytes.length;
     dioHeaders[HttpHeaders.contentTypeHeader] = file.mimeType;
+    final uploadStream = _wrapStreamWithCountedSendProgress(
+      stream: Stream.value(file.bytes),
+      totalBytes: file.bytes.length,
+      onSendProgress: onSendProgress,
+    );
     final response = await _client
         .postToGetBody(
           HomeserverEndpoint.uploadMediaServicePath
               .generateHomeserverMediaEndpoint(),
-          data: Stream.value(file.bytes),
+          data: uploadStream,
           queryParameters: {'fileName': file.name},
-          onSendProgress: onSendProgress,
           cancelToken: cancelToken,
           options: Options(headers: dioHeaders),
         )

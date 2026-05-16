@@ -89,7 +89,8 @@ class SendFileDialogView extends StatelessWidget {
                       room: controller.widget.room,
                       onRemoveFile: controller.onRemoveFile,
                       thumbnails: controller.thumbnails,
-                      maxMediaSizeNotifier: controller.maxMediaSizeNotifier,
+                      chatUploadServerMUploadNotifier:
+                          controller.chatUploadServerMUploadNotifier,
                     ),
               const SizedBox(height: 16.0),
               InkWell(

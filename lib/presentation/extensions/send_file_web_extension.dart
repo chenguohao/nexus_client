@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dartz/dartz.dart' hide id;
 import 'package:dio/dio.dart';
 import 'package:fluffychat/app_state/failure.dart';
+import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/data/network/media/cancel_exception.dart';
 import 'package:fluffychat/data/network/media/media_api.dart';
@@ -14,6 +15,9 @@ import 'package:fluffychat/utils/js_window/non_js_window.dart'
     if (dart.library.js) 'package:fluffychat/utils/js_window/js_window.dart';
 import 'package:fluffychat/utils/js_window/universal_image_bitmap.dart';
 import 'package:fluffychat/utils/manager/upload_manager/upload_state.dart';
+import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_file_extension.dart';
+import 'package:fluffychat/utils/matrix_upload_progress.dart';
+import 'package:fluffychat/utils/matrix_upload_progress_log.dart';
 import 'package:matrix/matrix.dart';
 
 extension SendFileWebExtension on Room {
@@ -46,18 +50,25 @@ extension SendFileWebExtension on Room {
     }
     sendingFilePlaceholders[txid] = file;
     try {
-      int maxMediaSize = 0;
+      int? rawServerLimit;
       try {
         final mediaConfig = await client.getConfig();
-        maxMediaSize = mediaConfig.mUploadSize ?? 0;
+        rawServerLimit = mediaConfig.mUploadSize;
       } catch (e) {
         Logs().e('Cannot get media config', e);
       }
-      Logs().d(
-        'SendImage::sendImageFileEvent(): FileSized ${file.size} || maxMediaSize $maxMediaSize',
+      final isPayloadImage = file.msgType == MessageTypes.Image ||
+          file is MatrixImageFile ||
+          (file.msgType == MessageTypes.File && file.isImage());
+      final effectiveMax = AppConfig.zeonChatClientFacingUploadMaxBytes(
+        serverMUploadSize: rawServerLimit,
+        isChatImagePayload: isPayloadImage,
       );
-      if (maxMediaSize > 0 && maxMediaSize < file.size) {
-        throw FileTooBigMatrixException(file.size, maxMediaSize);
+      Logs().d(
+        'SendImage::sendImageFileEvent(): FileSized ${file.size} || effectiveMax $effectiveMax (server $rawServerLimit)',
+      );
+      if (file.size > effectiveMax) {
+        throw FileTooBigMatrixException(file.size, effectiveMax);
       }
     } catch (e) {
       Logs().d('Config error while sending file', e);
@@ -161,12 +172,27 @@ extension SendFileWebExtension on Room {
     while (uploadResp == null) {
       try {
         final mediaApi = getIt.get<MediaAPI>();
+        final mainUploadProgressLog =
+            MatrixUploadProgressLogger(txid: txid, phase: 'main');
         final uploadFileResponse = await mediaApi.uploadFileWeb(
           file: uploadFile,
           cancelToken: cancelToken,
           onSendProgress: (receive, total) {
+            if (uploadStreamController?.isClosed == true) return;
+            final n = normalizeMatrixUploadSendProgress(
+              receive: receive,
+              totalReported: total,
+              knownContentLength: uploadFile.bytes.length,
+            );
+            mainUploadProgressLog.maybeLog(
+              dioReceive: receive,
+              dioTotal: total,
+              normalized: n,
+            );
             uploadStreamController?.add(
-              Right(UploadingFileState(receive: receive, total: total)),
+              Right(
+                UploadingFileState(receive: n.receive, total: n.total),
+              ),
             );
           },
         );
@@ -174,15 +200,32 @@ extension SendFileWebExtension on Room {
             ? Uri.tryParse(uploadFileResponse.contentUri!)
             : null;
         if (uploadThumbnail != null) {
+          final thumbnailFile = uploadThumbnail;
+          uploadStreamController?.add(
+            const Right(FinalizingRoomAttachmentState()),
+          );
+          final thumbUploadProgressLog =
+              MatrixUploadProgressLogger(txid: txid, phase: 'thumbnail');
           final uploadThumbnailResponse = await mediaApi.uploadFileWeb(
-            file: uploadThumbnail,
+            file: thumbnailFile,
             cancelToken: cancelToken,
             onSendProgress: (receive, total) {
+              if (uploadStreamController?.isClosed == true) return;
+              final n = normalizeMatrixUploadSendProgress(
+                receive: receive,
+                totalReported: total,
+                knownContentLength: thumbnailFile.bytes.length,
+              );
+              thumbUploadProgressLog.maybeLog(
+                dioReceive: receive,
+                dioTotal: total,
+                normalized: n,
+              );
               uploadStreamController?.add(
                 Right(
                   UploadingFileState(
-                    receive: receive,
-                    total: total,
+                    receive: n.receive,
+                    total: n.total,
                     isThumbnail: true,
                   ),
                 ),

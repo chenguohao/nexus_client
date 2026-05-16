@@ -25,6 +25,8 @@ import 'package:fluffychat/utils/exception/upload_exception.dart';
 import 'package:fluffychat/utils/extension/mime_type_extension.dart';
 import 'package:fluffychat/utils/manager/storage_directory_manager.dart';
 import 'package:fluffychat/utils/manager/upload_manager/upload_state.dart';
+import 'package:fluffychat/utils/matrix_upload_progress.dart';
+import 'package:fluffychat/utils/matrix_upload_progress_log.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
@@ -68,25 +70,35 @@ extension SendFileExtension on Room {
     // Media config is unreachable or the file is bigger than the given maxsize.
     try {
       final mediaConfig = await client.getConfig();
-      final maxMediaSize = mediaConfig.mUploadSize;
+      final serverMUpload = mediaConfig.mUploadSize;
+      final effectiveMax = AppConfig.zeonChatClientFacingUploadMaxBytes(
+        serverMUploadSize: serverMUpload,
+        isChatImagePayload: msgType == MessageTypes.Image,
+      );
       Logs().d(
-        'SendImage::sendFileEvent(): FileSized ${fileInfo.fileSize} || maxMediaSize $maxMediaSize',
+        'SendImage::sendFileEvent(): FileSized ${fileInfo.fileSize} || effectiveMax $effectiveMax (server $serverMUpload)',
       );
       Logs().d('SendImage::sendFileEvent(): file ${fileInfo.fileName}');
 
       Logs().d('SendImage::sendFileEvent(): File info $fileInfo');
-      if (maxMediaSize != null && maxMediaSize < fileInfo.fileSize) {
+      if (fileInfo.fileSize > effectiveMax) {
         uploadStreamController?.add(
           Left(
             UploadFileFailedState(
               exception: FileTooBigMatrixException(
                 fileInfo.fileSize,
-                maxMediaSize,
+                effectiveMax,
               ),
               txid: txid,
             ),
           ),
         );
+        await updateFakeSync(
+          fakeImageEvent,
+          messageSendingStatusKey,
+          EventStatus.error.intValue,
+        );
+        return null;
       }
     } catch (e) {
       Logs().d('Config error while sending file', e);
@@ -237,6 +249,8 @@ extension SendFileExtension on Room {
 
     EncryptedFile? encryptedFileInfo;
     EncryptedFile? encryptedThumbnail;
+    File? encryptedMainUploadTemp;
+    File? encryptedThumbnailUploadTemp;
     if (isRoomEncrypted()) {
       await updateFakeSync(
         fakeImageEvent,
@@ -264,10 +278,16 @@ extension SendFileExtension on Room {
         return null;
       }
 
+      encryptedMainUploadTemp = File(
+        '${tempDir.path}/zeon_enc_${txid.hashCode.abs()}_main.bin',
+      );
+      await encryptedMainUploadTemp.writeAsBytes(
+        encryptedFileInfo.data,
+        flush: true,
+      );
       fileInfo = FileInfo(
         fileInfo.fileName,
-        filePath: fileInfo.filePath,
-        bytes: encryptedFileInfo.data,
+        filePath: encryptedMainUploadTemp.path,
       );
       if (thumbnail != null) {
         try {
@@ -281,6 +301,13 @@ extension SendFileExtension on Room {
             mimeType: thumbnail.mimeType,
           );
           encryptedThumbnail = await thumbnailMatrixFile.encrypt();
+          encryptedThumbnailUploadTemp = File(
+            '${tempDir.path}/zeon_enc_${txid.hashCode.abs()}_thumb.bin',
+          );
+          await encryptedThumbnailUploadTemp.writeAsBytes(
+            encryptedThumbnail.data,
+            flush: true,
+          );
           uploadStreamController?.add(
             const Right(EncryptedFileState(isThumbnail: true)),
           );
@@ -295,6 +322,7 @@ extension SendFileExtension on Room {
           );
           thumbnail = null;
           encryptedThumbnail = null;
+          encryptedThumbnailUploadTemp = null;
         }
       }
     }
@@ -306,6 +334,7 @@ extension SendFileExtension on Room {
       FileSendingStatus.uploading.name,
     );
 
+    try {
     int retryCount = 0;
     const maxRetries = 3;
     const baseDelay = Duration(seconds: 2);
@@ -333,13 +362,27 @@ extension SendFileExtension on Room {
 
       try {
         final mediaApi = getIt.get<MediaAPI>();
+        final mainUploadProgressLog =
+            MatrixUploadProgressLogger(txid: txid, phase: 'main');
         final response = await mediaApi.uploadFileMobile(
           fileInfo: fileInfo,
           cancelToken: cancelToken,
           onSendProgress: (receive, total) {
             if (uploadStreamController?.isClosed == true) return;
+            final n = normalizeMatrixUploadSendProgress(
+              receive: receive,
+              totalReported: total,
+              knownContentLength: fileInfo.fileSize,
+            );
+            mainUploadProgressLog.maybeLog(
+              dioReceive: receive,
+              dioTotal: total,
+              normalized: n,
+            );
             uploadStreamController?.add(
-              Right(UploadingFileState(receive: receive, total: total)),
+              Right(
+                UploadingFileState(receive: n.receive, total: n.total),
+              ),
             );
           },
         );
@@ -358,20 +401,41 @@ extension SendFileExtension on Room {
         }
 
         if (thumbnail != null) {
+          uploadStreamController?.add(
+            const Right(FinalizingRoomAttachmentState()),
+          );
+          final thumbnailUploadInfo = encryptedThumbnail != null
+              ? FileInfo(
+                  thumbnail.fileName,
+                  filePath: encryptedThumbnailUploadTemp!.path,
+                )
+              : FileInfo(
+                  thumbnail.fileName,
+                  filePath: thumbnail.filePath,
+                  bytes: thumbnail.bytes,
+                );
+          final thumbUploadProgressLog =
+              MatrixUploadProgressLogger(txid: txid, phase: 'thumbnail');
           final thumbnailResponse = await mediaApi.uploadFileMobile(
-            fileInfo: FileInfo(
-              thumbnail.fileName,
-              filePath: thumbnail.filePath,
-              bytes: encryptedThumbnail?.data ?? thumbnail.bytes,
-            ),
+            fileInfo: thumbnailUploadInfo,
             cancelToken: cancelToken,
             onSendProgress: (receive, total) {
               if (uploadStreamController?.isClosed == true) return;
+              final n = normalizeMatrixUploadSendProgress(
+                receive: receive,
+                totalReported: total,
+                knownContentLength: thumbnailUploadInfo.fileSize,
+              );
+              thumbUploadProgressLog.maybeLog(
+                dioReceive: receive,
+                dioTotal: total,
+                normalized: n,
+              );
               uploadStreamController?.add(
                 Right(
                   UploadingFileState(
-                    receive: receive,
-                    total: total,
+                    receive: n.receive,
+                    total: n.total,
                     isThumbnail: true,
                   ),
                 ),
@@ -542,6 +606,17 @@ extension SendFileExtension on Room {
       if (tempThumbnailFile != null) tempThumbnailFile.delete(),
     ]);
     return eventId;
+    } finally {
+      await _safeDeleteLocalTemp(encryptedMainUploadTemp);
+      await _safeDeleteLocalTemp(encryptedThumbnailUploadTemp);
+    }
+  }
+
+  Future<void> _safeDeleteLocalTemp(File? file) async {
+    if (file == null) return;
+    try {
+      if (await file.exists()) await file.delete();
+    } catch (_) {}
   }
 
   /// Resolves bytes from FileInfo, always returning current bytes.

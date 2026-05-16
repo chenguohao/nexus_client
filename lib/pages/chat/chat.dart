@@ -96,7 +96,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:go_router/go_router.dart';
 import 'package:linagora_design_flutter/dialog/options_dialog.dart';
-import 'package:linagora_design_flutter/images_picker/asset_counter.dart';
+import 'package:fluffychat/widgets/zeon_chat_gallery_asset_counter.dart';
 import 'package:linagora_design_flutter/linagora_design_flutter.dart'
     hide ImagePicker;
 import 'package:linagora_design_flutter/reaction/reaction_picker.dart';
@@ -608,6 +608,8 @@ class ChatController extends State<Chat>
 
   void handleDragDone(DropDoneDetails details) async {
     final matrixFiles = await onDragDone(details);
+    if (matrixFiles.isEmpty) return;
+    if (zeonWarnChatMatrixPickFilesTooBig(matrixFiles)) return;
     final pendingText = sendController.text;
     sendController.clear();
     sendFileOnWebAction(
@@ -2416,7 +2418,9 @@ class ChatController extends State<Chat>
 
   void _showMediaPicker(BuildContext context) {
     final imagePickerController = ImagePickerGridController(
-      AssetCounter(imagePickerMode: ImagePickerMode.multiple),
+      ZeonChatGalleryAssetCounter(
+        maxSelections: AppConfig.maxChatGallerySelectionCount,
+      ),
     );
 
     if (sendController.text.isNotEmpty) {

@@ -12,10 +12,8 @@ import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
-import 'package:linagora_design_flutter/images_picker/images_picker.dart'
-    as linagora_image_picker;
+import 'package:fluffychat/widgets/zeon_image_picker_sheet.dart';
+import 'package:fluffychat/widgets/zeon_photo_picker_tokens.dart';
 import 'package:linagora_design_flutter/images_picker/images_picker_grid.dart';
 import 'package:linagora_design_flutter/images_picker/use_camera_widget.dart';
 import 'package:matrix/matrix.dart';
@@ -98,7 +96,7 @@ mixin MediaPickerMixin on CommonMediaPickerMixin {
       }
     });
 
-    return await linagora_image_picker.ImagePicker.showImagesGridBottomSheet(
+    return await ZeonLinagoraImagePicker.showImagesGridBottomSheet(
       context: context,
       controller: imagePickerController,
       backgroundImageCamera: MediaPickerStyle.cameraIcon,
@@ -106,7 +104,7 @@ mixin MediaPickerMixin on CommonMediaPickerMixin {
       minChildSize: MediaPickerStyle.initialChildSize,
       permissionStatus: permissionStatusPhotos,
       gridPadding: MediaPickerStyle.gridPadding,
-      assetBackgroundColor: LinagoraSysColors.material().background,
+      assetBackgroundColor: ZeonPhotoPickerTokens.pageBg,
       counterImageBuilder: (counterImage) {
         if (counterImage == 0) {
           return const SizedBox.shrink();
@@ -117,9 +115,16 @@ mixin MediaPickerMixin on CommonMediaPickerMixin {
             children: [
               Text(
                 L10n.of(context)!.photoSelectedCounter(counterImage),
-                style: Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: ZeonPhotoPickerTokens.textPrimary,
+                      letterSpacing: 0.28,
+                      fontFamily: 'Inter',
+                    ),
               ),
-              const Icon(Icons.chevron_right_outlined),
+              const Icon(
+                Icons.chevron_right_outlined,
+                color: ZeonPhotoPickerTokens.textSecondary,
+              ),
               const Expanded(child: SizedBox.shrink()),
             ],
           ),
@@ -141,14 +146,10 @@ mixin MediaPickerMixin on CommonMediaPickerMixin {
           if (value == 0 && onPickerTypeTap != null) {
             return Container(
               padding: MediaPickerStyle.itemPickerPadding,
-              decoration: BoxDecoration(
-                color: LinagoraSysColors.material().surface,
+              decoration: const BoxDecoration(
+                color: ZeonPhotoPickerTokens.sectionBg,
                 border: Border(
-                  top: BorderSide(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceTint.withOpacity(0.16),
-                  ),
+                  top: BorderSide(color: ZeonPhotoPickerTokens.divider),
                 ),
               ),
               child: Row(
@@ -167,7 +168,7 @@ mixin MediaPickerMixin on CommonMediaPickerMixin {
           return child!;
         },
         child: Container(
-          color: LinagoraSysColors.material().background,
+          color: ZeonPhotoPickerTokens.pageBg,
           child: Column(
             children: [
               Stack(
@@ -175,13 +176,9 @@ mixin MediaPickerMixin on CommonMediaPickerMixin {
                 children: [
                   Container(
                     padding: MediaPickerStyle.composerPadding,
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       border: Border(
-                        top: BorderSide(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.surfaceTint.withOpacity(0.16),
-                        ),
+                        top: BorderSide(color: ZeonPhotoPickerTokens.divider),
                       ),
                     ),
                     child: Row(
@@ -213,79 +210,89 @@ mixin MediaPickerMixin on CommonMediaPickerMixin {
                         ),
                         Padding(
                           padding: MediaPickerStyle.sendButtonPadding,
-                          child: InkWell(
-                            borderRadius:
-                                MediaPickerStyle.sendButtonBorderRadius,
-                            onTap: () {
-                              if (onSendTap != null) {
-                                onSendTap();
-                              }
-                              Navigator.of(context).pop();
-                            },
-                            child: SizedBox(
-                              width: MediaPickerStyle.sendButtonSize,
-                              height: MediaPickerStyle.sendButtonSize,
-                              child: Stack(
-                                children: [
-                                  SvgPicture.asset(
-                                    ImagePaths.icSend,
-                                    width: MediaPickerStyle.sendIconSize,
-                                    height: MediaPickerStyle.sendIconSize,
-                                  ),
-                                  ValueListenableBuilder(
-                                    valueListenable:
-                                        numberSelectedImagesNotifier,
-                                    builder:
-                                        (context, numberSelectedImages, child) {
-                                          if (numberSelectedImages == 0 &&
-                                              onPickerTypeTap != null) {
-                                            return child!;
-                                          }
-                                          return Positioned(
-                                            bottom: 0,
-                                            right: 0,
-                                            child: Container(
-                                              width: MediaPickerStyle
-                                                  .counterIconSize,
-                                              height: MediaPickerStyle
-                                                  .counterIconSize,
-                                              padding: MediaPickerStyle
-                                                  .counterPadding,
-                                              decoration: ShapeDecoration(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                                shape: const CircleBorder()
-                                                    .copyWith(
-                                                      side: BorderSide(
-                                                        color: Theme.of(
-                                                          context,
-                                                        ).colorScheme.surface,
-                                                        width: MediaPickerStyle
-                                                            .borderSideWidth,
-                                                      ),
-                                                    ),
-                                              ),
-                                              alignment: Alignment.center,
-                                              child: AutoSizeText(
-                                                "$numberSelectedImages",
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .labelLarge
-                                                    ?.copyWith(
-                                                      color: Theme.of(
-                                                        context,
-                                                      ).colorScheme.surface,
-                                                    ),
-                                                minFontSize: MediaPickerStyle
-                                                    .minFontSize,
+                          child: Material(
+                            color: Colors.white,
+                            child: InkWell(
+                              borderRadius:
+                                  MediaPickerStyle.sendButtonBorderRadius,
+                              onTap: () {
+                                if (onSendTap != null) {
+                                  onSendTap();
+                                }
+                                Navigator.of(context).pop();
+                              },
+                              child: SizedBox(
+                                width: MediaPickerStyle.sendButtonSize,
+                                height: MediaPickerStyle.sendButtonSize,
+                                child: Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    Center(
+                                      child: SvgPicture.asset(
+                                        ImagePaths.icSend,
+                                        width: MediaPickerStyle.sendIconSize,
+                                        height:
+                                            MediaPickerStyle.sendIconSize,
+                                        colorFilter: const ColorFilter.mode(
+                                          Color(0xFF131314),
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                    ),
+                                    ValueListenableBuilder(
+                                      valueListenable:
+                                          numberSelectedImagesNotifier,
+                                      builder:
+                                          (context,
+                                              numberSelectedImages,
+                                              child) {
+                                        if (numberSelectedImages == 0 &&
+                                            onPickerTypeTap != null) {
+                                          return child!;
+                                        }
+                                        return Positioned(
+                                          bottom: 0,
+                                          right: 0,
+                                          child: Container(
+                                            width: MediaPickerStyle
+                                                .counterIconSize,
+                                            height: MediaPickerStyle
+                                                .counterIconSize,
+                                            padding: MediaPickerStyle
+                                                .counterPadding,
+                                            decoration: BoxDecoration(
+                                              color: ZeonPhotoPickerTokens
+                                                  .secondaryDark,
+                                              border: Border.all(
+                                                color:
+                                                    ZeonPhotoPickerTokens
+                                                        .divider,
+                                                width: MediaPickerStyle
+                                                    .borderSideWidth,
                                               ),
                                             ),
-                                          );
-                                        },
-                                    child: const SizedBox.shrink(),
-                                  ),
-                                ],
+                                            alignment: Alignment.center,
+                                            child: AutoSizeText(
+                                              "$numberSelectedImages",
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .labelLarge
+                                                  ?.copyWith(
+                                                    color: ZeonPhotoPickerTokens
+                                                        .textPrimary,
+                                                    fontWeight:
+                                                        FontWeight.w600,
+                                                  ),
+                                              minFontSize: MediaPickerStyle
+                                                  .minFontSize,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      child: const SizedBox.shrink(),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -317,9 +324,10 @@ mixin MediaPickerMixin on CommonMediaPickerMixin {
           Text(
             L10n.of(context)!.tapToAllowAccessToYourGallery,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: LinagoraRefColors.material().neutral,
+              color: ZeonPhotoPickerTokens.textSecondary,
               fontWeight: MediaPickerStyle.photoPermissionFontWeight,
               fontSize: MediaPickerStyle.photoPermissionFontSize,
+              fontFamily: 'Inter',
             ),
             textAlign: TextAlign.center,
           ),

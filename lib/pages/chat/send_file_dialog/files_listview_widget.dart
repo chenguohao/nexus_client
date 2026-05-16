@@ -21,14 +21,14 @@ class FilesListViewWidget extends StatelessWidget {
 
   final Room? room;
 
-  final ValueNotifier<double> maxMediaSizeNotifier;
+  final ValueNotifier<int?> chatUploadServerMUploadNotifier;
 
   const FilesListViewWidget({
     super.key,
     required this.filesNotifier,
     required this.onRemoveFile,
     required this.thumbnails,
-    required this.maxMediaSizeNotifier,
+    required this.chatUploadServerMUploadNotifier,
     this.room,
   });
 
@@ -59,8 +59,8 @@ class FilesListViewWidget extends StatelessWidget {
                   child: SendFileDialogActionsWidget(
                     onTap: () => onRemoveFile(file),
                     child: ValueListenableBuilder(
-                      valueListenable: maxMediaSizeNotifier,
-                      builder: (context, maxMediaSize, _) {
+                      valueListenable: chatUploadServerMUploadNotifier,
+                      builder: (context, serverM, _) {
                         return FileTileWidget(
                           mimeType: file.mimeType,
                           filename: file.name,
@@ -70,11 +70,11 @@ class FilesListViewWidget extends StatelessWidget {
                               SendFileDialogStyle.listViewBackgroundColor(
                                 context,
                               ),
-                          fileTileIcon: file.isFileHaveError(maxMediaSize)
+                          fileTileIcon: file.isChatUploadOversized(serverM)
                               ? ImagePaths.icFileError
                               : null,
                           imageBytes: thumbnails[file]?.bytes,
-                          style: file.isFileHaveError(maxMediaSize)
+                          style: file.isChatUploadOversized(serverM)
                               ? FileErrorTileWidgetStyle()
                               : const FileTileWidgetStyle(),
                         );

@@ -51,9 +51,32 @@ mixin UploadFileMixin<T extends StatefulWidget> on State<T> {
               receive: success.receive,
               total: success.total,
             );
+          } else {
+            uploadFileStateNotifier.value =
+                const UploadProcessingUIState();
           }
-        } else if (success is UploadFileSuccessState) {
+        } else if (success is FinalizingRoomAttachmentState) {
+          uploadFileStateNotifier.value =
+              const UploadProcessingUIState();
+        } else if (success is UploadFileSuccessState &&
+            !success.isThumbnail) {
           uploadFileStateNotifier.value = const UploadFileSuccessUIState();
+        } else if (success is ConvertingStreamToBytesState ||
+            success is ConvertedStreamToBytesState ||
+            success is GeneratingThumbnailState ||
+            (success is EncryptingFileState && !success.isThumbnail) ||
+            (success is EncryptedFileState && !success.isThumbnail)) {
+          final cur = uploadFileStateNotifier.value;
+          final keepNumericProgress = cur is UploadingFileUIState &&
+              cur.receive != null &&
+              cur.total != null &&
+              cur.total! > 0 &&
+              cur.receive! > 0 &&
+              cur.receive! < cur.total!;
+          if (!keepNumericProgress) {
+            uploadFileStateNotifier.value =
+                const UploadProcessingUIState();
+          }
         }
       },
     );

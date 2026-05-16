@@ -5,12 +5,13 @@ import 'package:matrix/matrix.dart';
 class GenerateThumbnailsMediaState extends UIState {}
 
 class GenerateThumbnailsMediaInitial extends GenerateThumbnailsMediaState {
-  final int maxUploadFileSize;
+  /// Matrix `/config` `m.upload.size` when authenticated; nullable if unknown.
+  final int? serverMUploadSize;
 
-  GenerateThumbnailsMediaInitial({required this.maxUploadFileSize});
+  GenerateThumbnailsMediaInitial({required this.serverMUploadSize});
 
   @override
-  List<Object?> get props => [maxUploadFileSize];
+  List<Object?> get props => [serverMUploadSize];
 }
 
 class GenerateThumbnailsMediaSuccess extends GenerateThumbnailsMediaState {

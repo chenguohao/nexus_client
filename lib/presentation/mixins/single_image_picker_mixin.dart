@@ -3,11 +3,9 @@ import 'package:fluffychat/resource/image_paths.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
+import 'package:fluffychat/widgets/zeon_image_picker_sheet.dart';
+import 'package:fluffychat/widgets/zeon_photo_picker_tokens.dart';
 import 'package:linagora_design_flutter/images_picker/asset_counter.dart';
-import 'package:linagora_design_flutter/images_picker/images_picker.dart'
-    as linagora_image_picker;
 import 'package:linagora_design_flutter/images_picker/images_picker_grid.dart';
 import 'package:linagora_design_flutter/images_picker/use_camera_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -28,13 +26,13 @@ mixin SingleImagePickerMixin on CommonMediaPickerMixin {
     RequestType type = RequestType.image,
   }) async {
     if (permissionStatusPhotos != null) {
-      return await linagora_image_picker.ImagePicker.showImagesGridBottomSheet(
+      return await ZeonLinagoraImagePicker.showImagesGridBottomSheet(
         context: context,
         controller: imagePickerController,
         backgroundImageCamera: const AssetImage("assets/verification.png"),
         initialChildSize: MediaPickerStyle.initialChildSize,
         permissionStatus: permissionStatusPhotos,
-        assetBackgroundColor: LinagoraSysColors.material().background,
+        assetBackgroundColor: ZeonPhotoPickerTokens.pageBg,
         expandedWidget: const SizedBox(
           height: MediaPickerStyle.expandedWidgetHeight,
         ),
@@ -50,9 +48,10 @@ mixin SingleImagePickerMixin on CommonMediaPickerMixin {
             Text(
               L10n.of(context)!.tapToAllowAccessToYourGallery,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: LinagoraRefColors.material().neutral,
+                color: ZeonPhotoPickerTokens.textSecondary,
                 fontWeight: MediaPickerStyle.photoPermissionFontWeight,
                 fontSize: MediaPickerStyle.photoPermissionFontSize,
+                fontFamily: 'Inter',
               ),
               textAlign: TextAlign.center,
             ),

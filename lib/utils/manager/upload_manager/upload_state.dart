@@ -87,6 +87,14 @@ class UploadingFileState extends Success {
   List<Object?> get props => [receive, total, isThumbnail];
 }
 
+/// Primary POST to `/_matrix/media/v3/upload` finished; thumbnail POST / send pipeline still running.
+class FinalizingRoomAttachmentState extends Success {
+  const FinalizingRoomAttachmentState();
+
+  @override
+  List<Object?> get props => [];
+}
+
 class UploadFileSuccessState extends Success {
   final String? eventId;
   final bool isThumbnail;

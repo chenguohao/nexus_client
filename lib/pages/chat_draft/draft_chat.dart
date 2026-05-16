@@ -44,7 +44,9 @@ import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import 'package:go_router/go_router.dart';
-import 'package:linagora_design_flutter/images_picker/asset_counter.dart';
+import 'package:fluffychat/config/app_config.dart';
+import 'package:fluffychat/utils/zeon_chat_pick_limits.dart';
+import 'package:fluffychat/widgets/zeon_chat_gallery_asset_counter.dart';
 import 'package:linagora_design_flutter/images_picker/images_picker.dart'
     hide ImagePicker;
 import 'package:matrix/matrix.dart';
@@ -517,7 +519,9 @@ class DraftChatController extends State<DraftChat>
 
   void _showMediaPicker(BuildContext context) {
     final imagePickerController = ImagePickerGridController(
-      AssetCounter(imagePickerMode: ImagePickerMode.multiple),
+      ZeonChatGalleryAssetCounter(
+        maxSelections: AppConfig.maxChatGallerySelectionCount,
+      ),
     );
 
     if (sendController.text.isNotEmpty) {
@@ -538,13 +542,23 @@ class DraftChatController extends State<DraftChat>
 
   void sendFileOnWebAction(BuildContext context, {Room? room}) async {
     final result = await FilePicker.platform.pickFiles(
-      withData: true,
+      withData: false,
       allowMultiple: true,
     );
     if (result == null || result.files.isEmpty) return;
 
+    final xList = result.xFiles.toList();
+    for (var i = 0; i < result.files.length; i++) {
+      final pf = result.files[i];
+      final sz =
+          pf.size > 0 ? pf.size : await xList[i].length();
+      if (sz > 0 && zeonWarnIfPickNameSizeTooBig(xList[i].name, sz)) {
+        return;
+      }
+    }
+
     final matrixFilesList = await Future.wait(
-      result.xFiles.map((file) async {
+      xList.map((file) async {
         try {
           return (await file.toMatrixFileOnWeb()).detectFileType;
         } catch (e) {
@@ -553,7 +567,12 @@ class DraftChatController extends State<DraftChat>
       }),
     );
 
-    _handleSendFileOnWeb(context, matrixFilesList.nonNulls.toList());
+    final files = matrixFilesList.nonNulls.toList();
+    if (zeonWarnChatMatrixPickFilesTooBig(files)) {
+      return;
+    }
+
+    _handleSendFileOnWeb(context, files);
   }
 
   Future<void> _handleSendFileOnWeb(

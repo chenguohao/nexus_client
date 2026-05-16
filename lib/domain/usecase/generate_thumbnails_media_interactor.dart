@@ -20,12 +20,9 @@ class GenerateThumbnailsMediaInteractor {
   }) async* {
     try {
       final serverConfig = await _serverConfigRepository.getServerConfig();
-      if (serverConfig.mUploadSize == null) {
-        yield const Left(GenerateThumbnailsMediaFailure('mUploadSize is null'));
-      }
       yield Right(
         GenerateThumbnailsMediaInitial(
-          maxUploadFileSize: serverConfig.mUploadSize!,
+          serverMUploadSize: serverConfig.mUploadSize,
         ),
       );
 

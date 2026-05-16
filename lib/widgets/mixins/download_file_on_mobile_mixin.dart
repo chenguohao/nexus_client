@@ -14,6 +14,15 @@ import 'package:fluffychat/utils/matrix_sdk_extensions/event_extension.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
+bool _eventOwnAttachmentLateWriteRaceLikely(Event event) {
+  if (!event.isOwnMessage) return false;
+  return const {
+    MessageTypes.Video,
+    MessageTypes.Image,
+    MessageTypes.File,
+  }.contains(event.messageType);
+}
+
 mixin DownloadFileOnMobileMixin<T extends StatefulWidget> on State<T> {
   final downloadManager = getIt.get<DownloadManager>();
 
@@ -51,9 +60,34 @@ mixin DownloadFileOnMobileMixin<T extends StatefulWidget> on State<T> {
     }
     await checkFileInDownloadsInApp();
 
+    if (downloadFileStateNotifier.value is DownloadedPresentationState) {
+      return;
+    }
+
     _trySetupDownloadingStreamSubcription();
     if (streamSubscription != null) {
       downloadFileStateNotifier.value = const DownloadingPresentationState();
+    }
+
+    if (_eventOwnAttachmentLateWriteRaceLikely(event)) {
+      unawaited(_pollUntilLocalAttachmentAppears());
+    }
+  }
+
+  /// [Room.sendEvent] updates the timeline before [send_file_extension] finishes
+  /// copying the sent file into app storage — briefly looks like "needs download".
+  Future<void> _pollUntilLocalAttachmentAppears() async {
+    const gapsMs = [60, 120, 240, 480, 960];
+    for (final gap in gapsMs) {
+      await Future.delayed(Duration(milliseconds: gap));
+      if (!mounted || downloadFileStateNotifier.isDisposed) return;
+      if (downloadFileStateNotifier.value is DownloadedPresentationState) {
+        return;
+      }
+      await checkFileInDownloadsInApp();
+      if (downloadFileStateNotifier.value is DownloadedPresentationState) {
+        return;
+      }
     }
   }
 

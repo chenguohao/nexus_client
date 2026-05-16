@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' show min;
 
 import 'package:fluffychat/config/app_constants.dart';
 import 'package:fluffychat/config/config_saas/config_saas.dart';
@@ -166,6 +167,8 @@ abstract class AppConfig {
   static const String iOSKeychainSharingId = 'KUT463DS29.app.twake.ios.chat';
   static const String iOSKeychainSharingAccount = 'app.twake.ios.chat.sessions';
   static const int maxFilesSendPerDialog = 6;
+  /// Chat gallery bottom sheet: max items selected per send batch (photos + videos).
+  static const int maxChatGallerySelectionCount = 9;
   static const bool supportMultipleAccountsInTheSameHomeserver = false;
   static const imageCompressFormmat = CompressFormat.jpeg;
   static const videoThumbnailFormat = ImageFormat.JPEG;
@@ -179,7 +182,54 @@ abstract class AppConfig {
 
   static String? issueId;
 
-  static int defaultMaxUploadAvtarSizeInBytes = 10000000;
+  /// Profile / room / group avatar uploads (single image).
+  /// Chat send limits use [maxChatSingleImageBytes] / [maxChatAttachmentBytes] instead.
+  static int defaultMaxUploadAvtarSizeInBytes = 10 * 1024 * 1024;
+
+  /// Chat: gallery / captions — one photo payload (excluding video).
+  /// Temporary Zeon policy; pair with server `m.upload.size` via [chatUploadEffectiveMaxBytes].
+  static const int maxChatSingleImageBytes = 10 * 1024 * 1024;
+
+  /// Chat: video, generic files (documents), audio, etc.
+  /// (Server may still advertise up to this; Zeon additionally clamps sends in-app via
+  /// [maxChatClientFileAndVideoBytes].)
+  static const int maxChatAttachmentBytes = 100 * 1024 * 1024;
+
+  /// Zeon picker / in-app sends: plain files and gallery videos capped below server 100MB.
+  static const int maxChatClientFileAndVideoBytes = 50 * 1024 * 1024;
+
+  /// `min(server, clientCap)` so local policy and Matrix config both apply.
+  static int chatUploadEffectiveMaxBytes({
+    required int? serverMUploadSize,
+    required bool isChatImagePayload,
+  }) {
+    final clientCap = isChatImagePayload
+        ? maxChatSingleImageBytes
+        : maxChatAttachmentBytes;
+    if (serverMUploadSize == null) return clientCap;
+    return serverMUploadSize < clientCap ? serverMUploadSize : clientCap;
+  }
+
+  /// Same as [chatUploadEffectiveMaxBytes], then clamps non-image payloads to
+  /// [maxChatClientFileAndVideoBytes] for Zeon clients.
+  static int zeonChatClientFacingUploadMaxBytes({
+    required int? serverMUploadSize,
+    required bool isChatImagePayload,
+  }) {
+    final base = chatUploadEffectiveMaxBytes(
+      serverMUploadSize: serverMUploadSize,
+      isChatImagePayload: isChatImagePayload,
+    );
+    if (isChatImagePayload) return base;
+    return min(base, maxChatClientFileAndVideoBytes);
+  }
+
+  /// Avatar uploads: smallest of server Matrix limit (if known) and [defaultMaxUploadAvtarSizeInBytes].
+  static int avatarUploadEffectiveMaxBytes({required int? serverMUploadSize}) {
+    final cap = defaultMaxUploadAvtarSizeInBytes;
+    if (serverMUploadSize == null) return cap;
+    return serverMUploadSize < cap ? serverMUploadSize : cap;
+  }
 
   static bool devMode = false;
 

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/model/extensions/xfile/xfile_extension.dart';
 import 'package:fluffychat/domain/model/file_info/file_info.dart';
@@ -11,10 +12,11 @@ import 'package:flutter/material.dart';
 import 'package:linagora_design_flutter/images_picker/images_picker.dart';
 import 'package:matrix/matrix.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_file_extension.dart';
+import 'package:fluffychat/utils/twake_snackbar.dart';
+import 'package:fluffychat/utils/zeon_chat_pick_limits.dart';
 
 mixin SendFilesMixin {
-  static const int _maxVideoSizeBytes = 100 * 1024 * 1024; // 100 MB
-
   Future<void> sendMedia(
     ImagePickerGridController imagePickerController, {
     required BuildContext context,
@@ -26,27 +28,48 @@ mixin SendFilesMixin {
 
     final selectedAssets = imagePickerController.sortedSelectedAssets;
 
-    // Validate video file sizes before uploading.
+    if (selectedAssets.length > AppConfig.maxChatGallerySelectionCount) {
+      if (context.mounted) {
+        TwakeSnackBar.show(
+          context,
+          '单次最多只能选择 ${AppConfig.maxChatGallerySelectionCount} 个相册文件',
+        );
+      }
+      return;
+    }
+
+    int? serverMUpload;
+    try {
+      serverMUpload = (await room.client.getConfig()).mUploadSize;
+    } catch (_) {}
+
     for (final indexed in selectedAssets) {
       final asset = indexed.asset;
-      if (asset.type != AssetType.video) continue;
-
       final file = await asset.originFile;
       if (file == null) continue;
 
       final sizeBytes = await File(file.path).length();
-      if (sizeBytes > _maxVideoSizeBytes) {
+      final imageCap = AppConfig.zeonChatClientFacingUploadMaxBytes(
+        serverMUploadSize: serverMUpload,
+        isChatImagePayload: true,
+      );
+      final videoCap = AppConfig.zeonChatClientFacingUploadMaxBytes(
+        serverMUploadSize: serverMUpload,
+        isChatImagePayload: false,
+      );
+
+      if (asset.type == AssetType.image && sizeBytes > imageCap) {
         if (context.mounted) {
           await showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
               backgroundColor: const Color(0xFF1C1B1C),
               title: const Text(
-                '视频文件过大',
+                '图片过大',
                 style: TextStyle(color: Color(0xFFE5E2E3)),
               ),
               content: const Text(
-                '视频文件不能超过 100MB，请重新选择。',
+                '单张图片不能超过 10MB，请重新选择。',
                 style: TextStyle(color: Color(0xFF919191)),
               ),
               actions: [
@@ -61,7 +84,17 @@ mixin SendFilesMixin {
             ),
           );
         }
-        return; // abort send
+        return;
+      }
+
+      if (asset.type == AssetType.video && sizeBytes > videoCap) {
+        if (context.mounted) {
+          TwakeSnackBar.show(
+            context,
+            '文件不可大于50M',
+          );
+        }
+        return;
       }
     }
 
@@ -91,6 +124,11 @@ mixin SendFilesMixin {
     }).toList();
 
     if (fileInfos == null || fileInfos.isEmpty) return;
+
+    for (final info in fileInfos) {
+      if (zeonWarnIfPickFileInfoTooBig(info)) return;
+    }
+
     onSendFileCallback?.call();
     final uploadManger = getIt.get<UploadManager>();
     uploadManger.uploadFileMobile(
@@ -102,13 +140,28 @@ mixin SendFilesMixin {
 
   Future<List<MatrixFile>> pickFilesFromSystem() async {
     final result = await FilePicker.platform.pickFiles(
-      withData: true,
+      withData: false,
       allowMultiple: true,
     );
-    if (result == null || result.xFiles.isEmpty) return [];
-    return await Future.wait(
-      result.xFiles.map((file) => file.toMatrixFileOnWeb()),
+    if (result == null || result.files.isEmpty) return [];
+
+    final xList = result.xFiles.toList();
+    for (var i = 0; i < result.files.length; i++) {
+      final pf = result.files[i];
+      final sz =
+          pf.size > 0 ? pf.size : await xList[i].length();
+      if (sz > 0 && zeonWarnIfPickNameSizeTooBig(xList[i].name, sz)) {
+        return [];
+      }
+    }
+
+    final list = await Future.wait(
+      xList.map((file) => file.toMatrixFileOnWeb()),
     );
+    if (zeonWarnChatMatrixPickFilesTooBig(list)) {
+      return [];
+    }
+    return list;
   }
 
   void onPickerTypeClick({

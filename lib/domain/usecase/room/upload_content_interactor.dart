@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
+import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/data/network/media/media_api.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/room/upload_content_state.dart';
@@ -22,15 +23,21 @@ class UploadContentInteractor {
       final contentFileInfo = await contentEntity.toFileInfo();
       final mediaConfig = await matrixClient.getConfig();
       final maxMediaSize = mediaConfig.mUploadSize;
+      final effectiveAvatarMax = AppConfig.avatarUploadEffectiveMaxBytes(
+        serverMUploadSize: maxMediaSize,
+      );
       if (contentFileInfo != null) {
         final fileSize = contentFileInfo.fileSize;
         Logs().d(
-          'UploadContentInteractor::execute(): FileSized $fileSize || maxMediaSize $maxMediaSize',
+          'UploadContentInteractor::execute(): FileSized $fileSize || avatarMaxCap $effectiveAvatarMax',
         );
-        if (maxMediaSize != null && maxMediaSize < fileSize) {
+        if (fileSize > effectiveAvatarMax) {
           yield Left(
-            FileTooBigMatrix(FileTooBigMatrixException(fileSize, maxMediaSize)),
+            FileTooBigMatrix(
+              FileTooBigMatrixException(fileSize, effectiveAvatarMax),
+            ),
           );
+          return;
         }
 
         final response = await mediaApi.uploadFileMobile(

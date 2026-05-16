@@ -24,6 +24,14 @@ class UploadingFileUIState extends UploadFileUIState {
   List<Object?> get props => [receive, total];
 }
 
+/// Before numeric Dio progress (thumbnail, encrypt, convert).
+class UploadProcessingUIState extends UploadFileUIState {
+  const UploadProcessingUIState();
+
+  @override
+  List<Object?> get props => [];
+}
+
 class UploadFileSuccessUIState extends UploadFileUIState {
   const UploadFileSuccessUIState();
 

@@ -63,7 +63,7 @@ class SendFileDialogController extends State<SendFileDialog> {
 
   Map<MatrixFile, MatrixImageFile?> thumbnails = {};
 
-  ValueNotifier<double> maxMediaSizeNotifier = ValueNotifier(double.infinity);
+  ValueNotifier<int?> chatUploadServerMUploadNotifier = ValueNotifier(null);
 
   ValueNotifier<bool> haveErrorFilesNotifier = ValueNotifier(false);
 
@@ -88,15 +88,16 @@ class SendFileDialogController extends State<SendFileDialog> {
     focusSuggestionController.dispose();
     captionsFocusNode.dispose();
     filesNotifier.dispose();
-    maxMediaSizeNotifier.dispose();
+    chatUploadServerMUploadNotifier.dispose();
     haveErrorFilesNotifier.dispose();
     _thumbnailsForMediaSubscription?.cancel();
     super.dispose();
   }
 
   void updateHaveErrorFilesNotifier() {
+    final serverM = chatUploadServerMUploadNotifier.value;
     haveErrorFilesNotifier.value = filesNotifier.value.any(
-      (file) => file.size > maxMediaSizeNotifier.value,
+      (file) => file.isChatUploadOversized(serverM),
     );
   }
 
@@ -116,7 +117,8 @@ class SendFileDialogController extends State<SendFileDialog> {
                 thumbnails[right.file] = right.thumbnail;
                 filesNotifier.notify();
               } else if (right is GenerateThumbnailsMediaInitial) {
-                maxMediaSizeNotifier.value = right.maxUploadFileSize.toDouble();
+                chatUploadServerMUploadNotifier.value =
+                    right.serverMUploadSize;
                 updateHaveErrorFilesNotifier();
               }
             },
@@ -156,8 +158,9 @@ class SendFileDialogController extends State<SendFileDialog> {
   }
 
   List<MatrixFile> getFilesNotError() {
+    final serverM = chatUploadServerMUploadNotifier.value;
     return filesNotifier.value
-        .where((file) => !file.isFileHaveError(maxMediaSizeNotifier.value))
+        .where((file) => !file.isChatUploadOversized(serverM))
         .toList();
   }
 

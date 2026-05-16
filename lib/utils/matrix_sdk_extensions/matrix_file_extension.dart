@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/utils/stream_list_int_extension.dart';
-import 'package:fluffychat/utils/twake_snackbar.dart';
+import 'package:fluffychat/zeon/utils/toast.dart';
 import 'package:flutter/material.dart';
+import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:matrix/matrix.dart';
 import 'package:share_plus/share_plus.dart';
@@ -143,6 +145,20 @@ extension MatrixFileExtension on MatrixFile {
 
   bool isFileHaveError(double maxSize) => size > maxSize;
 
+  bool _isPayloadTreatedAsChatImage() =>
+      this is MatrixImageFile ||
+      msgType == MessageTypes.Image ||
+      (msgType == MessageTypes.File && isImage());
+
+  int computeChatUploadCapBytes({required int? serverMUploadSize}) =>
+      AppConfig.zeonChatClientFacingUploadMaxBytes(
+        serverMUploadSize: serverMUploadSize,
+        isChatImagePayload: _isPayloadTreatedAsChatImage(),
+      );
+
+  bool isChatUploadOversized(int? serverMUploadSize) =>
+      size > computeChatUploadCapBytes(serverMUploadSize: serverMUploadSize);
+
   bool isSendingImageInWeb() {
     return this is MatrixImageFile;
   }
@@ -150,6 +166,28 @@ extension MatrixFileExtension on MatrixFile {
   bool isSendingImageInMobile() {
     return this is MatrixImageFile && !PlatformInfos.isWeb;
   }
+}
+
+/// After loading [MatrixFile]s: toast and return `true` if any violates Zeon/chat caps.
+bool zeonWarnChatMatrixPickFilesTooBig(
+  List<MatrixFile> files, {
+  int? serverMUploadSize,
+}) {
+  for (final f in files) {
+    final cap = f.computeChatUploadCapBytes(serverMUploadSize: serverMUploadSize);
+    if (f.size <= cap) continue;
+    final asImg =
+        f is MatrixImageFile ||
+        f.msgType == MessageTypes.Image ||
+        (f.msgType == MessageTypes.File && f.isImage());
+    if (asImg) {
+      Toast.show('单张图片不能超过 10MB，请重新选择。');
+    } else {
+      Toast.show('文件不可大于50M');
+    }
+    return true;
+  }
+  return false;
 }
 
 class TwakeAudioFile extends MatrixFile {

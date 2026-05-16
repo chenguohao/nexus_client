@@ -1,7 +1,7 @@
 import 'package:fluffychat/pages/chat/chat_actions_style.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
+import 'package:fluffychat/widgets/zeon_photo_picker_tokens.dart';
 
 enum PickerType {
   gallery,
@@ -63,12 +63,12 @@ enum PickerType {
   Color? getTextColor(BuildContext context) {
     switch (this) {
       case PickerType.gallery:
-        return LinagoraSysColors.material().primary;
+        return ZeonPhotoPickerTokens.textPrimary;
       case PickerType.documents:
-        return LinagoraSysColors.material().tertiary;
+        return ZeonPhotoPickerTokens.textSecondary;
       case PickerType.location:
       case PickerType.contact:
-        return LinagoraSysColors.material().onBackground;
+        return Theme.of(context).colorScheme.onSurface;
     }
   }
 }
