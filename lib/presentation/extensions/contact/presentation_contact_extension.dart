@@ -55,6 +55,7 @@ extension ContactExtensionInPresentation on Contact {
         status: status == ThirdPartyStatus.inactive
             ? ContactStatus.inactive
             : ContactStatus.active,
+        friendStatus: friendStatus,
       ),
     };
 

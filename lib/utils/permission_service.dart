@@ -1,10 +1,11 @@
 import 'dart:io';
+
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/presentation/enum/chat/audio_type_enum.dart';
 import 'package:fluffychat/utils/permission_dialog.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PermissionHandlerService {
@@ -80,23 +81,30 @@ class PermissionHandlerService {
       useRootNavigator: false,
       context: context,
       barrierDismissible: false,
+      barrierColor: const Color(0xCC131314),
       builder: (dialogContext) {
         return PermissionDialog(
-          icon: Icon(
-            Icons.keyboard_voice_outlined,
-            color: LinagoraSysColors.material().primary,
-          ),
+          icon: const Icon(Icons.keyboard_voice_outlined),
           permission: Permission.microphone,
           explainTextRequestPermission: Text(
             L10n.of(context)!.explainPermissionToAccessMicrophone,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+            style: const TextStyle(
+              color: ZeonColors.outline,
+              fontFamily: 'Inter',
+              fontSize: 14,
+              letterSpacing: 0.25,
+              height: 1.35,
             ),
           ),
           titleTextRequestPermission: Text(
             L10n.of(context)!.allowMicrophoneAccess,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurface,
+            style: const TextStyle(
+              color: ZeonColors.onSurface,
+              fontFamily: 'Inter',
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.3,
+              height: 1.25,
             ),
           ),
           customButtonRow: Row(
@@ -105,34 +113,42 @@ class PermissionHandlerService {
               PermissionTextButton(
                 context: context,
                 text: L10n.of(context)!.later,
-                textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.primary,
+                textStyle: const TextStyle(
+                  color: ZeonColors.outline,
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.2,
                 ),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 10.0,
+                  horizontal: 16,
+                  vertical: 12,
                 ),
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.of(dialogContext).pop();
                 },
               ),
-              const SizedBox(width: 8.0),
+              const SizedBox(width: 8),
               PermissionTextButton(
                 context: context,
                 text: L10n.of(context)!.continueProcess,
-                textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onPrimary,
+                textStyle: const TextStyle(
+                  color: ZeonColors.onPrimary,
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 1.2,
                 ),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 10.0,
+                  horizontal: 20,
+                  vertical: 12,
                 ),
-                decoration: BoxDecoration(
-                  color: LinagoraSysColors.material().primary,
-                  borderRadius: BorderRadius.circular(100.0),
+                decoration: const BoxDecoration(
+                  color: ZeonColors.primary,
+                  borderRadius: BorderRadius.zero,
                 ),
-                onPressed: () async {
-                  Navigator.of(context).pop(true);
+                onPressed: () {
+                  Navigator.of(dialogContext).pop(true);
                 },
               ),
             ],
@@ -177,13 +193,13 @@ class PermissionHandlerService {
         useRootNavigator: false,
         context: context,
         barrierDismissible: false,
+        barrierColor: const Color(0xCC131314),
         builder: (dialogContext) {
           return PermissionDialog(
             icon: const Icon(Icons.photo),
             permission: Permission.photos,
             explainTextRequestPermission: Text(
               L10n.of(context)!.explainPermissionToAccessPhotos,
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
             onAcceptButton: () async {
               Navigator.of(dialogContext).pop(true);
@@ -203,13 +219,13 @@ class PermissionHandlerService {
         useRootNavigator: false,
         context: context,
         barrierDismissible: false,
+        barrierColor: const Color(0xCC131314),
         builder: (dialogContext) {
           return PermissionDialog(
             icon: const Icon(Icons.video_camera_back_outlined),
             permission: Permission.videos,
             explainTextRequestPermission: Text(
               L10n.of(context)!.explainPermissionToAccessVideos,
-              style: Theme.of(context).textTheme.bodyMedium,
             ),
             onAcceptButton: () async {
               Navigator.of(dialogContext).pop(true);
@@ -245,6 +261,7 @@ class PermissionHandlerService {
           useRootNavigator: false,
           context: context,
           barrierDismissible: false,
+          barrierColor: const Color(0xCC131314),
           builder: (dialogContext) {
             return PermissionDialog(
               icon: const Icon(Icons.photo),
@@ -253,7 +270,6 @@ class PermissionHandlerService {
                   : Permission.storage,
               explainTextRequestPermission: Text(
                 L10n.of(context)!.explainPermissionToAccessMedias,
-                style: Theme.of(context).textTheme.bodyMedium,
               ),
               onAcceptButton: () async {
                 Navigator.of(dialogContext).pop(true);

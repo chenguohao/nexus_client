@@ -5,7 +5,8 @@ class MxcImageCacheManager {
   static MxcImageCacheManager get instance => _instance;
   MxcImageCacheManager._();
 
-  static const _size = 100;
+  /// 头像与列表滚动场景下同一会话内命中率高，适当增大减少解码与瞬时内存抖动。
+  static const _size = 400;
   final Map<EventId, ImageData> _imageCache = {};
 
   void cacheImage(EventId eventId, ImageData imageData) {

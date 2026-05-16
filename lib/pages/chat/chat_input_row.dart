@@ -215,8 +215,14 @@ class ChatInputRow extends StatelessWidget {
                               controller.stopRecording.call();
 
                               try {
+                                // social_media_recorder temp paths include ':' in the
+                                // timestamp; iOS cannot use that character in local
+                                // cache filenames for playback (AVFoundation -11829).
+                                final safeName =
+                                    'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
                                 final file = TwakeAudioFile(
-                                  name: soundFile.path,
+                                  name: safeName,
+                                  mimeType: 'audio/mp4',
                                   duration: time.inMilliseconds,
                                   bytes: await soundFile.readAsBytes(),
                                 );

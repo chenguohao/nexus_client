@@ -1,6 +1,7 @@
 import 'package:fluffychat/data/model/addressbook/address_book.dart';
 import 'package:fluffychat/domain/model/contact/contact.dart';
 import 'package:fluffychat/domain/model/contact/contact_status.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/domain/model/contact/third_party_status.dart';
 import 'package:fluffychat/presentation/model/contact/presentation_contact.dart';
 
@@ -85,6 +86,7 @@ extension AddressBookExtension on AddressBook {
         status: addressBookIsActive()
             ? ContactStatus.active
             : ContactStatus.inactive,
+        friendStatus: FriendStatus.fromString(status),
         emails: emails
             ?.map(
               (email) => PresentationEmail(
@@ -196,6 +198,8 @@ extension AddressBookExtension on AddressBook {
       displayName: displayName,
       emails: toEmails(),
       phoneNumbers: toPhoneNumber(),
+      friendStatus: FriendStatus.fromString(status),
+      updatedAtMillis: updatedAt,
     );
   }
 }

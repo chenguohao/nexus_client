@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'package:fluffychat/data/local/mxc_disk_image_cache.dart';
 import 'package:fluffychat/data/memory/mxc_image_cache_manager.dart';
 import 'package:fluffychat/pages/image_viewer/image_viewer.dart';
 import 'package:fluffychat/pages/media_viewer/media_viewer.dart';
@@ -14,6 +14,7 @@ import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_file_extension.dar
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/widgets/hero_page_route.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_avif/flutter_avif.dart';
 import 'package:http/http.dart' as http;
@@ -24,7 +25,26 @@ import 'package:fluffychat/widgets/matrix.dart';
 typedef EventId = String;
 typedef ImageData = Uint8List;
 
+/// 解析 `mxc://{serverName}/{mediaId}`，供 [Client.getContent] / [Client.getContentThumbnail] 使用。
+(String serverName, String mediaId)? _parseMxcAuthority(Uri uri) {
+  if (!uri.isScheme('mxc')) return null;
+  final host = uri.host;
+  if (host.isEmpty) return null;
+  var mediaPath = uri.path;
+  if (mediaPath.startsWith('/')) {
+    mediaPath = mediaPath.substring(1);
+  }
+  if (mediaPath.isEmpty) return null;
+  final serverName = uri.hasPort ? '$host:${uri.port}' : host;
+  return (serverName, mediaPath);
+}
+
 class MxcImage extends StatefulWidget {
+  /// 可选：显式指定 Matrix [Client]，用于部分 Overlay / 路由子树里
+  /// `Matrix.of(context)` 查不到 [MatrixState] 的场景（见 `FlutterEasyLoading` 双层 Overlay）。
+  /// 传入后 [MxcImage] 不再调用 [Matrix.of]。
+  final Client? matrixClient;
+
   final Uri? uri;
   final Event? event;
   final double? width;
@@ -60,6 +80,7 @@ class MxcImage extends StatefulWidget {
   final bool keepAlive;
 
   const MxcImage({
+    this.matrixClient,
     this.uri,
     this.event,
     this.width,
@@ -134,11 +155,25 @@ class _MxcImageState extends State<MxcImage>
 
   bool? _isCached;
 
+  Client _matrixClient(BuildContext context) {
+    final explicit = widget.matrixClient;
+    if (explicit != null) return explicit;
+    return Matrix.of(context).client;
+  }
+
+  /// 同一 mxc 在不同「缩略图尺寸 / 是否缩略图 / 动画」下对应不同二进制，全部纳入键避免错图。
+  String _mxcDiskLogicalKey(Uri mxcUri, int? rw, int? rh) {
+    final w = rw ?? 0;
+    final h = rh ?? 0;
+    return '$mxcUri|thumb:${widget.isThumbnail}|${w}x$h|'
+        'anim:${widget.animated}|meth:${widget.thumbnailMethod.name}';
+  }
+
   Future<({Uint8List? imageData, String? filePath})> _load(
     BuildContext context,
   ) async {
     if (!context.mounted) return (imageData: null, filePath: null);
-    final client = Matrix.of(context).client;
+    final client = _matrixClient(context);
     final uri = widget.uri;
     final event = widget.event;
 
@@ -148,39 +183,128 @@ class _MxcImageState extends State<MxcImage>
       final height = widget.height;
       final realHeight = height == null ? null : context.getCacheSize(height);
 
-      final httpUri = widget.isThumbnail
-          ? uri.getThumbnail(
-              client,
-              width: realWidth,
-              height: realHeight,
-              animated: widget.animated,
-              method: widget.thumbnailMethod,
-            )
-          : uri.getDownloadLink(client);
-
-      if (_isCached == null && widget.event != null) {
-        final cachedData = await client.database.getFile(httpUri);
-        if (cachedData != null) {
-          _isCached = true;
-          return (imageData: cachedData, filePath: null);
+      // ── MXC：必须用 [Client.getContent] / [Client.getContentThumbnail] ─────────
+      // 与 Matrix SDK 内部同步、附件下载共用同一套 endpoint + Bearer + HttpClient，
+      // 避免手写 GET 与 MSC3916 / Matrix 1.11 媒体路由不一致。
+      if (uri.isScheme('mxc')) {
+        final parsed = _parseMxcAuthority(uri);
+        if (parsed == null) {
+          debugPrint('[MxcImage] invalid mxc (need host + path): $uri');
+          return (imageData: null, filePath: null);
         }
-        _isCached = false;
+        final serverName = parsed.$1;
+        final mediaId = parsed.$2;
+
+        final Uri httpUri;
+        try {
+          httpUri = widget.isThumbnail
+              ? await uri.getThumbnailUri(
+                  client,
+                  width: realWidth,
+                  height: realHeight,
+                  animated: widget.animated,
+                  method: widget.thumbnailMethod,
+                )
+              : await uri.getDownloadUri(client);
+        } catch (e, st) {
+          debugPrint('[MxcImage] resolve URL failed: $e\n$st');
+          Logs().w('MxcImage::_load: failed to resolve media URL: $e\n$st');
+          return (imageData: null, filePath: null);
+        }
+
+        if (httpUri.host.isEmpty) {
+          debugPrint('[MxcImage] empty host after resolve: $uri');
+          return (imageData: null, filePath: null);
+        }
+
+        final diskKey = _mxcDiskLogicalKey(uri, realWidth, realHeight);
+        final diskBytes = await MxcDiskImageCache.instance.get(diskKey);
+        if (diskBytes != null) {
+          final ck = widget.cacheKey;
+          if (ck != null && widget.cacheMap == null) {
+            MxcImageCacheManager.instance.cacheImage(ck, diskBytes);
+          }
+          return (imageData: diskBytes, filePath: null);
+        }
+
+        if (_isCached == null && widget.event != null) {
+          final cachedData = await client.database.getFile(httpUri);
+          if (cachedData != null) {
+            _isCached = true;
+            return (imageData: cachedData, filePath: null);
+          }
+          _isCached = false;
+        }
+
+        try {
+          final fr = widget.isThumbnail
+              ? await client.getContentThumbnail(
+                  serverName,
+                  mediaId,
+                  (realWidth ?? context.getCacheSize(512)).clamp(32, 4096),
+                  (realHeight ?? context.getCacheSize(512)).clamp(32, 4096),
+                  method: widget.thumbnailMethod == ThumbnailMethod.scale
+                      ? Method.scale
+                      : Method.crop,
+                  animated: widget.animated,
+                  allowRemote: true,
+                )
+              : await client.getContent(
+                  serverName,
+                  mediaId,
+                  allowRemote: true,
+                );
+
+          await MxcDiskImageCache.instance.put(diskKey, fr.data);
+          if (widget.event != null) {
+            await client.database.storeFile(httpUri, fr.data, 0);
+          }
+          return (imageData: fr.data, filePath: null);
+        } catch (e, st) {
+          debugPrint('[MxcImage] SDK getContent failed mxc=$uri: $e\n$st');
+          Logs().w('MxcImage::_load: SDK getContent failed: $e\n$st');
+          rethrow;
+        }
       }
 
-      final response = await http.get(httpUri);
-      if (response.statusCode != 200) {
-        if (response.statusCode == 404) {
+      // ── 普通 https 头像（极少见）：仍走 Matrix 配置的 httpClient ────────────────
+      if (!uri.isScheme('http') && !uri.isScheme('https')) {
+        debugPrint('[MxcImage] unsupported scheme: ${uri.scheme} ($uri)');
+        return (imageData: null, filePath: null);
+      }
+
+      final httpsDiskKey = uri.toString();
+      final httpsCached = await MxcDiskImageCache.instance.get(httpsDiskKey);
+      if (httpsCached != null) {
+        final ck = widget.cacheKey;
+        if (ck != null && widget.cacheMap == null) {
+          MxcImageCacheManager.instance.cacheImage(ck, httpsCached);
+        }
+        return (imageData: httpsCached, filePath: null);
+      }
+
+      final req = http.Request('GET', uri);
+      final token = client.accessToken;
+      if (token != null && token.isNotEmpty) {
+        req.headers['Authorization'] = 'Bearer $token';
+      }
+      final streamed = await client.httpClient.send(req);
+      final remoteData = await streamed.stream.toBytes();
+      if (streamed.statusCode != 200) {
+        if (streamed.statusCode == 404) {
           _mediaExpired = true;
           return (imageData: null, filePath: null);
         }
-        throw Exception();
+        debugPrint(
+          '[MxcImage] GET ${streamed.statusCode} len=${remoteData.length} $uri',
+        );
+        Logs().w(
+          'MxcImage::_load: media GET ${streamed.statusCode} '
+          '(${remoteData.length}b) $uri',
+        );
+        throw Exception('MxcImage: HTTP ${streamed.statusCode}');
       }
-      final remoteData = response.bodyBytes;
-
-      if (widget.event != null) {
-        await client.database.storeFile(httpUri, remoteData, 0);
-      }
-
+      await MxcDiskImageCache.instance.put(httpsDiskKey, remoteData);
       return (imageData: remoteData, filePath: null);
     }
 
@@ -218,29 +342,44 @@ class _MxcImageState extends State<MxcImage>
   bool _notImageOrVideo(MatrixFile matrixFile, Event event) =>
       !matrixFile.isImage() && !event.isVideoOrImage;
 
-  Future<void> _tryLoad(BuildContext context) async {
-    _imageData = widget.imageData;
-    if (_imageData != null) {
+  Future<void> _tryLoad(BuildContext context, {int attempt = 0}) async {
+    if (widget.imageData != null) {
+      _imageData = widget.imageData;
       isLoadDone = true;
       filePath = null;
-      setState(() {});
+      if (mounted) setState(() {});
+      return;
     }
+
+    final ck = widget.cacheKey;
+    if (ck != null &&
+        widget.cacheMap == null &&
+        MxcImageCacheManager.instance.getImage(ck) != null) {
+      isLoadDone = true;
+      filePath = null;
+      if (mounted) setState(() {});
+      return;
+    }
+
     try {
       final loadResult = await _load(context);
+      if (!mounted) return;
       isLoadDone = true;
       _imageData = loadResult.imageData;
       filePath = loadResult.filePath;
-      // If we got null data after a successful call (e.g. 404 set _mediaExpired),
-      // make sure we rebuild to show the expired state.
-      if (mounted) setState(() {});
-    } catch (e) {
-      if (mounted && !isLoadDone) {
-        // First failure: retry once.
-        isLoadDone = true;
-        _tryLoad(context);
-      } else if (mounted) {
-        // Second failure: give up and mark as expired.
+      setState(() {});
+    } catch (e, st) {
+      // 历史上这里在「首次失败」时先设 isLoadDone=true 再递归 _tryLoad，
+      // 导致内层第一次 catch 必走「已过期」分支（误杀 TLS/瞬时网络错误）。
+      debugPrint('[MxcImage] _tryLoad#$attempt uri=${widget.uri} err=$e');
+      debugPrint('$st');
+      if (!mounted) return;
+      if (attempt < 1) {
+        await Future<void>.delayed(widget.retryDuration);
+        if (mounted) await _tryLoad(context, attempt: attempt + 1);
+      } else {
         _mediaExpired = true;
+        isLoadDone = true;
         setState(() {});
       }
     }
@@ -297,7 +436,8 @@ class _MxcImageState extends State<MxcImage>
     // when the sending event is replaced by the server-confirmed event.
     if (oldWidget.event?.eventId != widget.event?.eventId ||
         oldWidget.uri != widget.uri ||
-        oldWidget.cacheKey != widget.cacheKey) {
+        oldWidget.cacheKey != widget.cacheKey ||
+        oldWidget.matrixClient != widget.matrixClient) {
       isLoadDone = false;
       _mediaExpired = false;
       _imageDataNoCache = null;

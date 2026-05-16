@@ -1,6 +1,7 @@
 import 'package:fluffychat/widgets/context_menu_builder_ios_paste_without_permission.dart';
 import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:flutter/material.dart';
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/pages/dialer/pip/dismiss_keyboard.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
@@ -22,7 +23,7 @@ class SearchTextField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.zero,
       child: TextField(
         onTapOutside: (event) {
           dismissKeyboard(context);
@@ -33,35 +34,40 @@ class SearchTextField extends StatelessWidget {
         enabled: true,
         focusNode: focusNode,
         autofocus: autofocus,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        cursorColor: ZeonColors.onSurface,
+        style: const TextStyle(
+          color: ZeonColors.onSurface,
+          fontSize: 14,
+          letterSpacing: 0.25,
+        ),
         decoration: InputDecoration(
           filled: true,
           contentPadding: const EdgeInsets.symmetric(vertical: 14),
-          fillColor: const Color(0xFF0E0E0F),
-          border: OutlineInputBorder(
-            borderSide: const BorderSide(color: Color(0x33474747)),
-            borderRadius: BorderRadius.circular(8),
+          fillColor: ZeonColors.surfaceContainerLow,
+          border: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0x0DFFFFFF)),
+            borderRadius: BorderRadius.zero,
           ),
-          enabledBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Color(0x33474747)),
-            borderRadius: BorderRadius.circular(8),
+          enabledBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0x0DFFFFFF)),
+            borderRadius: BorderRadius.zero,
           ),
-          focusedBorder: OutlineInputBorder(
-            borderSide: const BorderSide(color: Color(0x66FFFFFF)),
-            borderRadius: BorderRadius.circular(8),
+          focusedBorder: const OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0x4DFFFFFF)),
+            borderRadius: BorderRadius.zero,
           ),
           hintText: hintText ?? 'SEARCH DIRECTORY',
           hintStyle: const TextStyle(
-            color: Color(0xFF919191),
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.0,
+            color: ZeonColors.outline,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.8,
           ),
           floatingLabelBehavior: FloatingLabelBehavior.never,
           prefixIcon: const Icon(
             Icons.search_outlined,
             size: 20,
-            color: Color(0xFF919191),
+            color: ZeonColors.outline,
           ),
           suffixIcon: ValueListenableBuilder(
             valueListenable: textEditingController,
@@ -71,6 +77,7 @@ class SearchTextField extends StatelessWidget {
             child: TwakeIconButton(
               tooltip: L10n.of(context)!.close,
               icon: Icons.close,
+              iconColor: ZeonColors.onSurface,
               onTap: () {
                 textEditingController.clear();
               },

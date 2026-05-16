@@ -25,6 +25,7 @@ import 'package:fluffychat/generated/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:fluffychat/utils/localized_exception_extension.dart';
+import 'package:fluffychat/utils/safe_matrix_audio_filename.dart';
 import 'package:opus_caf_converter_dart/opus_caf_converter_dart.dart';
 
 class AudioPlayerWidget extends StatefulWidget {
@@ -131,7 +132,8 @@ class AudioPlayerState extends State<AudioPlayerWidget>
         final fileName = Uri.encodeComponent(
           widget.event.attachmentOrThumbnailMxcUrl()!.pathSegments.last,
         );
-        file = File('${tempDir.path}/${fileName}_${matrixFile.name}');
+        final safeBase = safeMatrixAudioLocalFilename(matrixFile.name);
+        file = File('${tempDir.path}/${fileName}_$safeBase');
 
         await file.writeAsBytes(matrixFile.bytes);
 

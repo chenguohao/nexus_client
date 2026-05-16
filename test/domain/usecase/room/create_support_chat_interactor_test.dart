@@ -124,7 +124,7 @@ void main() {
           ).called(1);
           verify(
             mockClient.createGroupChat(
-              groupName: 'Support Twake Workplace',
+              groupName: 'Zeon Support',
               enableEncryption: false,
               preset: CreateRoomPreset.trustedPrivateChat,
               initialState: anyNamed('initialState'),
@@ -259,7 +259,7 @@ void main() {
           ).called(1);
           verify(
             mockClient.createGroupChat(
-              groupName: 'Support Twake Workplace',
+              groupName: 'Zeon Support',
               enableEncryption: false,
               preset: CreateRoomPreset.trustedPrivateChat,
               initialState: anyNamed('initialState'),
@@ -464,7 +464,7 @@ void main() {
 
         verify(
           mockClient.createGroupChat(
-            groupName: 'Support Twake Workplace',
+            groupName: 'Zeon Support',
             enableEncryption: false,
             preset: CreateRoomPreset.trustedPrivateChat,
             initialState: anyNamed('initialState'),

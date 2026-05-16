@@ -39,6 +39,7 @@ class SearchExternalContactWidget extends StatelessWidget {
         child: ExpansionContactListTile(
           contact: newContact,
           highlightKeyword: searchController.textEditingController.text,
+          suppressInkWell: true,
         ),
       ),
     );

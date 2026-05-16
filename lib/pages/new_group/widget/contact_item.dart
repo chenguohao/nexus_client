@@ -107,6 +107,7 @@ class ContactItem extends StatelessWidget {
                   child: ExpansionContactListTile(
                     contact: contact,
                     highlightKeyword: highlightKeyword,
+                    suppressInkWell: true,
                   ),
                 ),
               ],
@@ -115,9 +116,7 @@ class ContactItem extends StatelessWidget {
         ),
         if (disableBannedUser && !room.canSelectToInvite(contact.matrixId))
           const Positioned.fill(
-            child: IgnorePointer(
-              child: ColoredBox(color: Color(0x44131314)),
-            ),
+            child: IgnorePointer(child: ColoredBox(color: Color(0x44131314))),
           ),
       ],
     );

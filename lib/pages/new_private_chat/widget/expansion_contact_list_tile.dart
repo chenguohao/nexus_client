@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart' as dartz;
 import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/data/model/invitation/invitation_status_response.dart';
 import 'package:fluffychat/domain/app_state/invitation/get_invitation_status_state.dart';
 import 'package:fluffychat/domain/model/contact/contact_status.dart';
@@ -14,11 +15,9 @@ import 'package:fluffychat/utils/string_extension.dart';
 import 'package:fluffychat/widgets/avatar/avatar.dart';
 import 'package:fluffychat/widgets/highlight_text.dart';
 import 'package:fluffychat/widgets/matrix.dart';
-import 'package:fluffychat/widgets/twake_components/twake_chip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 typedef OnExpansionListTileTap = void Function();
@@ -29,12 +28,16 @@ class ExpansionContactListTile extends StatefulWidget {
   final bool enableInvitation;
   final void Function()? onContactTap;
 
+  /// 外层已包一层 [InkWell]（如建群多选、搜索建议）时设为 true，避免嵌套水波纹抢手势。
+  final bool suppressInkWell;
+
   const ExpansionContactListTile({
     super.key,
     required this.contact,
     this.highlightKeyword = '',
     this.enableInvitation = false,
     this.onContactTap,
+    this.suppressInkWell = false,
   });
 
   @override
@@ -101,134 +104,167 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
 
   @override
   Widget build(BuildContext context) {
-    return TwakeInkWell(
-      onTap: _onContactTapHandler(
-        context,
-        widget.contact,
-        getInvitationStatusNotifier.value
-            .getSuccessOrNull<GetInvitationStatusSuccessState>()
-            ?.invitationStatusResponse,
+    final tileBody = Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0x1F474747))),
       ),
-      child: TwakeListItem(
-        child: Padding(
-          padding: const EdgeInsetsDirectional.only(
-            start: 8.0,
-            top: 8.0,
-            bottom: 8.0,
-          ),
-          child: FutureBuilder<Profile?>(
-            key: widget.contact.matrixId != null
-                ? Key(widget.contact.matrixId!)
-                : null,
-            future: widget.contact.status == ContactStatus.active
-                ? getProfile(context)
-                : null,
-            builder: (context, snapshot) {
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: IgnorePointer(
-                      child: Avatar(
-                        mxContent: snapshot.data?.avatarUrl,
-                        name: widget.contact.displayName,
-                      ),
+      child: Padding(
+        padding: const EdgeInsetsDirectional.only(
+          start: 8.0,
+          top: 8.0,
+          bottom: 8.0,
+        ),
+        child: FutureBuilder<Profile?>(
+          key: widget.contact.matrixId != null
+              ? Key(widget.contact.matrixId!)
+              : null,
+          future: widget.contact.status == ContactStatus.active
+              ? getProfile(context)
+              : null,
+          builder: (context, snapshot) {
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: IgnorePointer(
+                    child: Avatar(
+                      mxContent: snapshot.data?.avatarUrl,
+                      name: widget.contact.displayName,
+                      borderRadius: 0,
                     ),
                   ),
-                  const SizedBox(width: 8.0),
-                  Expanded(
-                    child: SizedBox(
-                      height: 64,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              mainAxisSize: MainAxisSize.max,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                IntrinsicWidth(
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Row(
-                                          children: [
-                                            Flexible(
-                                              child: _displayNameWidget(
-                                                snapshot.data?.displayName,
-                                              ),
+                ),
+                const SizedBox(width: 8.0),
+                Expanded(
+                  child: SizedBox(
+                    height: 64,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.max,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              IntrinsicWidth(
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Row(
+                                        children: [
+                                          Flexible(
+                                            child: _displayNameWidget(
+                                              snapshot.data?.displayName,
                                             ),
-                                          ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (widget.contact.matrixId != null &&
+                                        widget.contact.matrixId!
+                                            .isCurrentMatrixId(context)) ...[
+                                      const SizedBox(width: 8.0),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: ZeonColors.surfaceContainer,
+                                          border: Border.all(
+                                            color: const Color(0x33474747),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          L10n.of(context)!.owner,
+                                          style: const TextStyle(
+                                            color: ZeonColors.outline,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w700,
+                                            fontFamily: 'Inter',
+                                            letterSpacing: 1.8,
+                                          ),
                                         ),
                                       ),
-                                      if (widget.contact.matrixId != null &&
-                                          widget.contact.matrixId!
-                                              .isCurrentMatrixId(context)) ...[
-                                        const SizedBox(width: 8.0),
-                                        TwakeChip(
-                                          text: L10n.of(context)!.owner,
-                                          textColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                        ),
-                                      ],
-                                      const SizedBox(width: 8.0),
-                                      if (widget.contact.status != null &&
-                                          widget.contact.status ==
-                                              ContactStatus.inactive)
-                                        ContactStatusWidget(
-                                          status: widget.contact.status!,
-                                        ),
                                     ],
-                                  ),
+                                    const SizedBox(width: 8.0),
+                                    if (widget.contact.status != null &&
+                                        widget.contact.status ==
+                                            ContactStatus.inactive)
+                                      ContactStatusWidget(
+                                        status: widget.contact.status!,
+                                      ),
+                                  ],
                                 ),
-                                if (widget.contact.matrixId != null &&
-                                    widget.contact.matrixId!.isNotEmpty) ...[
-                                  HighlightText(
-                                    text: widget.contact.matrixId!,
-                                    searchWord: widget.highlightKeyword,
-                                    style: const TextStyle(
-                                      color: Color(0xFFC6C6C6),
-                                      fontSize: 13,
-                                      fontFamily: 'Inter',
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                              ),
+                              if (widget.contact.matrixId != null &&
+                                  widget.contact.matrixId!.isNotEmpty) ...[
+                                HighlightText(
+                                  text: widget.contact.matrixId!,
+                                  searchWord: widget.highlightKeyword,
+                                  style: const TextStyle(
+                                    color: Color(0xFF636363),
+                                    fontSize: 12,
+                                    letterSpacing: 0.25,
+                                    fontFamily: 'Inter',
                                   ),
-                                  if (widget.highlightKeyword.isNotEmpty) ...[
-                                    if (widget.highlightKeyword
-                                        .isPhoneNumberFormatted()) ...[
-                                      _displayPhoneNumber(),
-                                    ] else ...[
-                                      _displayEmail(),
-                                    ],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (widget.highlightKeyword.isNotEmpty) ...[
+                                  if (widget.highlightKeyword
+                                      .isPhoneNumberFormatted()) ...[
+                                    _displayPhoneNumber(),
                                   ] else ...[
-                                    _displayInformationDefault(),
+                                    _displayEmail(),
                                   ],
                                 ] else ...[
-                                  _displayPhoneNumber(),
-                                  _displayEmail(),
+                                  _displayInformationDefault(),
                                 ],
+                              ] else ...[
+                                _displayPhoneNumber(),
+                                _displayEmail(),
                               ],
-                            ),
+                            ],
                           ),
-                          if (widget.contact.matrixId == null ||
-                              widget.contact.matrixId!.isEmpty)
-                            ValueListenableBuilder(
-                              valueListenable: getInvitationStatusNotifier,
-                              builder: _invitationIconBuilder,
-                              child: _displayIconInvitation(),
-                            ),
-                        ],
-                      ),
+                        ),
+                        if (widget.contact.matrixId == null ||
+                            widget.contact.matrixId!.isEmpty)
+                          ValueListenableBuilder(
+                            valueListenable: getInvitationStatusNotifier,
+                            builder: _invitationIconBuilder,
+                            child: _displayIconInvitation(),
+                          ),
+                      ],
                     ),
                   ),
-                ],
-              );
-            },
-          ),
+                ),
+              ],
+            );
+          },
         ),
+      ),
+    );
+
+    if (widget.suppressInkWell) {
+      return tileBody;
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _onContactTapHandler(
+          context,
+          widget.contact,
+          getInvitationStatusNotifier.value
+              .getSuccessOrNull<GetInvitationStatusSuccessState>()
+              ?.invitationStatusResponse,
+        ),
+        splashColor: const Color(0x1AFFFFFF),
+        highlightColor: const Color(0x0DFFFFFF),
+        borderRadius: BorderRadius.zero,
+        child: tileBody,
       ),
     );
   }
@@ -242,7 +278,7 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
       contactDisplayName: widget.contact.displayName,
       highlightKeyword: widget.highlightKeyword,
       style: const TextStyle(
-        color: Colors.white,
+        color: ZeonColors.onSurface,
         fontSize: 16,
         fontWeight: FontWeight.w600,
         fontFamily: 'Inter',
@@ -273,7 +309,10 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
           child: SizedBox(
             width: 16,
             height: 16,
-            child: CupertinoActivityIndicator(),
+            child: CupertinoActivityIndicator(
+              color: ZeonColors.outline,
+              radius: 8,
+            ),
           ),
         );
       }
@@ -311,9 +350,7 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
         padding: const EdgeInsets.all(8),
         child: Icon(
           Icons.person_add_alt_rounded,
-          color: isExpired
-              ? LinagoraRefColors.material().primary
-              : const Color(0XFF00C853),
+          color: isExpired ? ZeonColors.outline : const Color(0xFF4CAF50),
         ),
       ),
     );
@@ -324,13 +361,21 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
       return HighlightText(
         text: widget.contact.primaryPhoneNumber,
         searchWord: widget.highlightKeyword,
-        style: const TextStyle(color: Color(0xFFC6C6C6), fontSize: 13, fontFamily: 'Inter'),
+        style: const TextStyle(
+          color: ZeonColors.outline,
+          fontSize: 13,
+          fontFamily: 'Inter',
+        ),
       );
     } else if (widget.contact.primaryEmail.isNotEmpty) {
       return HighlightText(
         text: widget.contact.primaryEmail,
         searchWord: widget.highlightKeyword,
-        style: const TextStyle(color: Color(0xFFC6C6C6), fontSize: 13, fontFamily: 'Inter'),
+        style: const TextStyle(
+          color: ZeonColors.outline,
+          fontSize: 13,
+          fontFamily: 'Inter',
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
@@ -343,7 +388,11 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
       return HighlightText(
         text: widget.contact.primaryPhoneNumber,
         searchWord: widget.highlightKeyword,
-        style: const TextStyle(color: Color(0xFFC6C6C6), fontSize: 13, fontFamily: 'Inter'),
+        style: const TextStyle(
+          color: ZeonColors.outline,
+          fontSize: 13,
+          fontFamily: 'Inter',
+        ),
       );
     }
     return const SizedBox();
@@ -354,7 +403,11 @@ class _ExpansionContactListTileState extends State<ExpansionContactListTile>
       return HighlightText(
         text: widget.contact.primaryEmail,
         searchWord: widget.highlightKeyword,
-        style: const TextStyle(color: Color(0xFFC6C6C6), fontSize: 13, fontFamily: 'Inter'),
+        style: const TextStyle(
+          color: ZeonColors.outline,
+          fontSize: 13,
+          fontFamily: 'Inter',
+        ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );

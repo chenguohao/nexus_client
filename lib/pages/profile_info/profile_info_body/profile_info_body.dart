@@ -4,10 +4,14 @@ import 'package:dartz/dartz.dart' hide State;
 import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/config/default_power_level_member.dart';
+import 'package:fluffychat/data/network/contact/friend_request_api.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/room/set_permission_level_state.dart';
 import 'package:fluffychat/domain/app_state/user_info/get_user_info_state.dart';
+import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/domain/model/room/room_extension.dart';
+import 'package:fluffychat/domain/usecase/contacts/request_friend_interactor.dart';
 import 'package:fluffychat/domain/usecase/room/set_permission_level_interactor.dart';
 import 'package:fluffychat/domain/usecase/user_info/get_user_info_interactor.dart';
 import 'package:fluffychat/pages/profile_info/profile_info_body/profile_info_body_view.dart';
@@ -157,7 +161,7 @@ class ProfileInfoBodyController extends State<ProfileInfoBody>
   void handleActions(ProfileInfoActions action) {
     switch (action) {
       case ProfileInfoActions.sendMessage:
-        openNewChat();
+        _handleSendMessageAction();
         break;
       case ProfileInfoActions.removeFromGroup:
         removeFromGroupChat();
@@ -168,6 +172,110 @@ class ProfileInfoBodyController extends State<ProfileInfoBody>
       default:
         break;
     }
+  }
+
+  /// 根据当前用户与对方的好友关系决定 sendMessage 按钮的形态：
+  ///   - accepted     → "发消息" + 普通消息图标 + openNewChat
+  ///   - pending_out  → "待确认"   + 禁用图标 + 不可点
+  ///   - pending_in   → "接受好友请求" + 跳到 DM 邀请房间
+  ///   - rejected/无  → "添加好友" + 发起 RequestFriend
+  ///   - 自己的资料    → 仍然是"发消息"（照原逻辑）
+  ({String label, IconData icon, bool enabled}) _sendMessageButtonState() {
+    final mxid = user?.id;
+    if (mxid == null || isOwnProfile) {
+      return (
+        label: L10n.of(context)!.sendMessage,
+        icon: Icons.chat_bubble_outline,
+        enabled: true,
+      );
+    }
+    final status = getIt.get<ContactsManager>().friendStatusOf(mxid);
+    switch (status) {
+      case FriendStatus.accepted:
+        return (
+          label: L10n.of(context)!.sendMessage,
+          icon: Icons.chat_bubble_outline,
+          enabled: true,
+        );
+      case FriendStatus.pendingOutgoing:
+        return (
+          label: '待确认',
+          icon: Icons.hourglass_empty,
+          enabled: false,
+        );
+      case FriendStatus.pendingIncoming:
+        return (
+          label: '接受好友请求',
+          icon: Icons.person_add_alt_1,
+          enabled: true,
+        );
+      case FriendStatus.rejected:
+      case null:
+        return (
+          label: '添加好友',
+          icon: Icons.person_add_alt_1,
+          enabled: true,
+        );
+    }
+  }
+
+  Future<void> _handleSendMessageAction() async {
+    final mxid = user?.id;
+    if (mxid == null || isOwnProfile) {
+      openNewChat();
+      return;
+    }
+    final status = getIt.get<ContactsManager>().friendStatusOf(mxid);
+    switch (status) {
+      case FriendStatus.accepted:
+        openNewChat();
+        return;
+      case FriendStatus.pendingOutgoing:
+        return; // disabled
+      case FriendStatus.pendingIncoming:
+        // 直接打开 DM 房间，让 chat_invitation_body 接管 accept/reject 流程
+        final roomId = Matrix.of(context).client.getDirectChatFromUserId(mxid);
+        if (roomId != null) context.go('/rooms/$roomId');
+        return;
+      case FriendStatus.rejected:
+      case null:
+        await _sendFriendRequest(mxid);
+        return;
+    }
+  }
+
+  Future<void> _sendFriendRequest(String mxid) async {
+    final client = Matrix.of(context).client;
+    final res = await TwakeDialog.showFutureLoadingDialogFullScreen<
+      ({bool ok, String? error})
+    >(
+      future: () async {
+        try {
+          await getIt.get<RequestFriendInteractor>().execute(
+            matrixClient: client,
+            mxid: mxid,
+            displayName: user?.displayName,
+          );
+          return (ok: true, error: null);
+        } on FriendRequestApiException catch (e) {
+          return (ok: false, error: e.message);
+        } catch (e) {
+          return (ok: false, error: e.toString());
+        }
+      },
+    );
+    if (!mounted) return;
+    final outcome = res.result;
+    if (outcome == null || !outcome.ok) {
+      TwakeSnackBar.show(
+        context,
+        outcome?.error ?? 'Failed to send friend request',
+      );
+      return;
+    }
+    getIt.get<ContactsManager>().refreshTomContacts(client);
+    TwakeSnackBar.show(context, '好友请求已发送，等待对方确认');
+    setState(() {});
   }
 
   Widget buildProfileInfoActions(BuildContext context) {
@@ -183,6 +291,12 @@ class ProfileInfoBodyController extends State<ProfileInfoBody>
         children: List.generate(actions.length, (i) {
           final action = actions[i];
           final isLast = i == actions.length - 1;
+
+          // sendMessage 行根据好友关系状态动态渲染（label/icon/enabled）
+          final isSendMessage = action == ProfileInfoActions.sendMessage;
+          final sendState = isSendMessage ? _sendMessageButtonState() : null;
+          final disabled = sendState != null && !sendState.enabled;
+
           return Column(
             children: [
               InkWell(
@@ -190,7 +304,7 @@ class ProfileInfoBodyController extends State<ProfileInfoBody>
                 splashColor: const Color(0x1AE5E2E3),
                 focusColor: Colors.transparent,
                 hoverColor: Colors.transparent,
-                onTap: () => handleActions(action),
+                onTap: disabled ? null : () => handleActions(action),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -198,14 +312,35 @@ class ProfileInfoBodyController extends State<ProfileInfoBody>
                   ),
                   child: Row(
                     children: [
-                      if (action.icon() != null) ...[
-                        action.icon()!,
+                      if (sendState != null) ...[
+                        Icon(
+                          sendState.icon,
+                          size: 18,
+                          color: disabled
+                              ? const Color(0xFF636363)
+                              : const Color(0xFFE5E2E3),
+                        ),
                         const SizedBox(width: 12),
+                        Text(
+                          sendState.label,
+                          style: TextStyle(
+                            color: disabled
+                                ? const Color(0xFF636363)
+                                : const Color(0xFFE5E2E3),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ] else ...[
+                        if (action.icon() != null) ...[
+                          action.icon()!,
+                          const SizedBox(width: 12),
+                        ],
+                        Text(
+                          action.label(context),
+                          style: action.textStyle(context),
+                        ),
                       ],
-                      Text(
-                        action.label(context),
-                        style: action.textStyle(context),
-                      ),
                     ],
                   ),
                 ),

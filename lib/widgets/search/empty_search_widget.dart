@@ -16,7 +16,7 @@ class EmptySearchWidget extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               color: const Color(0xFF1C1B1C),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.zero,
               border: Border.all(color: const Color(0x33474747)),
             ),
             child: const Icon(

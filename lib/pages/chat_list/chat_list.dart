@@ -2,10 +2,14 @@ import 'dart:async';
 
 import 'package:adaptive_dialog/adaptive_dialog.dart';
 import 'package:collection/collection.dart';
+import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/config/first_column_inner_routes.dart';
 import 'package:fluffychat/di/global/dio_cache_interceptor_for_client.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
+import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
+import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/domain/model/room/room_extension.dart';
 import 'package:fluffychat/pages/bootstrap/bootstrap_dialog.dart';
 import 'package:fluffychat/pages/chat_list/chat_custom_slidable_action.dart';
@@ -120,8 +124,75 @@ class ChatListController extends State<ChatList>
       ? ActiveFilter.messages
       : ActiveFilter.allChats;
 
-  List<Room> get _filteredRooms =>
-      activeClient.filteredRoomsForAll(activeFilter);
+  List<Room> get _filteredRooms {
+    final rooms = activeClient.filteredRoomsForAll(activeFilter);
+    final after = _applyZeonHideOutgoingPendingDms(rooms);
+    // 无任何 Tom 好友快照（磁盘也没有）时，通讯录 Initial 会剔除全部 DM；
+    // 此时仍需露出 Matrix 缓存会话以免误判欢迎页。但一旦已有快照却仍筛空，
+    // 说明会话均应隐藏（如 outbound pending），禁止退回 raw，否则会短暂露出 pending。
+    if (after.isEmpty && rooms.isNotEmpty) {
+      final snapshot =
+          getIt.get<ContactsManager>().getContactsNotifier().value;
+      GetContactsSuccess? tomSuccess =
+          snapshot.getSuccessOrNull<GetContactsSuccess>();
+      tomSuccess ??=
+          getIt.get<ContactsManager>().lastSuccessfulTomContactsSnapshot;
+      if (tomSuccess != null) {
+        return after;
+      }
+      return rooms;
+    }
+    return after;
+  }
+
+  /// 我发出好友申请后建的 DM：对方未接受（pending_outgoing）或已拒绝（rejected）时
+  /// 不显示在聊天列表，只在通讯录「发出的请求」里可见。
+  ///
+  /// 在 Tom 通讯录快照尚未就绪（Initial / Loading）时**先不展示任何 DM**，避免
+  /// Matrix 已同步出房间、但 `friendStatusByMxid` 未到导致的 pending 会话闪现/空列表来回跳。
+  ///
+  /// 若通讯录 notifier 因 `reSyncContacts` / Loading 处于瞬时非成功态，但本地已有
+  /// [ContactsManager.lastSuccessfulTomContactsSnapshot]，则用该快照继续过滤，
+  /// 避免私聊会话被整批隐藏触发首页欢迎页闪烁。
+  List<Room> _applyZeonHideOutgoingPendingDms(List<Room> rooms) {
+    final snapshot =
+        getIt.get<ContactsManager>().getContactsNotifier().value;
+    GetContactsSuccess? tomSuccess =
+        snapshot.getSuccessOrNull<GetContactsSuccess>();
+    tomSuccess ??=
+        getIt.get<ContactsManager>().lastSuccessfulTomContactsSnapshot;
+
+    if (tomSuccess == null) {
+      final hideDirectChatsUntilTomReady = snapshot.fold(
+        (failure) => failure is GetContactsIsEmpty,
+        (success) =>
+            success is ContactsInitial || success is ContactsLoading,
+      );
+      if (hideDirectChatsUntilTomReady) {
+        return rooms.where((room) => !room.isDirectChat).toList();
+      }
+      return rooms;
+    }
+
+    final statusMap = tomSuccess.friendStatusByMxid;
+    return rooms
+        .where(
+          (room) =>
+              !_shouldHideZeonOutboundPendingOrRejectedDm(room, statusMap),
+        )
+        .toList();
+  }
+
+  static bool _shouldHideZeonOutboundPendingOrRejectedDm(
+    Room room,
+    Map<String, FriendStatus> statusMap,
+  ) {
+    if (!room.isDirectChat) return false;
+    final peer = room.directChatMatrixID;
+    if (peer == null || peer.isEmpty) return false;
+    final st = statusMap[peer];
+    return st == FriendStatus.pendingOutgoing || st == FriendStatus.rejected;
+  }
 
   List<Room> get filteredRoomsForAll =>
       _filteredRooms.where((room) => !room.isFavourite).toList();
@@ -171,8 +242,10 @@ class ChatListController extends State<ChatList>
 
   bool get filteredRoomsForPinIsEmpty => filteredRoomsForPin.isEmpty;
 
-  bool get chatListBodyIsEmpty =>
-      filteredRoomsForAllIsEmpty && filteredRoomsForPinIsEmpty;
+  /// 是否显示「Welcome / 引导」大空状态：仅以 Matrix 本地会话为准（不经 Zeon DM 隐藏）。
+  /// 避免通讯录尚未返回时把私聊全藏起来而误当成新用户。
+  bool get chatListShowsOnboardingWelcome =>
+      activeClient.filteredRoomsForAll(activeFilter).isEmpty;
 
   bool get conversationSelectionNotifierIsEmpty =>
       conversationSelectionNotifier.value.isEmpty;
@@ -417,16 +490,29 @@ class ChatListController extends State<ChatList>
   }
 
   Future<void> _trySync() async {
-    if (widget.adaptiveScaffoldBodyArgs is LoggedInBodyArgs ||
-        widget.adaptiveScaffoldBodyArgs is LoggedInOtherAccountBodyArgs) {
+    final args = widget.adaptiveScaffoldBodyArgs;
+    if (args is LoggedInBodyArgs || args is LoggedInOtherAccountBodyArgs) {
+      Logs().i(
+        '[ZeonDiag][ChatList] _trySync → _waitForFirstSyncAfterLogin '
+        '(args=${args.runtimeType})',
+      );
       _waitForFirstSyncAfterLogin();
     } else {
+      Logs().i(
+        '[ZeonDiag][ChatList] _trySync → _waitForFirstSync '
+        '(args=${args?.runtimeType ?? 'null'})',
+      );
       _waitForFirstSync();
     }
   }
 
   Future<void> _waitForFirstSyncAfterLogin() async {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      Logs().i(
+        '[ZeonDiag][ChatList] _waitForFirstSyncAfterLogin start '
+        'user=${activeClient.userID} prevBatchSet=${activeClient.prevBatch != null} '
+        'matrixWaitFS=${matrixState.waitForFirstSync}',
+      );
       final result = await TomBootstrapDialog(
         client: activeClient,
       ).show(context);
@@ -443,6 +529,21 @@ class ChatListController extends State<ChatList>
         await setupAdditionalDioCacheOption(activeClient.userID!);
       }
       if (!mounted) return;
+      if (activeClient.isLogged() && activeClient.prevBatch == null) {
+        Logs().w(
+          '[ZeonDiag][ChatList] AfterLogin: prevBatch null — oneShotSync',
+        );
+        try {
+          await activeClient.oneShotSync(timeout: Duration.zero);
+        } catch (e, st) {
+          Logs().w('[ZeonDiag][ChatList] oneShotSync: $e\n$st');
+        }
+      }
+      if (!mounted) return;
+      Logs().i(
+        '[ZeonDiag][ChatList] _waitForFirstSyncAfterLogin before setState '
+        'prevBatchSet=${activeClient.prevBatch != null}',
+      );
       setState(() {
         matrixState.waitForFirstSync = true;
         matrixState.handleShowQrCodeDownload(_filteredRooms.isEmpty);
@@ -454,12 +555,66 @@ class ChatListController extends State<ChatList>
   }
 
   Future<void> _waitForFirstSync() async {
+    // Zeon (and similar) use `Client.init(waitForFirstSync: false)` so login
+    // returns before the first /sync finishes; `roomsLoading` is only the
+    // initial DB read from init and completes with `prevBatch` still null.
+    // Without awaiting the in-flight first sync, we set `waitForFirstSync`
+    // below too early: ChatListBodyView then shows the skeleton until
+    // `prevBatch != null`, but its StreamBuilder listens only to sync updates
+    // with `hasRoomUpdate` — a brand-new account may get none, so the UI
+    // never rebuilds until app restart (when prev_batch is loaded from disk).
+    Logs().i(
+      '[ZeonDiag][ChatList] _waitForFirstSync start '
+      'user=${activeClient.userID} '
+      'prevBatchSet=${activeClient.prevBatch != null} '
+      'firstSyncFutureNull=${activeClient.firstSyncReceived == null}',
+    );
+    final firstSync = activeClient.firstSyncReceived;
+    if (firstSync != null) {
+      try {
+        await firstSync;
+      } catch (e, st) {
+        Logs().w('[ZeonDiag][ChatList] firstSyncReceived error: $e\n$st');
+        rethrow;
+      }
+    } else {
+      Logs().w(
+        '[ZeonDiag][ChatList] firstSyncReceived is null — skipping await '
+        '(unexpected after login)',
+      );
+    }
+    Logs().i(
+      '[ZeonDiag][ChatList] _waitForFirstSync after firstSync '
+      'prevBatchSet=${activeClient.prevBatch != null}',
+    );
+    // `_innerSync` can return without setting `prevBatch` if the SDK drops a
+    // stale sync response ("Current sync request ID has changed"). The
+    // `firstSyncReceived` future still completes — force another sync pass.
+    if (activeClient.isLogged() && activeClient.prevBatch == null) {
+      Logs().w(
+        '[ZeonDiag][ChatList] prevBatch still null after firstSync — '
+        'calling oneShotSync',
+      );
+      try {
+        await activeClient.oneShotSync(timeout: Duration.zero);
+      } catch (e, st) {
+        Logs().w('[ZeonDiag][ChatList] oneShotSync failed: $e\n$st');
+      }
+      Logs().i(
+        '[ZeonDiag][ChatList] after oneShotSync '
+        'prevBatchSet=${activeClient.prevBatch != null}',
+      );
+    }
     await activeClient.roomsLoading;
     await activeClient.accountDataLoading;
     if (activeClient.userID != null) {
       await setupAdditionalDioCacheOption(activeClient.userID!);
     }
     if (!mounted) return;
+    Logs().i(
+      '[ZeonDiag][ChatList] _waitForFirstSync before setState(waitFS=true) '
+      'prevBatchSet=${activeClient.prevBatch != null} rooms=${_filteredRooms.length}',
+    );
     setState(() {
       matrixState.waitForFirstSync = true;
       matrixState.handleShowQrCodeDownload(_filteredRooms.isEmpty);
@@ -778,9 +933,38 @@ class ChatListController extends State<ChatList>
     activeRoomIdNotifier.value = widget.activeRoomIdNotifier.value;
     scrollController.addListener(_onScroll);
     _listenToRoomUpdates();
+    Logs().i(
+      '[ZeonDiag][ChatList] initState '
+      'args=${widget.adaptiveScaffoldBodyArgs?.runtimeType ?? 'null'} '
+      'user=${activeClient.userID} clientName=${activeClient.clientName} '
+      'prevBatchSet=${activeClient.prevBatch != null} '
+      'matrixWaitFS=${matrixState.waitForFirstSync} '
+      'firstSyncNull=${activeClient.firstSyncReceived == null}',
+    );
     if (!matrixState.waitForFirstSync) {
       _trySync();
+    } else if (activeClient.prevBatch == null) {
+      // Stale global flag (e.g. kept-alive + new session) would skip _trySync
+      // and trap the list on the skeleton forever.
+      Logs().w(
+        '[ZeonDiag][ChatList] initState: matrixWaitFS=true but prevBatch=null '
+        '— resetting waitFS and running _trySync',
+      );
+      matrixState.waitForFirstSync = false;
+      _trySync();
+    } else {
+      Logs().i(
+        '[ZeonDiag][ChatList] initState: skipped _trySync (already synced UI flag)',
+      );
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Logs().i(
+        '[ZeonDiag][ChatList] postFrame init '
+        'prevBatchSet=${activeClient.prevBatch != null} '
+        'matrixWaitFS=${matrixState.waitForFirstSync}',
+      );
+    });
     _hackyWebRTCFixForWeb();
     // TODO: 28Dec2023 Disable callkeep for util we support audio/video calls
     // CallKeepManager().initialize();

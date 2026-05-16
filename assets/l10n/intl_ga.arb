@@ -2167,11 +2167,11 @@
       "reaction": {}
     }
   },
-  "encryptionWarning": "D'fhéadfá do theachtaireachtaí a chailleadh má fhaigheann tú rochtain ar aip Twake ar an ngléas eile.",
+  "encryptionWarning": "D'fhéadfá do theachtaireachtaí a chailleadh má fhaigheann tú rochtain ar aip Zeon ar an ngléas eile.",
   "failedToSendFiles": "Theip ar chomhaid a sheoladh",
   "continueProcess": "Lean ar aghaidh",
   "countPinChat": "COMHRÁITE PINNED ({countPinChat})",
-  "twakeUsers": "Úsáideoirí Twake",
+  "twakeUsers": "Úsáideoirí Zeon",
   "useYourCompanyServer": "Bain úsáid as do fhreastalaí cuideachta",
   "allSpaces": "Gach spás",
   "searchResultNotFound5": "cabhair a lorg.",
@@ -2188,7 +2188,7 @@
   "declineTheInvitation": "Diúltaigh don chuireadh?",
   "searchContacts": "Cuardaigh teagmhálacha",
   "byContinuingYourAgreeingToOur": "Trí leanúint ar aghaidh, tá tú ag aontú lenár",
-  "explainPermissionToAccessPhotos": "Ní dhéanann Twake Chat sonraí a shioncronú idir do ghléas agus ár bhfreastalaithe. Ní stórálaimid ach na meáin a sheol tú chuig an seomra comhrá. Déantar gach comhad meán a sheoltar chuig comhrá a chriptiú agus a stóráil go slán. Téigh go Socruithe > Ceadanna agus gníomhachtaigh an cead Stóráil: Grianghraif. Is féidir leat rochtain ar do leabharlann meán a dhiúltú am ar bith freisin.",
+  "explainPermissionToAccessPhotos": "Ní dhéanann Zeon sonraí a shioncronú idir do ghléas agus ár bhfreastalaithe. Ní stórálaimid ach na meáin a sheol tú chuig an seomra comhrá. Déantar gach comhad meán a sheoltar chuig comhrá a chriptiú agus a stóráil go slán. Téigh go Socruithe > Ceadanna agus gníomhachtaigh an cead Stóráil: Grianghraif. Is féidir leat rochtain ar do leabharlann meán a dhiúltú am ar bith freisin.",
   "appearOnTopDetails": "Ceadaíonn sé don aip a bheith ar bharr (ní gá má tá socrú Fluffychat agat cheana féin mar chuntas glao)",
   "failToSend": "Theip ar sheoladh, bain triail eile as",
   "configureDataEncryption": "Cumraigh criptiú sonraí",
@@ -2200,8 +2200,8 @@
   "storyPrivacyWarning": "Tabhair faoi deara gur féidir le daoine a chéile a fheiceáil agus teagmháil a dhéanamh lena chéile i do scéal. Beidh do scéalta le feiceáil ar feadh 24 uair an chloig ach níl aon ráthaíocht ann go scriosfar iad ó gach feiste agus freastalaithe.",
   "sCameraPreviewLabel": "Réamhamharc ceamara: {value}",
   "noOtherDevicesFound": "Níor aimsíodh aon ghléas eile",
-  "explainGoToStorageSetting": "Twake gá rochtain ar do stóráil chun réamhamharc comhad, téigh go dtí socruithe chun an cead seo a cheadú",
-  "explainPermissionToAccessMedias": "Ní dhéanann Twake Chat sonraí a shioncronú idir do ghléas agus ár bhfreastalaithe. Ní stórálaimid ach na meáin a sheol tú chuig an seomra comhrá. Déantar gach comhad meán a sheoltar chuig comhrá a chriptiú agus a stóráil go slán. Téigh go Socruithe > Ceadanna agus gníomhachtaigh an cead Stóráil: Grianghraif agus Físeáin. Is féidir leat rochtain ar do leabharlann meán a dhiúltú am ar bith freisin.",
+  "explainGoToStorageSetting": "Zeon gá rochtain ar do stóráil chun réamhamharc comhad, téigh go dtí socruithe chun an cead seo a cheadú",
+  "explainPermissionToAccessMedias": "Ní dhéanann Zeon sonraí a shioncronú idir do ghléas agus ár bhfreastalaithe. Ní stórálaimid ach na meáin a sheol tú chuig an seomra comhrá. Déantar gach comhad meán a sheoltar chuig comhrá a chriptiú agus a stóráil go slán. Téigh go Socruithe > Ceadanna agus gníomhachtaigh an cead Stóráil: Grianghraif agus Físeáin. Is féidir leat rochtain ar do leabharlann meán a dhiúltú am ar bith freisin.",
   "onlineDayAgo": "ar líne {day}d ó shin",
   "@onlineDayAgo": {
     "placeholders": {
@@ -2334,7 +2334,7 @@
     "placeholders_order": [],
     "placeholders": {}
   },
-  "twakeChatUser": "Úsáideoir Comhrá Twake",
+  "twakeChatUser": "Úsáideoir Comhrá Zeon",
   "bundleName": "Ainm an chuachta",
   "commandHint_dm": "Tosaigh comhrá díreach\nÚsáid -- gan chriptiú chun criptiú a dhíchumasú",
   "@commandHint_dm": {
@@ -2406,7 +2406,7 @@
   "notificationAndSounds": "Fógra & Fuaimeanna",
   "logoutDialogWarning": "Caillfidh tú rochtain ar theachtaireachtaí criptithe. Molaimid duit cúltacaí comhrá a chumasú sula logálann tú amach",
   "location": "Suíomh",
-  "explainPermissionToAccessContacts": "Ní bhailíonn Twake Chat do theagmhálaithe. Seolann an aip ach haiseanna teagmhála chuig ár bhfreastalaithe chun tuiscint a fháil ar cé acu de do chairde atá ag úsáid na seirbhíse cheana féin. Níl do theagmhálaithe sioncrónaithe lenár bhfreastalaí.",
+  "explainPermissionToAccessContacts": "Ní bhailíonn Zeon do theagmhálaithe. Seolann an aip ach haiseanna teagmhála chuig ár bhfreastalaithe chun tuiscint a fháil ar cé acu de do chairde atá ag úsáid na seirbhíse cheana féin. Níl do theagmhálaithe sioncrónaithe lenár bhfreastalaí.",
   "more": "Níos mó",
   "storeInSecureStorageDescription": "Stóráil an eochair aisghabhála i stóráil slán an ghléis seo.",
   "unread": "Gan léamh",
@@ -2424,7 +2424,7 @@
       "user": {}
     }
   },
-  "updateAvailable": "Nuashonrú comhrá Twake ar fáil",
+  "updateAvailable": "Nuashonrú comhrá Zeon ar fáil",
   "supposedMxid": "Ba chóir go mbeadh sé seo {mxid}",
   "@supposedMxid": {
     "type": "text",
@@ -2479,7 +2479,7 @@
   "searchResultNotFound4": "• Mura bhfuil an chúis liostaithe thuas, ",
   "noConnection": "Gan ceangal",
   "addACaption": "Cuir fotheideal leis...",
-  "explainStoragePermission": "Twake gá rochtain ar do stóráil chun réamhamharc comhad",
+  "explainStoragePermission": "Zeon gá rochtain ar do stóráil chun réamhamharc comhad",
   "contact": "Teagmháil",
   "roomAvatarMaxFileSize": "Tá méid an avatar ró-mhór",
   "roomAvatarMaxFileSizeLong": "Caithfidh méid an avatar a bheith níos lú ná {max}",
@@ -2511,7 +2511,7 @@
   "unmuteThisChat": "Unmute an comhrá seo",
   "hasInvitedYouToAChat": " thug sé cuireadh duit comhrá a dhéanamh. Glac leis an gcomhrá nó diúltaigh dó agus scrios é?",
   "notNow": "Ní anois",
-  "settingsLanguageDescription": "Socraigh an teanga a úsáideann tú ar Twake Chat",
+  "settingsLanguageDescription": "Socraigh an teanga a úsáideann tú ar Zeon",
   "showLess": "Taispeáin Níos Lú",
   "noResults": "Gan Torthaí",
   "shootingTips": "Tapáil chun grianghraf a ghlacadh.",
@@ -2537,11 +2537,11 @@
       "count": {}
     }
   },
-  "settingUpYourTwake": "Do Twake a bhunú\nD'fhéadfadh sé tamall a thógáil",
+  "settingUpYourTwake": "Do Zeon a bhunú\nD'fhéadfadh sé tamall a thógáil",
   "performingAutomaticalLogin": "Logáil isteach uathoibríoch a dhéanamh trí SSO",
   "configurationNotFound": "Níor aimsíodh na sonraí cumraíochta",
   "saveFileToGalleryError": "Theip ar shábháil an chomhaid sa Ghailearaí",
-  "explainPermissionToAccessVideos": "Ní dhéanann Twake Chat sonraí a shioncronú idir do ghléas agus ár bhfreastalaithe. Ní stórálaimid ach na meáin a sheol tú chuig an seomra comhrá. Déantar gach comhad meán a sheoltar chuig comhrá a chriptiú agus a stóráil go slán. Téigh go Socruithe > Ceadanna agus gníomhachtaigh an cead Stóráil: Físeáin. Is féidir leat rochtain ar do leabharlann meán a dhiúltú am ar bith freisin.",
+  "explainPermissionToAccessVideos": "Ní dhéanann Zeon sonraí a shioncronú idir do ghléas agus ár bhfreastalaithe. Ní stórálaimid ach na meáin a sheol tú chuig an seomra comhrá. Déantar gach comhad meán a sheoltar chuig comhrá a chriptiú agus a stóráil go slán. Téigh go Socruithe > Ceadanna agus gníomhachtaigh an cead Stóráil: Físeáin. Is féidir leat rochtain ar do leabharlann meán a dhiúltú am ar bith freisin.",
   "dangerZone": "Crios contúirte",
   "youDontHaveAnyContactsYet": "Níl aon teagmháil agat go fóill.",
   "errorDialogTitle": "Oops, chuaigh rud éigin mícheart",
@@ -2576,7 +2576,7 @@
   "youAcceptedTheInvitation": "👍 Ghlac tú leis an gcuireadh",
   "screenSharingTitle": "comhroinnt scáileáin",
   "reopenChat": "Comhrá a athoscailt",
-  "welcomeToTwake": "Fáilte go Twake, {user}",
+  "welcomeToTwake": "Fáilte go Zeon, {user}",
   "@welcomeToTwake": {
     "placeholders": {
       "user": {}
@@ -2588,7 +2588,7 @@
       "count": {}
     }
   },
-  "twake": "Comhrá Twake",
+  "twake": "Comhrá Zeon",
   "externalContactTitle": "Tabhair cuireadh d'úsáideoirí nua",
   "adminPanel": "Painéal Riaracháin",
   "previousAccount": "An cuntas roimhe seo",
@@ -2615,7 +2615,7 @@
   "errorPageDescription": "Níl an leathanach sin ann.",
   "links": "Naisc",
   "whoWouldYouLikeToAdd": "Cé ba mhaith leat a chur leis?",
-  "createTwakeId": "Cruthaigh Aitheantas Twake",
+  "createTwakeId": "Cruthaigh Aitheantas Zeon",
   "addAPhoto": "Cuir grianghraf leis",
   "separateChatTypes": "Comhráite agus Grúpaí Díreacha ar Leithligh",
   "@separateChatTypes": {
@@ -2726,7 +2726,7 @@
   "playVideo": "Seinn",
   "done": "Déanta",
   "doYouReallyWantToDeclineThisInvitation": "An bhfuil tú cinnte gur mian leat an cuireadh seo a dhiúltú agus an comhrá a bhaint? Ní bheidh tú in ann an gníomh seo a chealú.",
-  "contactsWarningBannerTitle": "Chun a chinntiú gur féidir leat teagmháil a dhéanamh le do chairde go léir, lig do Twake rochtain a fháil ar theagmhálacha do ghléis. Is mór againn do thuiscint.",
+  "contactsWarningBannerTitle": "Chun a chinntiú gur féidir leat teagmháil a dhéanamh le do chairde go léir, lig do Zeon rochtain a fháil ar theagmhálacha do ghléis. Is mór againn do thuiscint.",
   "groupNameCannotBeEmpty": "Ní féidir ainm an ghrúpa a bheith folamh",
   "linagoraContactsCount": "Teagmhálacha Linagora ({count})",
   "fetchingPhonebookContacts": "Teagmhálacha á bhfáil ón ngléas... ({progress}% críochnaithe)",
@@ -2977,7 +2977,7 @@
   "other": "Eile",
   "enableRightAndLeftMessageAlignment": "Cumasaigh ailíniú teachtaireachta ar dheis/ar chlé",
   "holdToRecordAudio": "Coinnigh síos chun fuaim a thaifeadadh.",
-  "explainPermissionToAccessMicrophone": "Chun teachtaireachtaí gutha a sheoladh, lig do Twake Chat rochtain a fháil ar an micreafón.",
+  "explainPermissionToAccessMicrophone": "Chun teachtaireachtaí gutha a sheoladh, lig do Zeon rochtain a fháil ar an micreafón.",
   "allowMicrophoneAccess": "Ceadaigh rochtain micreafóin",
   "later": "Níos déanaí",
   "couldNotPlayAudioFile": "Níorbh fhéidir an comhad fuaime a sheinm",
@@ -3035,12 +3035,12 @@
   "failedToGetContactsVisibility": "Theip ar infheictheacht na dteagmhálaithe a fháil",
   "unblockUserToSendMessages": "Díbhlocáil úsáideoir chun teachtaireachtaí a sheoladh",
   "supportChat": "Comhrá Tacaíochta",
-  "supportChatDescription": "Táim i do shuí! Má thagann tú ar fhabhtanna nó má theastaíonn aon chabhair uait le Twake Workplace, seol teachtaireacht chugat, freagróidh mé go pras duit",
+  "supportChatDescription": "Táim i do shuí! Má thagann tú ar fhabhtanna nó má theastaíonn aon chabhair uait le Zeon, seol teachtaireacht chugat, freagróidh mé go pras duit",
   "inviteFriend": "Tabhair cuireadh do chara",
   "linkCopiedToClipboard": "Nasc cóipeáilte chuig an ghearrthaisce",
   "cannotCreateChatWithSelf": "Ní féidir leat comhrá a thosú leat féin",
   "yourPersonalQr": "Do QR pearsanta",
-  "personalQrDescription": "Tosaigh ag comhrá le do theagmhálaithe. Seol nasc cuireadh chuig Twake",
+  "personalQrDescription": "Tosaigh ag comhrá le do theagmhálaithe. Seol nasc cuireadh chuig Zeon",
   "shareQrCode": "Comhroinn cód QR",
   "copyLink": "Cóipeáil nasc",
   "downloadQrCode": "Íoslódáil cód QR",

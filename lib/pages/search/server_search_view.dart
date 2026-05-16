@@ -10,7 +10,6 @@ import 'package:fluffychat/pages/chat_list/chat_list_item_title.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/search/empty_search_widget.dart';
 import 'package:flutter/material.dart' hide SearchController;
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class ServerSearchMessagesList extends StatelessWidget {
@@ -56,45 +55,59 @@ class ServerSearchMessagesList extends StatelessWidget {
                 final event = Event.fromMatrixEvent(searchResult, room);
                 final originServerTs = searchResult.originServerTs;
 
-                return TwakeInkWell(
-                  onTap: () =>
-                      context.goToRoomWithEvent(event.room.id, event.eventId),
-                  child: TwakeListItem(
-                    child: Padding(
-                      padding: ServerSearchViewStyle.paddingInsideListItem,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: ServerSearchViewStyle.paddingAvatar,
-                            child: Avatar(
-                              mxContent: room.avatar,
-                              name: room.name,
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => context.goToRoomWithEvent(
+                      event.room.id,
+                      event.eventId,
+                    ),
+                    splashColor: const Color(0x1AFFFFFF),
+                    highlightColor: const Color(0x0DFFFFFF),
+                    borderRadius: BorderRadius.zero,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: Color(0x1F474747)),
+                        ),
+                      ),
+                      child: Padding(
+                        padding: ServerSearchViewStyle.paddingInsideListItem,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: ServerSearchViewStyle.paddingAvatar,
+                              child: Avatar(
+                                mxContent: room.avatar,
+                                name: room.name,
+                                borderRadius: 0,
+                              ),
                             ),
-                          ),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                ChatListItemTitle(
-                                  room: room,
-                                  originServerTs: originServerTs,
-                                ),
-                                HighlightText(
-                                  text: searchController.getBodyText(
-                                    event,
-                                    searchWord,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ChatListItemTitle(
+                                    room: room,
+                                    originServerTs: originServerTs,
                                   ),
-                                  searchWord: searchWord,
-                                  maxLines: 2,
-                                  style: ChatLitSubSubtitleTextStyleView
-                                      .textStyle
-                                      .textStyle(room, context),
-                                ),
-                              ],
+                                  HighlightText(
+                                    text: searchController.getBodyText(
+                                      event,
+                                      searchWord,
+                                    ),
+                                    searchWord: searchWord,
+                                    maxLines: 2,
+                                    style: ChatLitSubSubtitleTextStyleView
+                                        .textStyle
+                                        .textStyle(room, context),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),

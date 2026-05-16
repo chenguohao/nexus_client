@@ -309,7 +309,6 @@ class _Actions extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            flex: 2,
             child: AnimatedBuilder(
               animation: controller.userName,
               builder: (context, _) {
@@ -322,7 +321,7 @@ class _Actions extends StatelessWidget {
                 return _SovereignButton(
                   label: existedContact != null
                       ? L10n.of(context)!.sendMessage.toUpperCase()
-                      : 'SAVE CONTACT',
+                      : L10n.of(context)!.confirm.toUpperCase(),
                   enabled: enabled,
                   onPressed: enabled ? controller.onSave : null,
                 );

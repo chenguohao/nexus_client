@@ -134,6 +134,11 @@ class _ZeonProfileSetupPageState extends State<ZeonProfileSetupPage> {
     }
 
     if (!mounted) return;
+    Logs().i(
+      '[ZeonDiag][ProfileSetup] go /rooms (complete) '
+      'user=${client.userID} prevBatchSet=${client.prevBatch != null} '
+      'firstSyncNull=${client.firstSyncReceived == null}',
+    );
     context.go('/rooms');
   }
 
@@ -150,6 +155,11 @@ class _ZeonProfileSetupPageState extends State<ZeonProfileSetupPage> {
           })
           .catchError((_) {});
     }
+    Logs().i(
+      '[ZeonDiag][ProfileSetup] go /rooms (skip) '
+      'user=${client.userID} prevBatchSet=${client.prevBatch != null} '
+      'firstSyncNull=${client.firstSyncReceived == null}',
+    );
     context.go('/rooms');
   }
 

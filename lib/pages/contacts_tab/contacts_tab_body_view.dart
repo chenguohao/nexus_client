@@ -1,9 +1,10 @@
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/pages/contacts_tab/contacts_tab.dart';
 import 'package:fluffychat/pages/contacts_tab/contacts_tab_view_style.dart';
 import 'package:fluffychat/pages/contacts_tab/empty_contacts_body.dart';
+import 'package:fluffychat/pages/contacts_tab/outgoing_requests/outgoing_requests_entry.dart';
 import 'package:fluffychat/pages/new_private_chat/widget/expansion_contact_list_tile.dart';
-import 'package:fluffychat/pages/new_private_chat/widget/loading_contact_widget.dart';
 import 'package:fluffychat/pages/new_private_chat/widget/no_contacts_found.dart';
 import 'package:fluffychat/pages/search/recent_item_widget.dart';
 import 'package:fluffychat/presentation/model/contact/get_presentation_contacts_empty.dart';
@@ -24,6 +25,7 @@ class ContactsTabBodyView extends StatelessWidget {
   Widget build(BuildContext context) {
     return CustomScrollView(
       slivers: [
+        const SliverToBoxAdapter(child: OutgoingRequestsEntry()),
         _SliverRecentContacts(controller: controller),
         _SliverContactsList(controller: controller),
         const _SliverPadding(),
@@ -84,7 +86,7 @@ class _SliverContactsList extends StatelessWidget {
           },
           (success) {
             if (success is ContactsLoading) {
-              return const SliverToBoxAdapter(child: LoadingContactWidget());
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
             }
 
             if (success is PresentationExternalContactSuccess) {
@@ -102,7 +104,26 @@ class _SliverContactsList extends StatelessWidget {
             }
 
             if (success is PresentationContactsSuccess) {
-              final contacts = success.contacts;
+              // 主列表只显示双向 accepted 的好友。pending/rejected 的记录走顶部
+              // OutgoingRequestsEntry → OutgoingRequestsPage 单独管理。
+              final contacts = success.contacts
+                  .where((c) => c.friendStatus == FriendStatus.accepted)
+                  .toList();
+              if (contacts.isEmpty) {
+                final keyword = controller.textEditingController.text;
+                if (keyword.isEmpty) {
+                  return const SliverToBoxAdapter(child: EmptyContactBody());
+                }
+                return SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: ContactsTabViewStyle.padding,
+                      top: ContactsTabViewStyle.padding,
+                    ),
+                    child: NoContactsFound(keyword: keyword),
+                  ),
+                );
+              }
               return SliverExpandableList(
                 title: L10n.of(context)!.linagoraContactsCount(contacts.length),
                 itemCount: contacts.length,

@@ -1,3 +1,4 @@
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/pages/search/recent_contacts_banner_widget_style.dart';
 import 'package:fluffychat/pages/search/search.dart';
 import 'package:fluffychat/utils/display_name_widget.dart';
@@ -51,6 +52,9 @@ class PreSearchRecentContactWidget extends StatelessWidget {
     );
     return InkWell(
       onTap: () => context.go('/rooms/${room.id}'),
+      borderRadius: BorderRadius.zero,
+      splashColor: const Color(0x1AFFFFFF),
+      highlightColor: const Color(0x0DFFFFFF),
       child: SizedBox(
         width: RecentContactsBannerWidgetStyle.chatRecentContactItemWidth,
         child: Column(
@@ -59,12 +63,24 @@ class PreSearchRecentContactWidget extends StatelessWidget {
             SizedBox(
               width: RecentContactsBannerWidgetStyle.avatarWidthSize,
               height: RecentContactsBannerWidgetStyle.avatarWidthSize,
-              child: Avatar(mxContent: room.avatar, name: displayName),
+              child: Avatar(
+                mxContent: room.avatar,
+                name: displayName,
+                borderRadius: 0,
+              ),
             ),
             Padding(
               padding:
                   RecentContactsBannerWidgetStyle.chatRecentContactItemPadding,
-              child: BuildDisplayName(profileDisplayName: displayName),
+              child: BuildDisplayName(
+                profileDisplayName: displayName,
+                style: const TextStyle(
+                  color: ZeonColors.onSurface,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.25,
+                ),
+              ),
             ),
           ],
         ),

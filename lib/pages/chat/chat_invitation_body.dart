@@ -93,7 +93,9 @@ class ChatInvitationBody extends StatelessWidget with MessageContentMixin {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      L10n.of(context)!.hasInvitedYouToAChat,
+                      controller.isFriendRequestInvitation
+                          ? '想加你为好友'
+                          : L10n.of(context)!.hasInvitedYouToAChat,
                       style: const TextStyle(
                         color: Color(0xFF919191),
                         fontSize: 13,

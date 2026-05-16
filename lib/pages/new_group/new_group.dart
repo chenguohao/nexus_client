@@ -18,6 +18,10 @@ class NewGroupController extends ContactsSelectionController<NewGroup> {
   final responsiveUtils = getIt.get<ResponsiveUtils>();
 
   @override
+  int get minSelectedContactsToProceed =>
+      ContactsSelectionController.minSelectedContactsForNewGroupChat;
+
+  @override
   String getTitle(BuildContext context) {
     return L10n.of(context)!.addMembers;
   }

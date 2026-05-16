@@ -3,6 +3,8 @@ import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/domain/app_state/user_info/get_user_info_state.dart';
+import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
+import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/presence_extension.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/zeon/zeon_profile_header.dart';
@@ -68,10 +70,15 @@ class ProfileInfoHeader extends StatelessWidget {
           );
         }
 
+        final privacyMaskStranger =
+            !getIt.get<ContactsManager>().isAcceptedFriend(user.id);
+
         return ZeonProfileHeader(
           avatarUri: avatarUri,
           displayName: displayName,
           mxid: user.id,
+          matrixClient: client,
+          privacyMaskStranger: privacyMaskStranger,
           subtitle: subtitle,
           onTapAvatar: onAvatarInfoTap,
         );

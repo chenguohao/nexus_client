@@ -164,8 +164,8 @@ class _GroupGridAvatarState extends State<_GroupGridAvatar> {
       if (index < members.length) {
         final user = members[index];
         return _MemberCell(
-          mxContent: user.avatarUrl,
-          name: user.calcDisplayname(),
+          client: widget.room.client,
+          user: user,
           size: cellSize,
         );
       }
@@ -221,38 +221,93 @@ class _GroupGridAvatarState extends State<_GroupGridAvatar> {
   }
 }
 
-class _MemberCell extends StatelessWidget {
-  final Uri? mxContent;
-  final String name;
+class _MemberCell extends StatefulWidget {
+  final Client client;
+  final User user;
   final double size;
 
   const _MemberCell({
-    required this.mxContent,
-    required this.name,
+    required this.client,
+    required this.user,
     required this.size,
   });
 
   @override
+  State<_MemberCell> createState() => _MemberCellState();
+}
+
+class _MemberCellState extends State<_MemberCell> {
+  Future<Profile?>? _profileFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileFuture = _loadProfileIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(covariant _MemberCell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.user.id != widget.user.id ||
+        oldWidget.user.avatarUrl != widget.user.avatarUrl) {
+      _profileFuture = _loadProfileIfNeeded();
+    }
+  }
+
+  /// 与聊天列表 DM 一致：成员事件里常常不带 avatar_url，需拉 Profile 才有 mxc。
+  Future<Profile?>? _loadProfileIfNeeded() {
+    if (widget.user.avatarUrl != null) return null;
+    return widget.client.getProfileFromUserId(
+      widget.user.id,
+      getFromRooms: true,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Use a coloured gradient placeholder (same as the rest of the app)
-    // so a member cell is visually distinct from the grey `+N` count cell
-    // — otherwise a user whose name starts with a digit (e.g. `6ebbjp`)
-    // looks like a count badge.
+    final name = widget.user.calcDisplayname();
     final Widget fallback = AvatarGradientPlaceholder(
       name: name,
-      width: size,
-      height: size,
-      fontSize: size * 0.42,
+      width: widget.size,
+      height: widget.size,
+      fontSize: widget.size * 0.42,
     );
-    if (mxContent == null) return fallback;
+
+    final directUri = widget.user.avatarUrl;
+    if (directUri != null) {
+      return _avatarImage(context, directUri, fallback);
+    }
+
+    final fut = _profileFuture;
+    if (fut == null) {
+      return fallback;
+    }
+
+    return FutureBuilder<Profile?>(
+      future: fut,
+      builder: (context, snapshot) {
+        final uri = snapshot.data?.avatarUrl ?? directUri;
+        if (uri == null) {
+          return fallback;
+        }
+        return _avatarImage(context, uri, fallback);
+      },
+    );
+  }
+
+  Widget _avatarImage(
+    BuildContext context,
+    Uri mxContent,
+    Widget fallback,
+  ) {
     return MxcImage(
       key: Key(mxContent.toString()),
       uri: mxContent,
       fit: BoxFit.cover,
-      width: size,
-      height: size,
+      width: widget.size,
+      height: widget.size,
       cacheWidth:
-          (size * MediaQuery.devicePixelRatioOf(context) * 2).round(),
+          (widget.size * MediaQuery.devicePixelRatioOf(context) * 2).round(),
       cacheKey: mxContent.toString(),
       animated: true,
       isThumbnail: true,

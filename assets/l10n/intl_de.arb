@@ -2269,7 +2269,7 @@
     }
   },
   "noEmailWarning": "Bitte gib eine gültige E-Mail-Adresse ein. Andernfalls kannst du dein Passwort nicht zurücksetzen. Wenn du das nicht möchtest, tippe erneut auf die Schaltfläche, um fortzufahren.",
-  "updateAvailable": "Twake-Chat-Aktualisierung verfügbar",
+  "updateAvailable": "Zeon-Aktualisierung verfügbar",
   "updateNow": "Update im Hintergrund starten",
   "recoveryKey": "Wiederherstellungs-Schlüssel",
   "recoveryKeyLost": "Wiederherstellungsschlüssel verloren?",

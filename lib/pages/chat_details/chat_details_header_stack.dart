@@ -4,6 +4,7 @@ import 'package:fluffychat/pages/chat_details/chat_details_group_info_background
 import 'package:fluffychat/pages/chat_details/chat_details_group_information_view.dart';
 import 'package:fluffychat/pages/chat_details/chat_details_view_style.dart';
 import 'package:fluffychat/presentation/extensions/room_summary_extension.dart';
+import 'package:fluffychat/widgets/avatar/room_avatar.dart';
 import 'package:fluffychat/widgets/avatar/secondary_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
@@ -37,11 +38,9 @@ class ChatDetailsHeaderStack extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          child: SecondaryAvatar(
+          child: _ChatDetailsBackdropAvatar(
+            room: room,
             animationController: animationController,
-            mxContent: room.avatar,
-            name: room.getLocalizedDisplayname(),
-            fontSize: ChatDetailViewStyle.avatarFontSize,
           ),
         ),
         Positioned.fill(
@@ -73,6 +72,59 @@ class ChatDetailsHeaderStack extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// 与聊天列表一致：群聊未设置 [Room.avatar] 时用成员拼图；否则沿用大图单帧逻辑。
+class _ChatDetailsBackdropAvatar extends StatelessWidget {
+  const _ChatDetailsBackdropAvatar({
+    required this.room,
+    required this.animationController,
+  });
+
+  final Room room;
+  final AnimationController animationController;
+
+  @override
+  Widget build(BuildContext context) {
+    final useCompositeGroupAvatar =
+        !room.isDirectChat && room.avatar == null;
+
+    if (!useCompositeGroupAvatar) {
+      return SecondaryAvatar(
+        animationController: animationController,
+        mxContent: room.avatar,
+        name: room.getLocalizedDisplayname(),
+        fontSize: ChatDetailViewStyle.avatarFontSize,
+      );
+    }
+
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final size = Tween<double>(
+      begin: ChatDetailViewStyle.avatarSize,
+      end: screenWidth,
+    ).transform(animationController.value);
+    final paddingTop = Tween<double>(
+      begin: 16,
+      end: 0,
+    ).transform(animationController.value);
+
+    return Container(
+      padding: EdgeInsets.only(top: paddingTop),
+      alignment: Alignment.topCenter,
+      child: ClipRRect(
+        borderRadius: BorderRadius.zero,
+        child: IgnorePointer(
+          child: RoomAvatar(
+            room: room,
+            name: room.getLocalizedDisplayname(),
+            size: size,
+            fontSize: ChatDetailViewStyle.avatarFontSize,
+            keepAlive: true,
+          ),
+        ),
+      ),
     );
   }
 }

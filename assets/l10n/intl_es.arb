@@ -2157,7 +2157,7 @@
   },
   "commandHint_markasgroup": "Marcar como un chat",
   "updateNow": "Iniciar la actualización en segundo plano",
-  "updateAvailable": "Actualización de Twake Chat disponible",
+  "updateAvailable": "Actualización de Zeon disponible",
   "bubbleSize": "Tamaño de la burbuja",
   "@bubbleSize": {
     "type": "text",
@@ -2211,7 +2211,7 @@
   "unpinThisChat": "Desanclar esta conversación",
   "yesterday": "Ayer",
   "noResultsFound": "No se encontró ningún resultado",
-  "welcomeToTwake": "Le damos la bienvenida a Twake, {user}",
+  "welcomeToTwake": "Le damos la bienvenida a Zeon, {user}",
   "@welcomeToTwake": {
     "placeholders": {
       "user": {}
@@ -2369,7 +2369,7 @@
   },
   "roomCreationFailed": "Falló la creación de la sala",
   "sendImages": "{count, plural, =1{Enviar 1 imagen} other{Enviar {count} imágenes}}",
-  "settingsLanguageDescription": "Establezca el idioma que usar en Twake Chat",
+  "settingsLanguageDescription": "Establezca el idioma que usar en Zeon",
   "languageEnglish": "Inglés",
   "@languageEnglish": {
     "type": "text",

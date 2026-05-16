@@ -8,11 +8,11 @@ import 'package:fluffychat/pages/search/search_view_style.dart';
 import 'package:fluffychat/pages/search/server_search_view.dart';
 import 'package:fluffychat/presentation/model/search/presentation_server_side_empty_search.dart';
 import 'package:fluffychat/presentation/model/search/presentation_server_side_search.dart';
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
 import 'package:fluffychat/widgets/twake_components/twake_loading/center_loading_indicator.dart';
 import 'package:flutter/material.dart' hide SearchController;
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 
 class SearchView extends StatelessWidget {
   final SearchController searchController;
@@ -22,7 +22,7 @@ class SearchView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: LinagoraSysColors.material().onPrimary,
+      backgroundColor: ZeonColors.background,
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(SearchViewStyle.toolbarHeightSearch),
         child: _buildAppBarSearch(context),
@@ -163,7 +163,9 @@ class SearchView extends StatelessWidget {
   Widget _buildAppBarSearch(BuildContext context) {
     return AppBar(
       toolbarHeight: SearchViewStyle.toolbarHeightSearch,
-      backgroundColor: LinagoraSysColors.material().onPrimary,
+      backgroundColor: ZeonColors.background,
+      elevation: 0,
+      scrolledUnderElevation: 0,
       leadingWidth: double.infinity,
       leading: Padding(
         padding: SearchViewStyle.paddingLeadingAppBar,
@@ -172,6 +174,7 @@ class SearchView extends StatelessWidget {
             TwakeIconButton(
               tooltip: L10n.of(context)!.back,
               icon: Icons.arrow_back_ios,
+              iconColor: Colors.white,
               onTap: () => Navigator.of(context).pop(),
             ),
             const SizedBox(width: 4.0),
@@ -186,7 +189,7 @@ class SearchView extends StatelessWidget {
       bottom: PreferredSize(
         preferredSize: const Size(double.infinity, 6),
         child: Container(
-          color: Theme.of(context).colorScheme.surfaceTint.withOpacity(0.08),
+          color: const Color(0x1F474747),
           height: 1,
         ),
       ),
@@ -265,7 +268,7 @@ class _SearchHeader extends StatelessWidget {
       width: double.infinity,
       height: SearchViewStyle.toolbarHeightOfSliverAppBar,
       padding: SearchViewStyle.paddingRecentChatsHeaders,
-      decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface),
+      decoration: const BoxDecoration(color: ZeonColors.surfaceContainerLowest),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.start,
@@ -273,7 +276,7 @@ class _SearchHeader extends StatelessWidget {
           Expanded(
             child: Text(
               headerText,
-              style: SearchViewStyle.headerTextStyle(context),
+              style: SearchViewStyle.sectionHeaderZeon,
             ),
           ),
           if (needShowMore)
@@ -282,6 +285,7 @@ class _SearchHeader extends StatelessWidget {
                 searchController.searchContactAndRecentChatController!
                     .toggleShowMore();
               },
+              borderRadius: BorderRadius.zero,
               child: ValueListenableBuilder(
                 valueListenable: searchController
                     .searchContactAndRecentChatController!
@@ -291,7 +295,9 @@ class _SearchHeader extends StatelessWidget {
                     isShowMore
                         ? L10n.of(context)!.showMore
                         : L10n.of(context)!.showLess,
-                    style: SearchViewStyle.headerTextStyle(context),
+                    style: SearchViewStyle.sectionHeaderZeon.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   );
                 },
               ),

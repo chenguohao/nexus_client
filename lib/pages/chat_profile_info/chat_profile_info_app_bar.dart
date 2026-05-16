@@ -2,6 +2,8 @@ import 'package:dartz/dartz.dart' hide State;
 import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/config/zeon_colors.dart';
+import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
+import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/pages/chat_details/chat_details_page_view/chat_details_page_enum.dart';
 import 'package:fluffychat/pages/chat_profile_info/chat_profile_info_details.dart';
 import 'package:fluffychat/presentation/model/contact/presentation_contact.dart';
@@ -207,6 +209,11 @@ class _ChatProfileInfoHeaderState extends State<_ChatProfileInfoHeader> {
             widget.displayName ??
             '';
         final resolvedMxid = contact?.matrixId ?? widget.matrixId;
+        final matrixClient =
+            widget.room?.client ?? Matrix.of(context).client;
+        final rm = resolvedMxid;
+        final privacyMaskStranger = rm != null &&
+            !getIt.get<ContactsManager>().isAcceptedFriend(rm);
 
         return Container(
           color: ZeonColors.background,
@@ -218,6 +225,8 @@ class _ChatProfileInfoHeaderState extends State<_ChatProfileInfoHeader> {
                 avatarUri: resolvedAvatar,
                 displayName: resolvedDisplayName,
                 mxid: resolvedMxid,
+                matrixClient: matrixClient,
+                privacyMaskStranger: privacyMaskStranger,
               ),
               const SizedBox(height: 4),
               _MessagePrimaryAction(onTap: widget.onMessage),

@@ -93,7 +93,7 @@ class CreateSupportChatInteractor {
 
       final powerLevelManager = getIt.get<PowerLevelManager>();
       roomId = await client.createGroupChat(
-        groupName: 'Support Twake Workplace',
+        groupName: 'Zeon Support',
         preset: CreateRoomPreset.trustedPrivateChat,
         enableEncryption: false,
         initialState: [

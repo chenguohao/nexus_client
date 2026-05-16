@@ -1,18 +1,12 @@
 import 'package:collection/collection.dart';
-import 'package:dartz/dartz.dart' hide State;
 import 'package:debounce_throttle/debounce_throttle.dart';
-import 'package:fluffychat/app_state/failure.dart';
 import 'package:fluffychat/app_state/success.dart';
 import 'package:fluffychat/config/zeon_colors.dart';
-import 'package:fluffychat/data/model/addressbook/address_book.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
-import 'package:fluffychat/domain/app_state/contact/post_address_book_state.dart';
 import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
-import 'package:fluffychat/domain/model/extensions/contact/address_book_extension.dart';
-import 'package:fluffychat/domain/usecase/contacts/post_address_book_interactor.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:fluffychat/pages/chat_profile_info/chat_profile_info_navigator.dart';
 import 'package:fluffychat/pages/contacts_tab/widgets/add_contact/add_contact_dialog_view.dart';
 import 'package:fluffychat/pages/contacts_tab/widgets/add_contact/add_contact_dialog_view_web.dart';
 import 'package:fluffychat/presentation/extensions/contact/presentation_contact_extension.dart';
@@ -20,9 +14,8 @@ import 'package:fluffychat/presentation/model/contact/presentation_contact.dart'
 import 'package:fluffychat/presentation/model/contact/presentation_contact_constant.dart';
 import 'package:fluffychat/utils/dialog/twake_dialog.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
-import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:fluffychat/widgets/matrix.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:fluffychat/zeon/pages/contact_preview/zeon_contact_preview_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -175,97 +168,98 @@ class AddContactDialogController extends State<AddContactDialog> {
     if (!canSubmit) return;
 
     final mxid = resolvedMxid;
+    final client = Matrix.of(context).client;
+
+    // 自加自己拦截
+    if (mxid == client.userID) {
+      usernameErrorMessage.value = 'Cannot add yourself.';
+      return;
+    }
+
     final existedContact = availableContacts.firstWhereOrNull(
       (contact) => contact.matrixId == mxid,
     );
 
-    if (existedContact == null) {
-      // 预检：确认这个 mxid 在服务器上是真实存在的，同时获取对方昵称。
-      // 失败时把错误塞进 [usernameErrorMessage]，对话框会在 ZEON ID 输入框
-      // 下方直接显红字（snackbar 在 modal bottom sheet 里会被 sheet 自身遮住，
-      // 用户看不到）。
-      final fetchedDisplayName = await _fetchUserDisplayName(mxid);
-      if (fetchedDisplayName == null) return;
-
-      final result =
-          await TwakeDialog.showFutureLoadingDialogFullScreen<
-            Either<Failure, Success>
-          >(
-            future: () => getIt
-                .get<PostAddressBookInteractor>()
-                .execute(
-                  addressBooks: [
-                    AddressBook(
-                      mxid: mxid,
-                      displayName: fetchedDisplayName,
-                    ),
-                  ],
-                )
-                .last,
-          );
-      final state = result.result?.fold(
-        (failure) => failure,
-        (success) => success,
-      );
-      if (state is PostAddressBookFailureState) {
-        TwakeSnackBar.show(context, state.exception.toString());
-        return;
-      } else if (state is PostAddressBookSuccessState) {
-        getIt.get<ContactsManager>().refreshTomContacts(
-          Matrix.of(context).client,
-        );
-        final createdContact = state.updatedAddressBooks.firstOrNull
-            ?.toPresentationContact()
-            .firstOrNull;
-        if (PlatformInfos.isMobile) {
-          Navigator.pop(context);
-          Navigator.of(context).push(
-            CupertinoPageRoute(
-              builder: (context) => ChatProfileInfoNavigator(
-                isInStack: true,
-                onBack: context.pop,
-                contact: createdContact,
-              ),
-            ),
-          );
-        } else {
-          chatWithUser(mxid, contact: createdContact);
-        }
-      }
+    // 已是好友 → 直接打开聊天
+    if (existedContact != null &&
+        existedContact.friendStatus == FriendStatus.accepted) {
+      chatWithUser(mxid, contact: existedContact);
       return;
     }
 
-    chatWithUser(mxid, contact: existedContact);
+    // 已发出请求等对方处理 → 行内提示，不再发起
+    if (existedContact != null &&
+        existedContact.friendStatus == FriendStatus.pendingOutgoing) {
+      usernameErrorMessage.value = 'You already sent a friend request to this user.';
+      return;
+    }
+
+    // 对方已发请求等你处理 → 引导到通知（chat_invitation_body 那条邀请）
+    if (existedContact != null &&
+        existedContact.friendStatus == FriendStatus.pendingIncoming) {
+      usernameErrorMessage.value =
+          'This user has already sent you a friend request. Please respond from your messages.';
+      return;
+    }
+
+    // 校验存在 + 拉取展示资料（名字 + 头像），然后跳到资料预览页让用户二次确认。
+    // 真正的 /addressbook/request 调用延迟到用户在预览页主动点击「添加好友」时触发。
+    final preview = await _fetchUserPreview(mxid);
+    if (preview == null) return;
+
+    if (!mounted) return;
+    final matrixClient = Matrix.of(context).client;
+    Navigator.of(context).pop(); // 先关掉 modal bottom sheet / dialog
+    Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (_) => ZeonContactPreviewPage(
+          mxid: mxid,
+          initialDisplayName: preview.displayName,
+          initialAvatarUri: preview.avatarUri,
+          matrixClient: matrixClient,
+        ),
+      ),
+    );
   }
 
-  /// 调用 `client.getUserProfile()` 探测目标 mxid 是否真实存在，同时获取对方的 displayName。
-  /// - 存在 → 返回对方的 displayName（可能为 null，退化用 localpart）
-  /// - 服务器明确 404 (`M_NOT_FOUND`) → 返回 null 并把错误塞进
-  ///   [usernameErrorMessage]，UI 会在输入框下方直接显红字
+  /// 调用 `client.getUserProfile()` 探测目标 mxid 是否真实存在，并取回
+  /// 资料预览页的首屏数据（displayName + avatarUrl）。
+  /// - 存在 → 返回 [_UserPreview]（displayName 没有时退化用 localpart；avatar 可空）
+  /// - 服务器明确 404 (`M_NOT_FOUND`) → 返回 null 并把错误塞进 [usernameErrorMessage]
   /// - 其它异常（限流、网络）→ 返回 null 并显示通用错误
   ///
   /// 不在这里弹 snackbar，因为 modal bottom sheet 自身会盖住屏幕底部，
   /// 用户看不到 snackbar；行内错误才是该对话框唯一可靠的反馈通道。
-  Future<String?> _fetchUserDisplayName(String mxid) async {
+  Future<_UserPreview?> _fetchUserPreview(String mxid) async {
     final client = Matrix.of(context).client;
     final result = await TwakeDialog.showFutureLoadingDialogFullScreen<
-      ({String? displayName, String? error})
+      ({String? displayName, Uri? avatarUrl, String? error})
     >(
       future: () async {
         try {
           final profile = await client.getUserProfile(mxid);
-          return (displayName: profile.displayname, error: null);
+          return (
+            displayName: profile.displayname,
+            avatarUrl: profile.avatarUrl,
+            error: null,
+          );
         } on MatrixException catch (e) {
           if (e.error == MatrixError.M_NOT_FOUND) {
-            return (displayName: null, error: 'This user does not exist.');
+            return (
+              displayName: null,
+              avatarUrl: null,
+              error: 'This user does not exist.',
+            );
           }
           return (
             displayName: null,
+            avatarUrl: null,
             error: 'Unable to verify user: ${e.errorMessage}',
           );
         } catch (_) {
           return (
             displayName: null,
+            avatarUrl: null,
             error: 'Unable to verify user. Please try again.',
           );
         }
@@ -280,7 +274,10 @@ class AddContactDialogController extends State<AddContactDialog> {
     final localpart = mxid.contains(':')
         ? mxid.substring(1, mxid.indexOf(':'))
         : mxid.replaceFirst('@', '');
-    return data.displayName?.isNotEmpty == true ? data.displayName! : localpart;
+    final name = data.displayName?.isNotEmpty == true
+        ? data.displayName!
+        : localpart;
+    return _UserPreview(displayName: name, avatarUri: data.avatarUrl);
   }
 
   void chatWithUser(String matrixId, {PresentationContact? contact}) {
@@ -342,4 +339,12 @@ class AddContactDialogController extends State<AddContactDialog> {
         ? AddContactDialogView(controller: this)
         : AddContactDialogViewWeb(controller: this);
   }
+}
+
+/// 资料预览页首屏渲染所需的最小数据快照（在 dialog 这边一次性拉好）。
+class _UserPreview {
+  final String displayName;
+  final Uri? avatarUri;
+
+  const _UserPreview({required this.displayName, required this.avatarUri});
 }

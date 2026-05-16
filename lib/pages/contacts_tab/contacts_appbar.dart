@@ -6,6 +6,7 @@ import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/responsive/responsive_utils.dart';
 import 'package:fluffychat/widgets/app_bars/twake_app_bar.dart';
 import 'package:flutter/material.dart';
+import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
 class ContactsAppBar extends StatelessWidget {
   final ValueNotifier<bool> isSearchModeNotifier;
@@ -24,11 +25,12 @@ class ContactsAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = L10n.of(context)!;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         TwakeAppBar(
-          title: 'Contacts',
+          title: l10n.contacts,
           context: context,
           backgroundColor: const Color(0xFF131314),
           actions: [

@@ -42,6 +42,7 @@ import 'package:fluffychat/data/local/multiple_account/multiple_account_cache_ma
 import 'package:fluffychat/data/local/reaction/reaction_cache_manager.dart';
 import 'package:fluffychat/data/network/capabilities/server_capabilities_api.dart';
 import 'package:fluffychat/data/network/contact/address_book_api.dart';
+import 'package:fluffychat/data/network/contact/friend_request_api.dart';
 import 'package:fluffychat/data/network/contact/tom_contact_api.dart';
 import 'package:fluffychat/data/network/dio_cache_option.dart';
 import 'package:fluffychat/data/network/invitation/invitation_api.dart';
@@ -93,7 +94,10 @@ import 'package:fluffychat/domain/usecase/contacts/delete_third_party_contact_bo
 import 'package:fluffychat/domain/usecase/contacts/federation_look_up_phonebook_contact_interactor.dart';
 import 'package:fluffychat/domain/usecase/contacts/get_tom_contacts_interactor.dart';
 import 'package:fluffychat/domain/usecase/contacts/lookup_match_contact_interactor.dart';
+import 'package:fluffychat/domain/usecase/contacts/accept_friend_interactor.dart';
 import 'package:fluffychat/domain/usecase/contacts/post_address_book_interactor.dart';
+import 'package:fluffychat/domain/usecase/contacts/reject_friend_interactor.dart';
+import 'package:fluffychat/domain/usecase/contacts/request_friend_interactor.dart';
 import 'package:fluffychat/domain/usecase/contacts/try_get_synced_phone_book_contact_interactor.dart';
 import 'package:fluffychat/domain/usecase/contacts/twake_look_up_phonebook_contact_interactor.dart';
 import 'package:fluffychat/domain/usecase/create_direct_chat_interactor.dart';
@@ -363,6 +367,15 @@ class GetItInitializer {
     getIt.registerFactory<PostAddressBookInteractor>(
       () => PostAddressBookInteractor(),
     );
+    getIt.registerFactory<RequestFriendInteractor>(
+      () => RequestFriendInteractor(),
+    );
+    getIt.registerFactory<AcceptFriendInteractor>(
+      () => AcceptFriendInteractor(),
+    );
+    getIt.registerFactory<RejectFriendInteractor>(
+      () => RejectFriendInteractor(),
+    );
     getIt.registerFactory<FederationLookUpPhonebookContactInteractor>(
       () => FederationLookUpPhonebookContactInteractor(),
     );
@@ -526,6 +539,7 @@ class GetItInitializer {
       () => FederationIdentityRequestTokenManager(),
     );
     getIt.registerFactory<AddressBookApi>(() => AddressBookApi());
+    getIt.registerFactory<FriendRequestApi>(() => FriendRequestApi());
     getIt.registerFactory<FederationIdentityLookupManager>(
       () => FederationIdentityLookupManager(),
     );

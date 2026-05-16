@@ -13,6 +13,7 @@ import 'package:fluffychat/domain/app_state/contact/post_address_book_state.dart
 import 'package:fluffychat/domain/app_state/contact/try_get_synced_phone_book_contact_state.dart';
 import 'package:fluffychat/domain/exception/federation_configuration_not_found.dart';
 import 'package:fluffychat/domain/model/contact/contact.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/domain/model/extensions/contact/contact_extension.dart';
 import 'package:fluffychat/domain/repository/federation_configurations_repository.dart';
 import 'package:fluffychat/domain/usecase/contacts/federation_look_up_argument.dart';
@@ -28,11 +29,18 @@ import 'package:fluffychat/presentation/extensions/value_notifier_custom.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:fluffychat/widgets/twake_app.dart';
+import 'package:fluffychat/zeon/services/tom_friend_status_cache.dart';
 import 'package:matrix/matrix.dart' hide Contact;
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
 
 class ContactsManager {
   static const int _lookupChunkSize = 10;
+
+  /// 当本地仍有「待处理」好友状态时，在 Matrix sync 后防抖拉一次通讯录，
+  /// 以便对方接受/拒绝后首页会话列表与通讯录能及时更新（无需手动刷新）。
+  static const Duration _tomContactsPendingPollDebounce = Duration(
+    milliseconds: 900,
+  );
 
   final GetTomContactsInteractor getTomContactsInteractor = getIt
       .get<GetTomContactsInteractor>();
@@ -62,12 +70,28 @@ class ContactsManager {
 
   StreamSubscription<Either<Failure, Success>>? postAddressBookSubscription;
 
+  StreamSubscription<SyncUpdate>? _tomContactsMatrixSyncSubscription;
+
+  Timer? _tomContactsPendingPollDebounceTimer;
+
+  Client? _tomContactsPendingPollBoundClient;
+
   bool _doNotShowWarningContactsBannerAgain = false;
 
   bool _doNotShowWarningContactsDialogAgain = false;
 
   final ValueNotifierCustom<Either<Failure, Success>> _contactsNotifier =
       ValueNotifierCustom(const Right(ContactsInitial()));
+
+  /// 最近一次 Tom 通讯录成功快照。notifier 处于 [ContactsLoading] / [ContactsInitial]
+  ///（例如 `reSyncContacts`、带 loading 的刷新）时仍用于首页 DM 过滤，
+  /// 避免「会话几乎全是私聊」时列表被抽空误显示欢迎页闪烁。
+  GetContactsSuccess? _lastSuccessfulTomContacts;
+
+  /// 冷启动从磁盘灌入，直至内存里有一次成功的 Tom 拉取。
+  GetContactsSuccess? _diskTomSnapshot;
+
+  String? _contactsOwnerMxId;
 
   final ValueNotifierCustom<Either<Failure, Success>>
   _phonebookContactsNotifier = ValueNotifierCustom(
@@ -84,6 +108,49 @@ class ContactsManager {
   ValueNotifierCustom<Either<Failure, Success>> getContactsNotifier() =>
       _contactsNotifier;
 
+  /// 通讯录列表用：Loading / Initial 时用磁盘或内存成功快照顶替，避免整页转圈闪烁。
+  Either<Failure, Success> get tomContactsStateForPresentation {
+    final raw = _contactsNotifier.value;
+    return raw.fold(
+      (f) => Left(f),
+      (success) {
+        if (success is ContactsLoading || success is ContactsInitial) {
+          final fb = lastSuccessfulTomContactsSnapshot;
+          if (fb != null) return Right(fb);
+        }
+        return Right(success);
+      },
+    );
+  }
+
+  GetContactsSuccess? get effectiveTomContactsSuccess =>
+      tomContactsStateForPresentation.getSuccessOrNull<GetContactsSuccess>();
+
+  /// 登出 / 取消订阅见 [cancelAllSubscriptions] 时会清空磁盘与内存副本。
+  GetContactsSuccess? get lastSuccessfulTomContactsSnapshot =>
+      _lastSuccessfulTomContacts ?? _diskTomSnapshot;
+
+  Future<void> hydrateTomFriendStatusDiskSnapshot(String? matrixUserId) async {
+    if (matrixUserId == null || matrixUserId.isEmpty) {
+      _diskTomSnapshot = null;
+      _contactsOwnerMxId = null;
+      return;
+    }
+    _contactsOwnerMxId = matrixUserId;
+    _diskTomSnapshot =
+        await TomFriendStatusCache.instance.load(matrixUserId);
+    final disk = _diskTomSnapshot;
+    if (disk != null) {
+      final onlyInitial = _contactsNotifier.value.fold(
+        (_) => false,
+        (s) => s is ContactsInitial,
+      );
+      if (onlyInitial) {
+        _contactsNotifier.value = Right(disk);
+      }
+    }
+  }
+
   ValueNotifierCustom<Either<Failure, Success>>
   getPhonebookContactsNotifier() => _phonebookContactsNotifier;
 
@@ -92,6 +159,19 @@ class ContactsManager {
 
   ValueNotifierCustom<int?> get progressPhoneBookState =>
       _progressPhoneBookState;
+
+  /// 同步快照：mxid -> 好友关系状态。基于 [_contactsNotifier] 当前值即时生成，
+  /// 找不到记录返回 null（陌生人，可发起申请）。
+  FriendStatus? friendStatusOf(String mxid) {
+    final success = _contactsNotifier.value
+            .getSuccessOrNull<GetContactsSuccess>() ??
+        lastSuccessfulTomContactsSnapshot;
+    return success?.friendStatusByMxid[mxid];
+  }
+
+  /// 是否已是 accepted 好友（包括能正常发消息/被拉群的状态）。
+  bool isAcceptedFriend(String mxid) =>
+      friendStatusOf(mxid) == FriendStatus.accepted;
 
   bool _isSynchronizing = false;
 
@@ -129,6 +209,10 @@ class ContactsManager {
     _phonebookContactsNotifier.value = const Right(
       GetPhonebookContactsInitial(),
     );
+    final disk = _diskTomSnapshot;
+    if (disk != null) {
+      _contactsNotifier.value = Right(disk);
+    }
   }
 
   /// Synchronizes contacts when the contact tab is accessed.
@@ -193,13 +277,97 @@ class ContactsManager {
     );
   }
 
-  void refreshTomContacts(Client client) {
-    tomContactsSubscription = getTomContactsInteractor.execute().listen((
+  void refreshTomContacts(Client client, {bool silent = false}) {
+    tomContactsSubscription?.cancel();
+    tomContactsSubscription =
+        getTomContactsInteractor.execute(emitLoading: !silent).listen((
       event,
     ) {
-      _contactsNotifier.value = event;
+      _applyTomContactsNotifier(event, client.userID);
     });
     syncContactsAcrossDevices(client);
+  }
+
+  void _applyTomContactsNotifier(
+    Either<Failure, Success> event,
+    String? ownerMxId,
+  ) {
+    event.fold(
+      (failure) {
+        _contactsNotifier.value = Left(failure);
+      },
+      (success) {
+        if (success is ContactsLoading) {
+          final sticky = _lastSuccessfulTomContacts ??
+              _diskTomSnapshot ??
+              _contactsNotifier.value.getSuccessOrNull<GetContactsSuccess>();
+          if (sticky != null) {
+            return;
+          }
+        }
+
+        if (success is GetContactsSuccess) {
+          _lastSuccessfulTomContacts = success;
+          if (ownerMxId != null && ownerMxId.isNotEmpty) {
+            _contactsOwnerMxId = ownerMxId;
+            unawaited(TomFriendStatusCache.instance.save(ownerMxId, success));
+          }
+        }
+
+        final prev = _contactsNotifier.value;
+        final prevOk = prev.getSuccessOrNull<GetContactsSuccess>();
+        final nextOk = success is GetContactsSuccess ? success : null;
+        if (prevOk != null && nextOk != null && prevOk == nextOk) {
+          return;
+        }
+
+        _contactsNotifier.value = Right(success);
+      },
+    );
+  }
+
+  /// 绑定当前账号：在有 outgoing/incoming 待定好友时，每次 Matrix sync 后防抖刷新 Tom 通讯录。
+  ///
+  /// 须在切换活跃用户或首次登录成功后调用；会先解除上一账号的监听。
+  void attachTomContactsRefreshWhenRequestsPending(Client client) {
+    detachTomContactsRefreshWhenRequestsPending();
+    _tomContactsPendingPollBoundClient = client;
+    _tomContactsMatrixSyncSubscription = client.onSync.stream.listen((_) {
+      if (!_tomContactsSnapshotHasPendingRequests()) return;
+      _scheduleDebouncedTomContactsRefresh(client);
+    });
+  }
+
+  void detachTomContactsRefreshWhenRequestsPending() {
+    _tomContactsMatrixSyncSubscription?.cancel();
+    _tomContactsMatrixSyncSubscription = null;
+    _tomContactsPendingPollDebounceTimer?.cancel();
+    _tomContactsPendingPollDebounceTimer = null;
+    _tomContactsPendingPollBoundClient = null;
+  }
+
+  bool _tomContactsSnapshotHasPendingRequests() {
+    final success = _contactsNotifier.value
+            .getSuccessOrNull<GetContactsSuccess>() ??
+        lastSuccessfulTomContactsSnapshot;
+    final map = success?.friendStatusByMxid;
+    if (map == null || map.isEmpty) return false;
+    return map.values.any((s) => s.isPending);
+  }
+
+  void _scheduleDebouncedTomContactsRefresh(Client client) {
+    if (!_tomContactsSnapshotHasPendingRequests()) return;
+    _tomContactsPendingPollDebounceTimer?.cancel();
+    _tomContactsPendingPollDebounceTimer = Timer(
+      _tomContactsPendingPollDebounce,
+      () {
+        _tomContactsPendingPollDebounceTimer = null;
+        if (_tomContactsPendingPollBoundClient != client) return;
+        if (client.loginState != LoginState.loggedIn) return;
+        if (!_tomContactsSnapshotHasPendingRequests()) return;
+        refreshTomContacts(client, silent: true);
+      },
+    );
   }
 
   Future<void> _getAllContacts({
@@ -208,7 +376,7 @@ class ContactsManager {
   }) async {
     tomContactsSubscription =
         getTomContactsInteractor.execute().listen((event) {
-            _contactsNotifier.value = event;
+            _applyTomContactsNotifier(event, withMxId);
           })
           ..onDone(() async {
             Logs().d('ContactsManager::_getAllContacts: done');
@@ -234,7 +402,7 @@ class ContactsManager {
   }) async {
     tomContactsSubscription =
         getTomContactsInteractor.execute().listen((event) {
-            _contactsNotifier.value = event;
+            _applyTomContactsNotifier(event, withMxId);
           })
           ..onDone(() async {
             Logs().d('ContactsManager::_getAllContactsOnContactTab: done');
@@ -455,6 +623,14 @@ class ContactsManager {
   }
 
   Future<void> cancelAllSubscriptions() async {
+    detachTomContactsRefreshWhenRequestsPending();
+    _lastSuccessfulTomContacts = null;
+    _diskTomSnapshot = null;
+    final uid = _contactsOwnerMxId;
+    _contactsOwnerMxId = null;
+    if (uid != null && uid.isNotEmpty) {
+      await TomFriendStatusCache.instance.clear(uid);
+    }
     await Future.wait([
       if (tomContactsSubscription != null) tomContactsSubscription!.cancel(),
       if (federationPhonebookContactsSubscription != null)

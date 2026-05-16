@@ -3,8 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
-import '../../../pages/settings_dashboard/settings/settings.dart';
-import '../../../utils/platform_infos.dart';
 import '../../../widgets/matrix.dart';
 import '../../../widgets/zeon/zeon_profile_header.dart';
 import '../../services/key_service.dart';
@@ -20,7 +18,7 @@ import 'zeon_profile_edit_page.dart';
 ///
 ///   1. Identity     : avatar + nickname + UID
 ///   2. Web3         : wallet address (only visible to self)
-///   3. Settings     : 隐私与安全 / 关于 / 设置 / 登出
+///   3. Settings     : 隐私与安全 / 关于 / 登出（不进 Twake 设置）
 ///
 /// Reachable via the `/rooms/me` route, and rendered as the third tab of
 /// the bottom navigation (replacing the legacy "SETTINGS" tab).
@@ -246,13 +244,7 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
 
   void _onTapPrivacy() => context.push('/rooms/zeon-privacy');
 
-  void _onTapAbout() => PlatformInfos.showAboutDialogFullScreen();
-
-  void _onTapSettings() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const _SettingsHostPage()),
-    );
-  }
+  void _onTapAbout() => context.push('/rooms/zeon-about');
 
   void _onTapWallet() {
     setState(() => _walletVisible = true);
@@ -300,6 +292,7 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
                               avatarUri: _avatarUri,
                               displayName: _displayName ?? '',
                               mxid: Matrix.of(context).client.userID,
+                              matrixClient: Matrix.of(context).client,
                               padding: EdgeInsets.zero,
                             ),
                             const SizedBox(height: 36),
@@ -328,11 +321,6 @@ class _ZeonProfilePageState extends State<ZeonProfilePage> {
                                   icon: Icons.info_outline,
                                   label: '关于',
                                   onTap: _onTapAbout,
-                                ),
-                                _SettingItemData(
-                                  icon: Icons.tune,
-                                  label: '设置',
-                                  onTap: _onTapSettings,
                                 ),
                               ],
                             ),
@@ -800,46 +788,3 @@ class _BackgroundGlow extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Settings host page — wraps the existing Settings widget so it can be pushed
-// from the Profile screen with a working back affordance.
-//
-// `Settings` ships with its own `TwakeAppBar` whose `automaticallyImplyLeading`
-// is disabled, which means a plain Navigator push would leave the user with no
-// back button. We therefore keep `Settings` rendering its own scaffold and just
-// overlay a small floating back chip in the top-left.
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _SettingsHostPage extends StatelessWidget {
-  const _SettingsHostPage();
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        const Settings(),
-        Positioned(
-          top: MediaQuery.of(context).padding.top + 6,
-          left: 8,
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () => Navigator.of(context).pop(),
-              child: Container(
-                width: 40,
-                height: 40,
-                alignment: Alignment.center,
-                child: Icon(
-                  Icons.arrow_back_ios_new,
-                  size: 18,
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}

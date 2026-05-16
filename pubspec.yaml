@@ -305,8 +305,8 @@ flutter:
           weight: 700
 
 msix_config:
-  display_name: Twake Chat
-  publisher_display_name: Twake Chat
+  display_name: Zeon
+  publisher_display_name: Zeon
   publisher: CN=Twake, O=Linagora, C=FR
   identity_name: app.twake.windows.chat
   logo_path: assets\logo.png

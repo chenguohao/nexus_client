@@ -156,7 +156,7 @@ mixin class ContactsViewControllerMixin {
     final externalContactState = _checkExternalContact(keyword);
 
     presentationContactNotifier
-        .value = contactsManager.getContactsNotifier().value.fold(
+        .value = contactsManager.tomContactsStateForPresentation.fold(
       (failure) {
         if (externalContactState != null) {
           return externalContactState;
@@ -255,12 +255,8 @@ mixin class ContactsViewControllerMixin {
                   .toList();
 
               final tomContacts =
-                  contactsManager
-                      .getContactsNotifier()
-                      .value
-                      .getSuccessOrNull<GetContactsSuccess>()
-                      ?.contacts ??
-                  [];
+                  contactsManager.effectiveTomContactsSuccess?.contacts ??
+                  const [];
               final tomPresentationSearchContacts = tomContacts
                   .expand((contact) => contact.toPresentationContacts())
                   .toList();

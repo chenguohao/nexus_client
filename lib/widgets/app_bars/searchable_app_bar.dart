@@ -1,3 +1,4 @@
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/config/first_column_inner_routes.dart';
 import 'package:fluffychat/pages/dialer/pip/dismiss_keyboard.dart';
 import 'package:fluffychat/widgets/app_bars/twake_app_bar_style.dart';
@@ -22,6 +23,9 @@ class SearchableAppBar extends StatelessWidget {
   final Color? backgroundColor;
   final Color? foregroundColor;
 
+  /// Zeon：顶栏底部分割线关闭时使用（对齐 [TwakeAppBar.withDivider] = false）。
+  final bool withBottomDivider;
+
   const SearchableAppBar({
     super.key,
     required this.searchModeNotifier,
@@ -36,6 +40,7 @@ class SearchableAppBar extends StatelessWidget {
     this.displayBackButton = true,
     this.backgroundColor,
     this.foregroundColor,
+    this.withBottomDivider = true,
   });
 
   @override
@@ -46,17 +51,14 @@ class SearchableAppBar extends StatelessWidget {
     return AppBar(
       automaticallyImplyLeading: false,
       toolbarHeight: toolbarHeight,
-      bottom: PreferredSize(
-        preferredSize: const Size(double.infinity, 4),
-        child: Container(
-          color: const Color(0x1F474747),
-          height: 1,
-        ),
-      ),
-      backgroundColor: effectiveBg,
-      iconTheme: effectiveFg != null
-          ? IconThemeData(color: effectiveFg)
+      bottom: withBottomDivider
+          ? const PreferredSize(
+              preferredSize: Size(double.infinity, 1),
+              child: Divider(height: 1, color: Color(0x1F474747)),
+            )
           : null,
+      backgroundColor: effectiveBg,
+      iconTheme: effectiveFg != null ? IconThemeData(color: effectiveFg) : null,
       title: Align(
         alignment: Alignment.centerLeft,
         child: Column(
@@ -104,8 +106,9 @@ class SearchableAppBar extends StatelessWidget {
                         child: Text(
                           title,
                           textAlign: TextAlign.center,
-                          style: TwakeAppBarStyle.titleTextStyle(context)
-                              ?.copyWith(color: effectiveFg),
+                          style: TwakeAppBarStyle.titleTextStyle(
+                            context,
+                          )?.copyWith(color: effectiveFg),
                         ),
                       );
                     },
@@ -178,6 +181,7 @@ class SearchableAppBar extends StatelessWidget {
   }
 
   Widget _textFieldBuilder(BuildContext context, [Color? fgColor]) {
+    final inputColor = fgColor ?? ZeonColors.onSurface;
     return TextField(
       onTapOutside: (event) {
         dismissKeyboard(context);
@@ -195,6 +199,13 @@ class SearchableAppBar extends StatelessWidget {
           }) => const SizedBox.shrink(),
       maxLength: SearchableAppBarStyle.textFieldMaxLength,
       cursorHeight: 26,
+      cursorColor: inputColor,
+      style: TextStyle(
+        color: inputColor,
+        fontFamily: 'Inter',
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
       scrollPadding: const EdgeInsets.all(0),
       controller: textEditingController,
       decoration: InputDecoration(
@@ -206,12 +217,14 @@ class SearchableAppBar extends StatelessWidget {
                 Icons.search_outlined,
                 // TODO: change to colorSurface when its approved
                 // ignore: deprecated_member_use
-                color: Theme.of(context).colorScheme.onBackground,
+                color: fgColor ?? ZeonColors.outline,
               )
             : null,
         suffixIcon: const SizedBox.shrink(),
         hintStyle: TextStyle(
-          color: fgColor?.withOpacity(0.4) ?? const Color(0xFF636363),
+          color: fgColor != null
+              ? fgColor.withOpacity(0.45)
+              : const Color(0xFF636363),
         ),
       ),
     );

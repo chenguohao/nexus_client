@@ -1,9 +1,12 @@
+import 'dart:ui';
+
 import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/utils/clipboard.dart';
 import 'package:fluffychat/utils/twake_snackbar.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
+import 'package:matrix/matrix.dart';
 
 /// "Sovereign Architect" 风格的个人信息卡（头像 + 昵称 + Zeon UID）。
 ///
@@ -21,12 +24,17 @@ import 'package:fluffychat/generated/l10n/app_localizations.dart';
 ///
 /// mxid 显示策略：默认隐藏 `@` 前缀和 `:server` 后缀，仅显示 localpart
 /// （Zeon 用户的公开短码）。复制时同样只复制 localpart（即 6 位 UID）。
+///
+/// [privacyMaskStranger]：陌生人隐私视图——头像做高斯模糊，展示昵称取前两个
+/// Unicode 字素后接字面量 `***`（内部仍传完整 [displayName]，仅影响绘制）。
 class ZeonProfileHeader extends StatelessWidget {
   const ZeonProfileHeader({
     super.key,
     required this.avatarUri,
     required this.displayName,
     required this.mxid,
+    this.matrixClient,
+    this.privacyMaskStranger = false,
     this.subtitle,
     this.onTapAvatar,
     this.avatarSize = 210,
@@ -43,6 +51,12 @@ class ZeonProfileHeader extends StatelessWidget {
   /// 完整 mxid（如 `@alice:zeon.chat`），可空。
   /// 显示时会去掉 `@` 前缀和 `:server` 后缀，仅展示 `alice` 作为 UID。
   final String? mxid;
+
+  /// 拉取头像 MXC 所用的 Matrix 客户端；若在 Overlay 下无法 `Matrix.of(context)`，此处必填。
+  final Client? matrixClient;
+
+  /// 非好友隐私模式：模糊头像 + 昵称脱敏（见类注释）。
+  final bool privacyMaskStranger;
 
   /// 可选副标题（如在线状态、备注），渲染在 UID pill 下方。
   final Widget? subtitle;
@@ -66,11 +80,22 @@ class ZeonProfileHeader extends StatelessWidget {
     return colonIndex < 0 ? stripped : stripped.substring(0, colonIndex);
   }
 
+  /// 陌生人视图下的昵称：前两字素 + 字面量 `***`（trim 后；空则 `——`）。
+  static String maskDisplayNameForStranger(String raw) {
+    final t = raw.trim();
+    if (t.isEmpty) return '——';
+    final prefix = Characters(t).take(2).toString();
+    return '$prefix***';
+  }
+
   @override
   Widget build(BuildContext context) {
     final uidDisplay = (mxid != null && mxid!.isNotEmpty)
         ? displayUid(mxid!)
         : null;
+    final shownName = privacyMaskStranger
+        ? maskDisplayNameForStranger(displayName)
+        : displayName;
 
     return Padding(
       padding: padding,
@@ -79,12 +104,14 @@ class ZeonProfileHeader extends StatelessWidget {
         children: [
           _ZeonHeroAvatar(
             uri: avatarUri,
+            matrixClient: matrixClient,
+            privacyBlurAvatar: privacyMaskStranger,
             maxSize: avatarSize,
             onTap: onTapAvatar,
           ),
           const SizedBox(height: 28),
           Text(
-            displayName.isEmpty ? '——' : displayName,
+            shownName.isEmpty ? '——' : shownName,
             textAlign: TextAlign.left,
             style: const TextStyle(
               color: ZeonColors.primary,
@@ -128,11 +155,15 @@ class ZeonProfileHeader extends StatelessWidget {
 class _ZeonHeroAvatar extends StatelessWidget {
   const _ZeonHeroAvatar({
     required this.uri,
+    required this.matrixClient,
+    required this.privacyBlurAvatar,
     required this.maxSize,
     required this.onTap,
   });
 
   final Uri? uri;
+  final Client? matrixClient;
+  final bool privacyBlurAvatar;
   final double maxSize;
   final VoidCallback? onTap;
 
@@ -173,8 +204,9 @@ class _ZeonHeroAvatar extends StatelessWidget {
 
   Widget _buildContent(BuildContext context) {
     if (uri == null) return const ZeonAbstractAvatarPlaceholder();
-    return MxcImage(
+    Widget img = MxcImage(
       key: Key(uri.toString()),
+      matrixClient: matrixClient,
       uri: uri,
       fit: BoxFit.cover,
       cacheKey: uri.toString(),
@@ -182,6 +214,14 @@ class _ZeonHeroAvatar extends StatelessWidget {
       isThumbnail: false,
       placeholder: (_) => const ZeonAbstractAvatarPlaceholder(),
     );
+    if (privacyBlurAvatar) {
+      // 轻度模糊：sigma 过大整张脸会像牛奶块；6 左右仍能辨认大致轮廓与明暗。
+      img = ImageFiltered(
+        imageFilter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+        child: img,
+      );
+    }
+    return img;
   }
 }
 

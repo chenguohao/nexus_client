@@ -11,6 +11,8 @@ import 'package:fluffychat/domain/repository/federation_configurations_repositor
 import 'package:fluffychat/domain/repository/user_info/user_info_repository.dart';
 import 'package:fluffychat/domain/usecase/room/create_support_chat_interactor.dart';
 import 'package:fluffychat/event/twake_event_types.dart';
+import 'package:fluffychat/zeon/services/friend_auto_join_service.dart';
+import 'package:fluffychat/zeon/services/friend_request_history.dart';
 import 'package:fluffychat/pages/chat/events/audio_message/audio_player_widget.dart';
 import 'package:fluffychat/presentation/mixins/connectivity_mixin.dart';
 import 'package:fluffychat/presentation/mixins/init_config_mixin.dart';
@@ -173,7 +175,8 @@ class MatrixState extends State<Matrix>
       await _storePersistActiveAccount(newClient!);
       await _getUserInfoWithActiveClient(newClient);
       await _getHomeserverInformation(newClient);
-      getIt.get<ContactsManager>().refreshTomContacts(client);
+      _contactsManager.refreshTomContacts(client);
+      _contactsManager.attachTomContactsRefreshWhenRequestsPending(client);
       _createSupportChat(newClient);
       _listenSyncPresence(newClient);
       return SetActiveClientState.success;
@@ -309,14 +312,25 @@ class MatrixState extends State<Matrix>
     // Suppress the logout navigation that client.clear() emits as a
     // side-effect. The flag is read by _handleLastLogout(), which will
     // return early while it is set.
+    //
+    // IMPORTANT: client.clear() may fire the loggedOut event asynchronously
+    // (via an async StreamController or a deferred sync-abort callback).
+    // The flag must remain true until AFTER the event has been dispatched
+    // and consumed. We achieve this by yielding one extra event-loop tick
+    // (Future.delayed(Duration.zero)) after clear() returns before resetting
+    // the flag, so any queued loggedOut microtasks / events are processed
+    // while the flag is still active.
     _clearingForReinit = true;
     try {
       await client.clear();
     } catch (e) {
       Logs().e('MatrixState::clearClientForReinit: clear() failed', e);
-    } finally {
-      _clearingForReinit = false;
     }
+    // Yield to the event loop so any loggedOut events scheduled during
+    // clear() are dispatched (and suppressed by _handleLastLogout) before
+    // the flag is cleared.
+    await Future<void>.delayed(Duration.zero);
+    _clearingForReinit = false;
   }
 
   Future<Client> getLoginClient() async {
@@ -628,6 +642,20 @@ class MatrixState extends State<Matrix>
     await setUpFederationServicesInLogin(newActiveClient);
     await _storePersistActiveAccount(newActiveClient);
     await _getUserInfoWithActiveClient(newActiveClient);
+    // 加载/切换"我发起过的好友请求"本地历史，用于二级页"已确认"分组识别。
+    await FriendRequestHistoryStore.instance.resetForUser(
+      newActiveClient.userID,
+    );
+    if (newActiveClient.userID != null) {
+      await _contactsManager.hydrateTomFriendStatusDiskSnapshot(
+        newActiveClient.userID,
+      );
+    }
+    // 启动自动入群服务：好友拉群直接 join，群邀请页面不再弹接受按钮。
+    FriendAutoJoinService.instance.start(newActiveClient);
+    _contactsManager.attachTomContactsRefreshWhenRequestsPending(
+      newActiveClient,
+    );
     await _getHomeserverInformation(newActiveClient);
     matrixState.reSyncContacts();
     onClientLoginStateChanged.add(
@@ -721,6 +749,14 @@ class MatrixState extends State<Matrix>
     for (final c in widget.clients) {
       Logs().d('MatrixState::initMatrix: ${c.clientName} calling registerSubs');
       _registerSubs(c.clientName);
+    }
+
+    if (widget.clients.isNotEmpty && client.isLogged()) {
+      final uid = client.userID;
+      if (uid != null) {
+        await _contactsManager.hydrateTomFriendStatusDiskSnapshot(uid);
+      }
+      _contactsManager.attachTomContactsRefreshWhenRequestsPending(client);
     }
 
     await _retrieveLocalToMConfiguration();
@@ -1249,6 +1285,7 @@ class MatrixState extends State<Matrix>
     waitForFirstSync = false;
     matrixState.reSyncContacts();
     await matrixState.cancelListenSynchronizeContacts();
+    FriendAutoJoinService.instance.stop();
     if (PlatformInfos.isMobile) {
       await _deletePersistActiveAccount();
       TwakeApp.router.go('/home');

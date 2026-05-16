@@ -21,7 +21,7 @@ abstract class AppConfig {
 
   static bool get hasReachedMaxRetries => retryCompleterCount == 3;
 
-  static String _applicationName = 'Twake Chat';
+  static String _applicationName = 'Zeon';
 
   static String get applicationName => _applicationName;
   static String? _applicationWelcomeMessage;
@@ -127,9 +127,9 @@ abstract class AppConfig {
       'https://${AppConstants.appLinkUniversalLinkDomain}/';
   static const String schemePrefix = 'matrix:';
   static const String pushNotificationsChannelId = 'twake_push';
-  static const String pushNotificationsChannelName = 'Twake Chat push channel';
+  static const String pushNotificationsChannelName = 'Zeon push channel';
   static const String pushNotificationsChannelDescription =
-      'Push notifications for Twake Chat';
+      'Push notifications for Zeon';
   static String pushNotificationsAppId = Platform.isIOS
       ? kReleaseMode
             ? "app.twake.ios.chat"

@@ -5,6 +5,7 @@ import 'package:fluffychat/pages/chat/events/audio_message/audio_play_extension.
 import 'package:fluffychat/pages/chat/events/audio_message/audio_player_widget.dart';
 import 'package:fluffychat/pages/chat/events/message/display_name_widget.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
+import 'package:fluffychat/utils/safe_matrix_audio_filename.dart';
 import 'package:fluffychat/utils/string_extension.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/twake_components/twake_icon_button.dart';
@@ -218,7 +219,8 @@ class _ChatAudioPlayerWidgetState extends State<ChatAudioPlayerWidget> {
         final tempDir = await getTemporaryDirectory();
         final mxcUrl = currentEvent?.attachmentOrThumbnailMxcUrl();
         final fileName = Uri.encodeComponent(mxcUrl?.pathSegments.last ?? '');
-        file = File('${tempDir.path}/${fileName}_${matrixFile?.name}');
+        final safeBase = safeMatrixAudioLocalFilename(matrixFile?.name ?? '');
+        file = File('${tempDir.path}/${fileName}_$safeBase');
 
         final bytes = matrixFile?.bytes;
 

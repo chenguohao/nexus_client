@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:crypto/crypto.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/domain/model/contact/third_party_status.dart';
 import 'package:fluffychat/utils/string_extension.dart';
 import 'package:matrix/encryption/utils/base64_unpadded.dart';
@@ -30,26 +31,45 @@ class Contact extends Equatable {
 
   final Set<PhoneNumber>? phoneNumbers;
 
+  /// 好友关系状态。默认 [FriendStatus.accepted]，对老接口/老数据兼容。
+  final FriendStatus friendStatus;
+
+  /// 通讯录条目在服务端最后更新时间（Unix 毫秒）。旧数据可能为 null。
+  final int? updatedAtMillis;
+
   const Contact({
     required this.id,
     this.emails,
     this.displayName,
     this.phoneNumbers,
+    this.friendStatus = FriendStatus.accepted,
+    this.updatedAtMillis,
   });
 
   @override
-  List<Object?> get props => [id, emails, displayName, phoneNumbers];
+  List<Object?> get props => [
+    id,
+    emails,
+    displayName,
+    phoneNumbers,
+    friendStatus,
+    updatedAtMillis,
+  ];
 
   Contact copyWith({
     String? displayName,
     Set<Email>? emails,
     Set<PhoneNumber>? phoneNumbers,
+    FriendStatus? friendStatus,
+    int? updatedAtMillis,
   }) {
     return Contact(
       id: id,
       displayName: displayName ?? this.displayName,
       emails: emails ?? this.emails,
       phoneNumbers: phoneNumbers ?? this.phoneNumbers,
+      friendStatus: friendStatus ?? this.friendStatus,
+      updatedAtMillis: updatedAtMillis ?? this.updatedAtMillis,
     );
   }
 }

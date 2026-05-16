@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
+import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
 import 'package:fluffychat/utils/client_manager.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:flutter/material.dart';
@@ -47,6 +48,12 @@ void main() async {
   final firstClient = clients.firstOrNull;
   await firstClient?.roomsLoading;
   await firstClient?.accountDataLoading;
+  final tomHydrateUid = firstClient?.userID;
+  if (tomHydrateUid != null) {
+    await getIt.get<ContactsManager>().hydrateTomFriendStatusDiskSnapshot(
+      tomHydrateUid,
+    );
+  }
 
   // If the app starts in detached mode, we assume that it is in
   // background fetch mode for processing push notifications. This is

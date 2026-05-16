@@ -38,6 +38,7 @@ import 'package:fluffychat/widgets/layouts/agruments/app_adaptive_scaffold_body_
 import 'package:fluffychat/widgets/log_view.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/zeon/pages/mining/zeon_mining_page.dart';
+import 'package:fluffychat/zeon/pages/about/zeon_about_page.dart';
 import 'package:fluffychat/zeon/pages/privacy/zeon_privacy_page.dart';
 import 'package:fluffychat/zeon/pages/profile/zeon_profile_page.dart';
 import 'package:fluffychat/zeon/pages/profile_setup/zeon_profile_setup_page.dart';
@@ -277,6 +278,12 @@ abstract class AppRoutes {
               path: 'zeon-privacy',
               pageBuilder: (context, state) =>
                   defaultPageBuilder(context, const ZeonPrivacyPage()),
+              redirect: loggedOutRedirect,
+            ),
+            GoRoute(
+              path: 'zeon-about',
+              pageBuilder: (context, state) =>
+                  defaultPageBuilder(context, const ZeonAboutPage()),
               redirect: loggedOutRedirect,
             ),
             GoRoute(

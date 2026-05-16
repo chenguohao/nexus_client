@@ -1,3 +1,4 @@
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/pages/contacts_tab/widgets/add_contact/add_contact_dialog.dart';
 import 'package:fluffychat/pages/new_private_chat/new_private_chat.dart';
 import 'package:fluffychat/pages/new_private_chat/new_private_chat_style.dart';
@@ -7,7 +8,6 @@ import 'package:fluffychat/widgets/app_bars/searchable_app_bar.dart';
 import 'package:fluffychat/widgets/app_bars/searchable_app_bar_style.dart';
 import 'package:flutter/material.dart';
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/colors/linagora_sys_colors.dart';
 
 class NewPrivateChatView extends StatelessWidget {
   final NewPrivateChatController controller;
@@ -17,7 +17,7 @@ class NewPrivateChatView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: LinagoraSysColors.material().onPrimary,
+      backgroundColor: ZeonColors.background,
       appBar: PreferredSize(
         preferredSize: SearchableAppBarStyle.preferredSize(context),
         child: SearchableAppBar(
@@ -27,6 +27,9 @@ class NewPrivateChatView extends StatelessWidget {
           openSearchBar: controller.openSearchBar,
           closeSearchBar: controller.closeSearchBar,
           focusNode: controller.searchFocusNode,
+          foregroundColor: Colors.white,
+          backgroundColor: ZeonColors.background,
+          withBottomDivider: false,
         ),
       ),
       body: SingleChildScrollView(

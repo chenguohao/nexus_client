@@ -73,6 +73,15 @@ class AddressBook with EquatableMixin {
   @JsonKey(name: "mobile")
   final String? mobile;
 
+  /// 好友关系状态：accepted / pending_outgoing / pending_incoming / rejected。
+  /// 旧服务端不返回该字段时 fromJson 会得到 null，业务层视为 accepted（兼容）。
+  @JsonKey(name: "status")
+  final String? status;
+
+  /// 服务端最后一次写入该联系人记录的时间（Unix 毫秒）。
+  @JsonKey(name: "updated_at")
+  final int? updatedAt;
+
   AddressBook({
     this.id,
     this.addressbookId,
@@ -88,6 +97,8 @@ class AddressBook with EquatableMixin {
     this.phones,
     this.mail,
     this.mobile,
+    this.status,
+    this.updatedAt,
   });
 
   /// Checks if this address book entry is currently active.
@@ -119,5 +130,7 @@ class AddressBook with EquatableMixin {
     phones,
     mail,
     mobile,
+    status,
+    updatedAt,
   ];
 }

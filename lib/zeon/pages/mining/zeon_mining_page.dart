@@ -16,6 +16,7 @@ import '../../services/mining_service.dart';
 import '../../services/zeon_matrix_client_database.dart';
 import '../../widgets/zeon_dialog.dart';
 import '../../../widgets/matrix.dart';
+import '../../../widgets/twake_app.dart';
 
 // ── Phase enum ────────────────────────────────────────────────────────────────
 
@@ -372,16 +373,24 @@ class ZeonMiningPageState extends State<ZeonMiningPage>
         deviceId: _matrixDeviceId,
       );
 
-      if (!mounted) return;
-
       if (loginError != null) {
+        if (!mounted) return;
         _showSaveError('Key card saved, but login failed:\n$loginError');
         return;
       }
 
       // Take the freshly-registered user through the profile-setup step.
       // Skipping that step (or completing it) will navigate to /rooms.
-      context.go('/profile-setup');
+      //
+      // Safety: if a spurious loggedOut event navigated away while we were
+      // awaiting _loginMatrixClient (e.g. due to a race in clearClientForReinit),
+      // the mining page may be unmounted. In that case `context.go` is invalid,
+      // so we fall back to the global router which is always alive.
+      if (mounted) {
+        context.go('/profile-setup');
+      } else {
+        TwakeApp.router.go('/profile-setup');
+      }
     } catch (e) {
       if (mounted) _showSaveError('Failed to save key card: $e');
     } finally {

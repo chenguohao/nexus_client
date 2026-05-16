@@ -1,11 +1,11 @@
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/pages/contacts_tab/empty_contacts_body.dart';
 import 'package:fluffychat/pages/new_group/contacts_selection.dart';
 import 'package:fluffychat/pages/new_group/contacts_selection_view_style.dart';
 import 'package:fluffychat/pages/new_group/widget/contact_item.dart';
 import 'package:fluffychat/pages/new_group/widget/contacts_selection_list_style.dart';
 import 'package:fluffychat/pages/new_group/widget/selected_participants_list.dart';
-import 'package:fluffychat/pages/new_private_chat/widget/loading_contact_widget.dart';
 import 'package:fluffychat/pages/new_private_chat/widget/no_contacts_found.dart';
 import 'package:fluffychat/presentation/model/contact/get_presentation_contacts_empty.dart';
 import 'package:fluffychat/presentation/model/contact/get_presentation_contacts_failure.dart';
@@ -80,26 +80,32 @@ class ContactsSelectionView extends StatelessWidget {
         ],
       ),
       floatingActionButton: controller.isFullScreen
-          ? ValueListenableBuilder<bool>(
-              valueListenable: controller
-                  .selectedContactsMapNotifier
-                  .haveSelectedContactsNotifier,
-              builder: (context, haveSelectedContacts, child) {
-                if (!haveSelectedContacts) return const SizedBox.shrink();
-                return child!;
-              },
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  colorScheme: Theme.of(context).colorScheme.copyWith(
-                    primaryContainer: const Color(0xFF2A2A2B),
-                    onPrimaryContainer: const Color(0xFFE5E2E3),
+          ? AnimatedBuilder(
+              animation: controller.selectedContactsMapNotifier,
+              builder: (context, _) {
+                final count =
+                    controller.selectedContactsMapNotifier.contactsList.length;
+                if (count < 1) return const SizedBox.shrink();
+                final canProceed = count >= controller.minSelectedContactsToProceed;
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: Theme.of(context).colorScheme.copyWith(
+                      primaryContainer: canProceed
+                          ? const Color(0xFF2A2A2B)
+                          : const Color(0xFF1C1B1C),
+                      onPrimaryContainer: canProceed
+                          ? const Color(0xFFE5E2E3)
+                          : const Color(0xFF636363),
+                    ),
                   ),
-                ),
-                child: TwakeFloatingActionButton(
-                  icon: Icons.arrow_forward,
-                  onTap: () => controller.trySubmit(context),
-                ),
-              ),
+                  child: TwakeFloatingActionButton(
+                    icon: Icons.arrow_forward,
+                    onTap: canProceed
+                        ? () => controller.trySubmit(context)
+                        : null,
+                  ),
+                );
+              },
             )
           : null,
     );
@@ -185,7 +191,7 @@ class ContactsSelectionView extends StatelessWidget {
           },
           (success) {
             if (success is ContactsLoading) {
-              return const SliverToBoxAdapter(child: LoadingContactWidget());
+              return const SliverToBoxAdapter(child: SizedBox.shrink());
             }
 
             if (success is PresentationExternalContactSuccess &&
@@ -211,7 +217,11 @@ class ContactsSelectionView extends StatelessWidget {
             }
 
             if (success is PresentationContactsSuccess) {
-              final contacts = success.contacts;
+              // 拉群/邀请只能选 accepted 好友。pending/rejected 的人由
+              // OutgoingRequestsPage 等专门入口管理。
+              final contacts = success.contacts
+                  .where((c) => c.friendStatus == FriendStatus.accepted)
+                  .toList();
               if (contacts.isEmpty &&
                   controller.textEditingController.text.isNotEmpty) {
                 return SliverToBoxAdapter(
@@ -277,31 +287,32 @@ class ContactsSelectionView extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8.0),
-          ValueListenableBuilder<bool>(
-            valueListenable: controller
-                .selectedContactsMapNotifier
-                .haveSelectedContactsNotifier,
-            builder: (context, haveSelectedContacts, _) {
+          AnimatedBuilder(
+            animation: controller.selectedContactsMapNotifier,
+            builder: (context, _) {
+              final count =
+                  controller.selectedContactsMapNotifier.contactsList.length;
+              final canProceed =
+                  count >= controller.minSelectedContactsToProceed;
               return TwakeTextButton(
-                onTap: () =>
-                    haveSelectedContacts ? controller.trySubmit(context) : null,
+                onTap: canProceed ? () => controller.trySubmit(context) : null,
                 message: L10n.of(context)!.add,
                 margin: ContactsSelectionViewStyle.webActionsButtonMargin,
                 borderHover: 0,
                 buttonDecoration: BoxDecoration(
-                  color: haveSelectedContacts
+                  color: canProceed
                       ? const Color(0xFF2A2A2B)
-                      : const Color(0xFF1A1A1A),
+                      : const Color(0xFF1C1B1C),
                   border: Border.all(
-                    color: haveSelectedContacts
+                    color: canProceed
                         ? const Color(0x55E5E2E3)
-                        : const Color(0x22474747),
+                        : const Color(0x33474747),
                   ),
                 ),
                 styleMessage: TextStyle(
-                  color: haveSelectedContacts
+                  color: canProceed
                       ? const Color(0xFFE5E2E3)
-                      : const Color(0xFF444444),
+                      : const Color(0xFF636363),
                   fontSize: 14,
                   fontFamily: 'Inter',
                 ),

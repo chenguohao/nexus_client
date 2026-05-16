@@ -116,7 +116,7 @@ mixin SaveFileToTwakeAndroidDownloadsFolderMixin {
       final twakeFolder = await StorageDirectoryManager.instance
           .getTwakeDownloadsFolderInDevice();
       if (twakeFolder?.isNotEmpty != true) {
-        throw SaveToDownloadsException(error: 'Twake folder is empty');
+        throw SaveToDownloadsException(error: 'Zeon folder is empty');
       }
       final twakeFilePath = await StorageDirectoryManager.instance
           .getAvailableFilePath('$twakeFolder/${event.filename}');

@@ -2,13 +2,12 @@ import 'package:fluffychat/pages/search/recent_item_widget_style.dart';
 import 'package:fluffychat/presentation/extensions/room_summary_extension.dart';
 import 'package:fluffychat/presentation/extensions/search/presentation_search_extensions.dart';
 import 'package:fluffychat/presentation/model/search/presentation_search.dart';
+import 'package:fluffychat/config/zeon_colors.dart';
 import 'package:fluffychat/utils/string_extension.dart';
 import 'package:fluffychat/widgets/avatar/avatar.dart';
 import 'package:fluffychat/widgets/highlight_text.dart';
-import 'package:fluffychat/widgets/twake_components/twake_chip.dart';
 import 'package:flutter/material.dart' hide SearchController;
 import 'package:fluffychat/generated/l10n/app_localizations.dart';
-import 'package:linagora_design_flutter/linagora_design_flutter.dart';
 import 'package:matrix/matrix.dart';
 
 class RecentItemWidget extends StatelessWidget {
@@ -29,16 +28,23 @@ class RecentItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TwakeInkWell(
-      onTap: onTap,
-      child: SizedBox(
-        height: RecentItemStyle.recentItemHeight,
-        child: TwakeListItem(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashColor: const Color(0x1AFFFFFF),
+        highlightColor: const Color(0x0DFFFFFF),
+        borderRadius: BorderRadius.zero,
+        child: Container(
           height: RecentItemStyle.recentItemHeight,
-          child: Padding(
-            padding: RecentItemStyle.paddingRecentItem,
-            child: _buildInformationWidget(context),
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: Color(0x1F474747)),
+            ),
           ),
+          padding: RecentItemStyle.paddingRecentItem,
+          alignment: Alignment.centerLeft,
+          child: _buildInformationWidget(context),
         ),
       ),
     );
@@ -103,6 +109,7 @@ class _GroupChatInformation extends StatelessWidget {
               client: client,
             ),
             size: avatarSize ?? RecentItemStyle.avatarSize,
+            borderRadius: 0,
           ),
         ),
         const SizedBox(width: 8),
@@ -112,7 +119,7 @@ class _GroupChatInformation extends StatelessWidget {
             children: [
               _SearchHighlightText(
                 text: recentChatPresentationSearch.displayName ?? "",
-                style: ListItemStyle.titleTextStyle(fontFamily: 'Inter'),
+                style: RecentItemStyle.titleZeon,
                 searchWord: searchKeyword,
               ),
               Text(
@@ -120,7 +127,7 @@ class _GroupChatInformation extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
                 softWrap: false,
-                style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+                style: RecentItemStyle.subtitleZeon,
               ),
             ],
           ),
@@ -197,6 +204,7 @@ class _DirectChatInformation extends StatelessWidget {
               name: resolvedName,
               mxContent: resolvedAvatar,
               size: avatarSize ?? RecentItemStyle.avatarSize,
+              borderRadius: 0,
             ),
             const SizedBox(width: 8),
             Flexible(
@@ -205,12 +213,12 @@ class _DirectChatInformation extends StatelessWidget {
                 children: [
                   _SearchHighlightText(
                     text: resolvedName ?? matrixId ?? "",
-                    style: ListItemStyle.titleTextStyle(fontFamily: 'Inter'),
+                    style: RecentItemStyle.titleZeon,
                     searchWord: searchKeyword,
                   ),
                   _SearchHighlightText(
                     text: matrixId ?? "",
-                    style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+                    style: RecentItemStyle.subtitleZeon,
                     searchWord: searchKeyword,
                   ),
                 ],
@@ -248,6 +256,7 @@ class _ContactInformation extends StatelessWidget {
               mxContent: snapshot.data?.avatarUrl,
               name: contactPresentationSearch.displayName,
               size: avatarSize ?? RecentItemStyle.avatarSize,
+              borderRadius: 0,
             );
           },
         ),
@@ -261,7 +270,7 @@ class _ContactInformation extends StatelessWidget {
                   Expanded(
                     child: _SearchHighlightText(
                       text: contactPresentationSearch.displayName ?? "",
-                      style: ListItemStyle.titleTextStyle(fontFamily: 'Inter'),
+                      style: RecentItemStyle.titleZeon,
                       searchWord: searchKeyword,
                     ),
                   ),
@@ -270,9 +279,25 @@ class _ContactInformation extends StatelessWidget {
                         context,
                       )) ...[
                     const SizedBox(width: 8.0),
-                    TwakeChip(
-                      text: L10n.of(context)!.owner,
-                      textColor: Theme.of(context).colorScheme.primary,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: ZeonColors.surfaceContainer,
+                        border: Border.all(color: const Color(0x33474747)),
+                      ),
+                      child: Text(
+                        L10n.of(context)!.owner,
+                        style: const TextStyle(
+                          color: ZeonColors.outline,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Inter',
+                          letterSpacing: 1.8,
+                        ),
+                      ),
                     ),
                   ],
                 ],
@@ -284,9 +309,7 @@ class _ContactInformation extends StatelessWidget {
                     if (contactPresentationSearch.matrixId != null)
                       _SearchHighlightText(
                         text: contactPresentationSearch.matrixId ?? "",
-                        style: ListItemStyle.subtitleTextStyle(
-                          fontFamily: 'Inter',
-                        ),
+                        style: RecentItemStyle.subtitleZeon,
                         searchWord: searchKeyword,
                       ),
                     if (searchKeyword?.isNotEmpty == true) ...[
@@ -312,7 +335,7 @@ class _ContactInformation extends StatelessWidget {
     }
     return _SearchHighlightText(
       text: contactPresentationSearch.primaryEmail,
-      style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+      style: RecentItemStyle.subtitleZeon,
       searchWord: searchKeyword,
     );
   }
@@ -323,7 +346,7 @@ class _ContactInformation extends StatelessWidget {
     }
     return _SearchHighlightText(
       text: contactPresentationSearch.primaryPhoneNumber,
-      style: ListItemStyle.subtitleTextStyle(fontFamily: 'Inter'),
+      style: RecentItemStyle.subtitleZeon,
       searchWord: searchKeyword,
     );
   }

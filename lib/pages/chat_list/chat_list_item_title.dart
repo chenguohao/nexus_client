@@ -16,13 +16,22 @@ class ChatListItemTitle extends StatelessWidget with ChatListItemMixin {
 
   final DateTime? originServerTs;
 
-  const ChatListItemTitle({super.key, required this.room, this.originServerTs});
+  /// 若为 null，使用 [Room.getLocalizedDisplayname]（DM 可由通讯录覆盖）。
+  final String? displayNameOverride;
+
+  const ChatListItemTitle({
+    super.key,
+    required this.room,
+    this.originServerTs,
+    this.displayNameOverride,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final displayName = room.getLocalizedDisplayname(
-      MatrixLocals(L10n.of(context)!),
-    );
+    final displayName = displayNameOverride ??
+        room.getLocalizedDisplayname(
+          MatrixLocals(L10n.of(context)!),
+        );
     return Row(
       children: <Widget>[
         Expanded(

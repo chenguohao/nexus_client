@@ -10,6 +10,10 @@ import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/di/global/get_it_initializer.dart';
 import 'package:fluffychat/domain/app_state/contact/get_contacts_state.dart';
 import 'package:fluffychat/domain/app_state/room/report_content_state.dart';
+import 'package:fluffychat/domain/contact_manager/contacts_manager.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
+import 'package:fluffychat/domain/usecase/contacts/accept_friend_interactor.dart';
+import 'package:fluffychat/domain/usecase/contacts/reject_friend_interactor.dart';
 import 'package:fluffychat/domain/model/chat/message_report_reason.dart';
 import 'package:fluffychat/domain/model/extensions/contact/contact_extension.dart';
 import 'package:fluffychat/domain/model/file_info/file_info.dart';
@@ -213,6 +217,9 @@ class ChatController extends State<Chat>
   String _markerReadLocation = '';
 
   String? unreadReceivedMessageLocation;
+
+  /// 避免对同一房间重复跑「补绑好友」逻辑（每次会 GET 通讯录）。
+  String? _staleFriendHealAttemptedForRoomId;
 
   List<MatrixFile?>? get shareFiles => widget.shareFiles;
 
@@ -642,6 +649,7 @@ class ChatController extends State<Chat>
     loadTimelineFuture = _getTimeline();
     try {
       await loadTimelineFuture;
+      unawaited(_healStaleFriendRelationIfJoinedDm());
       // when the scroll controller is attached we want to scroll to an event id, if specified
       // and update the scroll controller...which will trigger a request history, if the
       // "load more" button is visible on the screen
@@ -2867,6 +2875,65 @@ class ChatController extends State<Chat>
     clearSelectedEvents();
   }
 
+  /// 修复：已通过 Matrix join 进入 DM，但曾因本地无通讯录快照未调用 `/accept`，
+  /// 服务端仍停留在 pending。进入聊天并成功拉取时间线后补一次。
+  Future<void> _healStaleFriendRelationIfJoinedDm() async {
+    final r = room;
+    if (r == null || !r.isDirectChat) return;
+    if (r.membership != Membership.join) return;
+    if (_staleFriendHealAttemptedForRoomId == r.id) return;
+    _staleFriendHealAttemptedForRoomId = r.id;
+
+    final inviter = r.directChatMatrixID;
+    final selfId = client.userID;
+    if (inviter == null || selfId == null || inviter == selfId) return;
+
+    try {
+      await getIt
+          .get<AcceptFriendInteractor>()
+          .acceptPendingIncomingIfExists(inviter);
+      if (mounted) {
+        getIt.get<ContactsManager>().refreshTomContacts(client);
+      }
+    } catch (e, s) {
+      Logs().d('Chat::_healStaleFriendRelationIfJoinedDm: skipped', e, s);
+    }
+  }
+
+  /// 当前 DM 邀请如果是来自一条 pending_incoming 好友请求，返回对应 contactId。
+  /// 否则返回 null（普通群邀请 / 普通 DM 邀请）。
+  String? get pendingFriendRequestContactId {
+    final r = room;
+    if (r == null || !r.isDirectChat) return null;
+    final inviter = r.directChatMatrixID;
+    if (inviter == null || inviter.isEmpty) return null;
+
+    final state = getIt
+        .get<ContactsManager>()
+        .getContactsNotifier()
+        .value
+        .getSuccessOrNull<GetContactsSuccess>();
+    if (state == null) return null;
+    if (state.friendStatusByMxid[inviter] != FriendStatus.pendingIncoming) {
+      return null;
+    }
+    // 反查 contactId（toContact 把它存到 Contact.id）
+    for (final c in state.contacts) {
+      final mxid = c.emails
+          ?.where((e) => e.matrixId != null && e.matrixId!.isNotEmpty)
+          .map((e) => e.matrixId!)
+          .firstOrNull;
+      if (mxid == inviter && c.friendStatus == FriendStatus.pendingIncoming) {
+        return c.id;
+      }
+    }
+    return null;
+  }
+
+  /// 当前邀请是否是好友请求（用于切换文案 + 接受/拒绝时联动 friend API）。
+  bool get isFriendRequestInvitation =>
+      pendingFriendRequestContactId != null;
+
   void onAcceptInvitation() async {
     await TwakeDialog.showFutureLoadingDialogFullScreen(
       future: () async {
@@ -2876,6 +2943,28 @@ class ChatController extends State<Chat>
         );
         await room?.join();
         await waitForRoom;
+
+        // 必须在 join 成功后调服务端 accept。
+        // 不能依赖内存里的 [ContactsManager]：用户若从未打开通讯录，本地根本没有
+        // pending_incoming，`pendingFriendRequestContactId` 会为 null，
+        // 结果就是只建了 Matrix DM、通讯录仍停在「待确认」。
+        final r = room;
+        if (r != null && r.isDirectChat) {
+          final inviter = r.directChatMatrixID;
+          final selfId = client.userID;
+          if (inviter != null &&
+              selfId != null &&
+              inviter != selfId) {
+            try {
+              await getIt
+                  .get<AcceptFriendInteractor>()
+                  .acceptPendingIncomingIfExists(inviter);
+              getIt.get<ContactsManager>().refreshTomContacts(client);
+            } catch (e) {
+              Logs().w('Chat::onAcceptInvitation: accept friend failed', e);
+            }
+          }
+        }
       },
     ).then((_) => _tryLoadTimeline());
   }
@@ -2895,6 +2984,10 @@ class ChatController extends State<Chat>
     // forget the room (not just leave) regardless of DM/group type.
     final targetRoom = room;
     if (targetRoom == null) return;
+    final inviterMxid = targetRoom.isDirectChat
+        ? targetRoom.directChatMatrixID
+        : null;
+    final selfId = targetRoom.client.userID;
 
     await TwakeDialog.showFutureLoadingDialogFullScreen(
       future: () async {
@@ -2902,6 +2995,18 @@ class ChatController extends State<Chat>
         try {
           await targetRoom.client.forgetRoom(targetRoom.id);
         } catch (_) {}
+        if (inviterMxid != null &&
+            selfId != null &&
+            inviterMxid != selfId) {
+          try {
+            await getIt
+                .get<RejectFriendInteractor>()
+                .rejectPendingIncomingIfExists(inviterMxid);
+            getIt.get<ContactsManager>().refreshTomContacts(client);
+          } catch (e) {
+            Logs().w('Chat::onRejectInvitation: reject friend failed', e);
+          }
+        }
       },
     );
 

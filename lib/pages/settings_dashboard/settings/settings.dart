@@ -47,7 +47,7 @@ class SettingsController extends State<Settings> with ConnectPageMixin {
       .get<FederationConfigurationsRepository>();
 
   static String generateEmailSubject(String? matrixId) =>
-      'Request for Deletion of Twake Chat Account${matrixId != null ? ' - $matrixId' : ''}';
+      'Request for Deletion of Zeon Account${matrixId != null ? ' - $matrixId' : ''}';
 
   StreamSubscription? onAccountDataSubscription;
 

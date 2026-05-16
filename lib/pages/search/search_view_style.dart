@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:linagora_design_flutter/colors/linagora_ref_colors.dart';
+import 'package:fluffychat/config/zeon_colors.dart';
 
 class SearchViewStyle {
   static double get toolbarHeightSearch => 56.0;
@@ -19,15 +19,17 @@ class SearchViewStyle {
 
   static const double paddingBackButton = 8.0;
 
-  static final BorderRadius borderRadiusTextField = BorderRadius.circular(24);
-
   static EdgeInsetsGeometry get appbarPadding =>
       const EdgeInsetsDirectional.only(bottom: 0.0, top: 0.0);
 
-  static TextStyle? headerTextStyle(BuildContext context) => Theme.of(context)
-      .textTheme
-      .labelLarge
-      ?.copyWith(color: LinagoraRefColors.material().neutral[40]);
+  /// Zeon 分区标题样式（对齐通讯录等板块）
+  static const TextStyle sectionHeaderZeon = TextStyle(
+    color: ZeonColors.outline,
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    fontFamily: 'Inter',
+    letterSpacing: 1.8,
+  );
 
   static const double searchIconSize = 24.0;
 }

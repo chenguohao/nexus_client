@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:fluffychat/domain/model/contact/contact.dart';
 import 'package:fluffychat/domain/model/contact/contact_status.dart';
 import 'package:fluffychat/domain/model/contact/contact_type.dart';
+import 'package:fluffychat/domain/model/contact/friend_status.dart';
 import 'package:fluffychat/domain/model/contact/third_party_status.dart';
 import 'package:collection/collection.dart';
 
@@ -22,6 +23,9 @@ class PresentationContact extends Equatable {
 
   final String? id;
 
+  /// 好友关系状态。默认 [FriendStatus.accepted]。
+  final FriendStatus friendStatus;
+
   const PresentationContact({
     this.id,
     this.emails,
@@ -31,6 +35,7 @@ class PresentationContact extends Equatable {
     this.status,
     this.type,
     this.expandInformation = false,
+    this.friendStatus = FriendStatus.accepted,
   });
 
   PresentationContact get presentationContactEmpty => const PresentationContact(
@@ -74,6 +79,7 @@ class PresentationContact extends Equatable {
     expandInformation,
     status,
     type,
+    friendStatus,
   ];
 }
 

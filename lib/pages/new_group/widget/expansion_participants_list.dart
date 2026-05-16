@@ -70,8 +70,10 @@ class _ExpansionParticipantsListState extends State<ExpansionParticipantsList> {
                   child: Column(
                     children: widget.contactsList
                         .map(
-                          (contact) =>
-                              ExpansionContactListTile(contact: contact),
+                          (contact) => ExpansionContactListTile(
+                            contact: contact,
+                            suppressInkWell: true,
+                          ),
                         )
                         .toList(),
                   ),

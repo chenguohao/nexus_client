@@ -235,8 +235,11 @@ class DraftChatInputRow extends StatelessWidget {
                 Logs().d('DraftChatInputRow:: sendRequestFunction $soundFile');
                 stopRecording?.call();
 
+                final safeName =
+                    'voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
                 final file = TwakeAudioFile(
-                  name: soundFile.path,
+                  name: safeName,
+                  mimeType: 'audio/mp4',
                   duration: time.inMilliseconds,
                   bytes: soundFile.readAsBytesSync(),
                 );

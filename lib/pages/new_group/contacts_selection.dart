@@ -18,7 +18,15 @@ abstract class ContactsSelectionController<T extends StatefulWidget>
         ContactsViewControllerMixin,
         AddressBooksMixin,
         WidgetsBindingObserver {
+  /// 新建群组选人页至少勾选的好友人数（不含当前用户；自己会在群内，
+  /// 因此勾选 2 人即为三人成群）。
+  static const int minSelectedContactsForNewGroupChat = 2;
+
   final selectedContactsMapNotifier = SelectedContactsMapChangeNotifier();
+
+  /// 至少勾选多少人后可进入下一步。新建群组覆盖为 [minSelectedContactsForNewGroupChat]；
+  /// 群内邀请成员等为 1。
+  int get minSelectedContactsToProceed => 1;
 
   String getTitle(BuildContext context);
 
@@ -63,6 +71,10 @@ abstract class ContactsSelectionController<T extends StatefulWidget>
   }
 
   void trySubmit(BuildContext context) {
+    if (selectedContactsMapNotifier.contactsList.length <
+        minSelectedContactsToProceed) {
+      return;
+    }
     onSubmit();
   }
 
